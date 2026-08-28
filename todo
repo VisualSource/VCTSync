@@ -1,0 +1,11 @@
+[] 
+[] file server
+    - allow configure of folders being shared
+[] deploy
+    - support delopying from github version
+    - support depploying from local version
+[] log sharing
+    - allow for live log reading
+    - allow collecting log
+[] allow sharing of files
+[] live unity runtime viewing?
