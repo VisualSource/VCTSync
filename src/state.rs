@@ -1,22 +1,36 @@
-use crate::screens;
+use std::sync::Arc;
 
-#[derive(Debug)]
+use iced::Task;
+
+use crate::{
+    query::QueryUpdate,
+    screens::{self, versions::Version},
+};
+
+#[derive(Debug, Default)]
 pub enum Screen {
+    #[default]
     Logs,
     Versions(screens::versions::VersionsScreen),
     Files,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct State {
     pub screen: Screen,
 }
 
 #[derive(Debug, Clone)]
-pub enum Message {
-    SetScreenLogs,
-    SetScreenVersions,
-    SetScreenFiles,
+pub enum Tab {
+    Logs,
+    Versions,
+    Files,
+}
 
-    InstallModVersion,
+#[derive(Debug, Clone)]
+pub enum Message {
+    SetTab(Tab),
+    Version,
+
+    QueryUpdate(String, QueryUpdate<Vec<Version>>),
 }
