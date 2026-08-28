@@ -1,10 +1,6 @@
-use std::sync::Arc;
-
-use iced::Task;
-
 use crate::{
     query::QueryUpdate,
-    screens::{self, versions::Version},
+    screens::{self, versions::requests::Version},
 };
 
 #[derive(Debug, Default)]

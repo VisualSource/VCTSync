@@ -1,57 +1,16 @@
-use std::sync::Arc;
-
-use iced::{
-    Element, Function, Task, color,
-    task::{Straw, sipper},
-    widget::{Column, Row, button, column, container, row, scrollable, svg, text},
-};
-use serde::Deserialize;
-
-macro_rules! asset {
-    ($name:literal) => {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/", $name)
-    };
-}
-
+pub mod requests;
+use crate::asset;
+use crate::screens::versions::requests::{Version, VersionType};
 use crate::{
-    http,
     query::{self, Query},
     state::Message,
 };
+use iced::{
+    Element, Function, Task, color,
+    widget::{Column, Row, button, column, container, row, scrollable, svg, text},
+};
 
-#[derive(Debug, Default, Deserialize, Clone)]
-pub enum VersionType {
-    Remote,
-    #[default]
-    Local,
-}
-
-#[derive(Debug, Default, Deserialize, Clone)]
-pub struct Version {
-    version: String,
-    git_hash: String,
-    timestamp: String,
-    content_type: VersionType,
-    source_url: String,
-}
-
-impl Version {
-    pub fn new(
-        version: String,
-        git_hash: String,
-        timestamp: String,
-        ct: VersionType,
-        source: String,
-    ) -> Self {
-        Version {
-            version,
-            git_hash,
-            timestamp,
-            content_type: ct,
-            source_url: source,
-        }
-    }
-}
+use requests::fetch_remote_version_list;
 
 #[derive(Debug)]
 pub struct VersionsScreen {
@@ -66,7 +25,7 @@ impl Default for VersionsScreen {
             current_version: None,
             remote_versions: Query::<Vec<Version>>::new(
                 "versions::remote".to_string(),
-                VersionsScreen::fetch_remote_version_list,
+                fetch_remote_version_list,
             ),
             local_versions: vec![Version::new(
                 "v0.14".into(),
@@ -162,65 +121,4 @@ impl VersionsScreen {
 
         vec![rt.map(Message::QueryUpdate.with(self.remote_versions.id.clone()))]
     }
-
-    fn fetch_remote_version_list() -> impl Straw<Vec<Version>, (), Arc<anyhow::Error>> {
-        sipper(async move |_| {
-            let client = http::get_client();
-
-            let response = client
-                .get("https://api.github.com/repos/VisualSource/VoidCrewTerminus/releases")
-                .header("Accept", "application/vnd.github+json")
-                .send()
-                .await
-                .map_err(|err| Arc::new(anyhow::Error::from(err)))?
-                .error_for_status()
-                .map_err(|err| Arc::new(anyhow::Error::from(err)))?;
-
-            let releases = response
-                .json::<Vec<GithubRelease>>()
-                .await
-                .map_err(|err| Arc::new(anyhow::Error::from(err)))?;
-
-            let versions: Vec<Version> = releases
-                .into_iter()
-                .map(|item| Version {
-                    version: item.tag_name,
-                    git_hash: "".into(),
-                    timestamp: "".into(),
-                    content_type: VersionType::Local,
-                    source_url: "".into(),
-                })
-                .collect();
-
-            Ok(versions)
-        })
-    }
-
-    fn fetch_local_version_list() -> impl Straw<(), Vec<Version>, anyhow::Error> {
-        sipper(async move |mut state| {
-            let response = reqwest::get("http://localhost/versions").await?;
-
-            let versions = response.json::<Vec<Version>>().await?;
-
-            state.send(versions).await;
-
-            Ok(())
-        })
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct GithubRelease {
-    tag_name: String,
-    name: Option<String>,
-    prerelease: bool,
-    draft: bool,
-    published_at: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ReleaseAsset {
-    name: String,
-    browser_download_url: String,
-    size: u64,
 }

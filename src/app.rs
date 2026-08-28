@@ -11,7 +11,7 @@ use crate::{
 pub struct Application {}
 
 impl Application {
-    pub fn theme(state: &State) -> Theme {
+    pub fn theme(_: &State) -> Theme {
         Theme::Nord
     }
     pub fn new() -> State {
@@ -19,8 +19,14 @@ impl Application {
     }
     pub fn update(state: &mut State, msg: Message) -> Task<Message> {
         match msg {
-            Message::SetTab(Tab::Files) => Task::none(),
-            Message::SetTab(Tab::Logs) => Task::none(),
+            Message::SetTab(Tab::Files) => {
+                state.screen = Screen::Files;
+                Task::none()
+            }
+            Message::SetTab(Tab::Logs) => {
+                state.screen = Screen::Logs;
+                Task::none()
+            }
             Message::SetTab(Tab::Versions) => {
                 let mut screen = VersionsScreen::default();
 
@@ -30,9 +36,9 @@ impl Application {
                 tasks
             }
             _ => match &mut state.screen {
-                Screen::Logs => todo!(),
+                Screen::Logs => Task::none(),
                 Screen::Versions(versions_screen) => versions_screen.update(msg),
-                Screen::Files => todo!(),
+                Screen::Files => Task::none(),
             },
         }
     }
