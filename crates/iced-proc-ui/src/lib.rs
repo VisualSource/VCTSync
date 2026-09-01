@@ -47,7 +47,7 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                     children.append_separated(results, quote! {,});
 
                     let col = quote! {
-                            iced::widget::row(vec![#children])
+                        iced::widget::Row::with_children(vec![#children])
                     };
 
                     return Ok(col);
@@ -63,7 +63,7 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                     children.append_separated(results, quote! {,});
 
                     let col = quote! {
-                        iced::widget::column(#children)
+                        iced::Element::from(iced::widget::Column::with_children(vec![#children]))
                     };
 
                     return Ok(col);
@@ -80,7 +80,7 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                     let content = handle_node(child)?;
 
                     let btn = quote! {
-                        iced::widget::button(#content)
+                       iced::Element::from(iced::widget::button(#content))
                     };
 
                     return Ok(btn);
@@ -90,13 +90,13 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
         }
         Node::Block(node_block) => unimplemented!(),
         Node::Text(node_text) => Ok(quote! {
-            iced::widget::text(#node_text.value)
+             iced::Element::from(iced::widget::text(#node_text.value))
         }),
         Node::RawText(raw_text) => {
             let source = raw_text.to_token_stream_string();
 
             Ok(quote! {
-                iced::widget::text!(#source)
+                 iced::Element::from(iced::widget::text(#source))
             })
         }
         Node::Custom(_) => unimplemented!(),

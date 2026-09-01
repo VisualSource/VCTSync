@@ -1,5 +1,5 @@
 [package]
-name = "iced-ui"
+name = "iced-xml"
 version = "0.1.0"
 edition = "2024"
 
@@ -11,4 +11,6 @@ rstml = { version = "0.13" }
 proc-macro2 = "1.0"
 syn = "3"
 quote = "1"
+
+[dev-dependencies]
 iced = { version = "0.14.0", features = ["svg"] }
