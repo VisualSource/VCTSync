@@ -87,6 +87,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "iced",
+ "iced-xml",
+ "reqwest",
+ "serde",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1492,7 +1503,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "iced-ui"
+name = "iced-xml"
 version = "0.1.0"
 dependencies = [
  "iced",
@@ -4202,16 +4213,6 @@ dependencies = [
  "js-sys",
  "serde_core",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "vct-sync"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "iced",
- "reqwest",
- "serde",
 ]
 
 [[package]]

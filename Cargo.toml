@@ -2,8 +2,4 @@
 resolver = "3"
 
 members = ["crates/iced-proc-ui", "crates/app"]
-
-[package]
-name = "iced_test"
-version = "0.1.0"
-edition = "2024"
+default-members = ["crates/app"]

@@ -83,26 +83,54 @@ impl VersionsScreen {
         }
     }
 
-    fn current_installed_version(&self) -> Row<'_, Message> {
+    fn current_installed_version(&self) -> Element<'_, Message> {
         match &self.current_version {
             Some(data) => match data.content_type {
                 VersionType::Local => self.local_mod_version(&data),
                 VersionType::Remote => self.remote_mod_version(&data),
             },
-            None => row![],
+            None => row![].into(),
         }
     }
 
-    fn remote_mod_version(&self, data: &Version) -> Row<'_, Message> {
-        row![
+    fn remote_mod_version(&self, data: &Version) -> Element<'_, Message> {
+        iced_xml::ui! {
+            <row>
+                <svg src={asset!("network.svg")}/>
+                <text>{data.version.clone()}</text>
+                <button>
+                    <svg src={asset!("hard-drive-download.svg")}/>
+                </button>
+            </row>
+        }
+        /*row![
             svg(asset!("network.svg")),
-            text(data.version.clone()), // version
+            text(data.version.clone), // version
             button(svg(asset!("hard-drive-download.svg")))
-        ]
+        ]*/
     }
 
-    fn local_mod_version(&self, data: &Version) -> Row<'_, Message> {
-        row![
+    fn local_mod_version(&self, data: &Version) -> Element<'_, Message> {
+        iced_xml::ui! {
+            <row padding=2>
+                <svg src={asset!("flask-conical.svg")} width=52 height=52 style={|_theme, _status| svg::Style {
+                    color: Some(color!(0xFFFFFF))
+                }}/>
+                <text padding={2}>
+                    data.version.clone()
+                </text>
+                <text>
+                    data.git_hash.clone()
+                </text>
+                <text>
+                    data.timestamp.clone()
+                </text>
+
+                <svg src={asset!("hard-drive-download.svg")}/>
+            </row>
+        }
+
+        /*row![
             svg(asset!("flask-conical.svg"))
                 .width(52)
                 .height(52)
@@ -113,7 +141,7 @@ impl VersionsScreen {
             container(text(data.git_hash.clone())),           // git hash
             container(text(data.timestamp.clone())),          // timestamp
             button(svg(asset!("hard-drive-download.svg")))
-        ]
+        ]*/
     }
 
     pub fn fetch(&mut self) -> Vec<Task<Message>> {

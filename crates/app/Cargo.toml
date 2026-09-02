@@ -3,8 +3,12 @@ name = "app"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "vcs"
+path = "src/main.rs"
+
 [dependencies]
-iced_xml = { path = "crates/iced-proc-ui" }
+iced-xml = { path = "../iced-proc-ui" }
 anyhow = "1.0.104"
 iced = { version = "0.14.0", features = ["svg", "tokio", "sipper"] }
 reqwest = { version = "0.13.4", features = ["stream", "json"] }

@@ -1,4 +1,10 @@
-use iced_ui::ui;
+use iced_xml::ui;
+
+macro_rules! asset {
+    ($name:literal) => {
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/", $name)
+    };
+}
 
 #[derive(Debug, Clone)]
 enum TestEnum {
@@ -7,13 +13,14 @@ enum TestEnum {
 
 #[test]
 fn test_parse() {
-    let result = ui! {
-        <row space=4>
+    let _result: iced::Element<'_, TestEnum> = ui! {
+        <row spacing=4>
+            <svg src=asset!("") width={50} height={50}/>
             <col>
                 Hello
             </col>
             <col>
-                <button onPress=TestEnum::Hello>Hello</button>
+                <button onPress={TestEnum::Hello}>Hello</button>
             </col>
         </row>
     };

@@ -9,7 +9,7 @@ use crate::app::Application;
 #[macro_export]
 macro_rules! asset {
     ($name:literal) => {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/assets/", $name)
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/", $name)
     };
 }
 
