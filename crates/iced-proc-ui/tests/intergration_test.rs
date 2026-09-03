@@ -15,7 +15,7 @@ enum TestEnum {
 fn test_parse() {
     let _result: iced::Element<'_, TestEnum> = ui! {
         <row spacing=4>
-            <svg src=asset!("") width={50} height={50}/>
+            <svg src={asset!("network.svg")} width={50} height={50}/>
             <col>
                 Hello
             </col>

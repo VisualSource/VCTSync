@@ -9,3 +9,52 @@
     - allow collecting log
 [] allow sharing of files
 [] live unity runtime viewing?
+
+
+# widgets:
+    [] button        -> <button/>
+    [] canvas        -> <canvas/>
+    [] checkbox      -> <input type="checkbox"/>
+    [] combo_box     -> 
+                        <combobox textShaping onInput onOpen onClose padding font icon size lineHeight width menuHeight inputStyle menuStyle inputClass menuClass onChange={} value={state.favorite} placeholder="">{&state.fruits}</combobox/>
+                        <combobox textShaping onOpen onClose padding font icon size lineHeight width onChange={} value={state.favorite} placeholder="">{&state.fruits}
+                            <input onChange={} style={} class={}/>
+                            <menu height={} style={} class={}>
+                                {&state.fruits}
+                            </menu>
+                        </combobox/>
+    [] container     -> <view id padding width height maxWidth maxHeight centerX centerY center alignLeft alignRight alignTop alignBottom alignX alignY clip style class/>
+    [] float         -> <float scale style class translate/>
+    [] grid          -> <grid spacing width height cols={} fluid/>
+    [] image-viewer  -> <img-viewer/>
+    [] image         -> <img src={} width height contentFit={} filterMethod={} rotation={} opacity={} scale={} crop={} borderRadius={}/>
+    [] keyed         -> <col-keyed/>
+    [] markdown      -> <markdown/>
+    [] overlay       -> <menu/>
+    [] pane_grid     -> <pane-grid width height spacing minSize onClick style class onDrag={} onResize={} state={&state.panes} />{VIEW}<pane-grid/>
+    [] pick_list     -> <select placeholder="select your favorite fruit..." value={&state.favorite} onChange={Message::FruitSelected}>{fruits}</select>
+    [] progress_bar  -> <progress-bar min={0} max={100} value={&state.progress}/>
+    [] qr_code       -> <qr-code value={&state.data}/>
+    [] radio         -> <input type="radio" label="A" value={Choice::A} checked={&state.selection} onChange={Message:RadioSelected}  />
+    [] row           -> <row spacing padding width height alignY clip warp/>
+    [] rule          -> <hr style={} class/>
+    [] scrollable    -> <scroll dir="Direction" width={} height={} onScroll={} anchor={top|bottom|left|right} anchorX={Anchor} anchorY={Anchor} spacing={} autoScroll={} style={} class/>
+    [] selector      ->
+    [] sensor        ->
+    [] shader        ->
+    [] slider        -> <input type="range" min={0} max={100} value={&state.value} onChange={Message::ValueChanged}/>
+    [] space         -> <space orient="horizontal|vertical" />
+    [] svg           -> <svg src=""/>
+    [] table         -> <table/>, <tr/>
+    [] text          -> <text/>
+    [] text_editor   -> <textarea onAction={Message::Edit} value={$state.content} placeholder="Type something here..."/>
+    [] text_input    -> <input type="text" placeholder="Type something here..." value={&state.content} onChange={Message::ContentChanged}/>
+    [] theme         -> <theme/>
+    [] toggler       -> <switch onChange={Message::Toggled} label="Toggle Me!"/>
+    [] tooltip         -> <tooltip position={Position::Bottom}></tooltip/>
+    [] vertical_slider  -> <input type="slider" min={0} max={100} value={value} onChange={Message::ValueChanged} orient="vertical"/>
+
+    [] keyed_column
+    [] rich_text
+
+    [] custom => <custom-view/> -> custom-view() | <Custom::view/> -> Custom::view()

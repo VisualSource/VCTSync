@@ -1,7 +1,4 @@
-use iced::{
-    Element, Task, Theme,
-    widget::{button, column, container, row, text},
-};
+use iced::{Element, Task, Theme};
 
 use crate::{
     screens::versions::VersionsScreen,
@@ -43,18 +40,23 @@ impl Application {
         }
     }
     pub fn view(state: &State) -> Element<'_, Message> {
-        column![
-            container(row![
-                button(text("Versions")).on_press(Message::SetTab(Tab::Versions)),
-                button(text("Logs")).on_press(Message::SetTab(Tab::Logs)),
-                button(text("Files")).on_press(Message::SetTab(Tab::Files))
-            ]),
-            container(match &state.screen {
-                Screen::Logs => column![],
-                Screen::Versions(screen) => screen.view(),
-                Screen::Files => column![],
-            })
-        ]
-        .into()
+        iced_xml::ui! {
+            <col>
+                <view>
+                    <row>
+                        <button onPress={Message::SetTab(Tab::Versions)}>Builds</button>
+                        <button onPress={Message::SetTab(Tab::Logs)}>Logs</button>
+                        <button onPress={Message::SetTab(Tab::Files)}>Settings</button>
+                    </row>
+                </view>
+                <view>
+                {match &state.screen {
+                    Screen::Logs => iced_xml::ui! { <col></col> },
+                    Screen::Versions(screen) => screen.view(),
+                    Screen::Files => iced_xml::ui! { <col></col> },
+                }}
+                </view>
+            </col>
+        }
     }
 }

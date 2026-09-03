@@ -7,8 +7,9 @@ use crate::{
 };
 use iced::{
     Element, Function, Task, color,
-    widget::{Column, Row, button, column, container, row, scrollable, svg, text},
+    widget::{Column, column, container, row, svg, text},
 };
+use iced_xml::ui;
 
 use requests::fetch_remote_version_list;
 
@@ -39,7 +40,7 @@ impl Default for VersionsScreen {
 }
 
 impl VersionsScreen {
-    pub fn view(&self) -> Column<'_, Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         let rv = match &self.remote_versions.state {
             query::QueryState::Finished(data) => Column::with_children(
                 data.iter()
@@ -50,7 +51,43 @@ impl VersionsScreen {
             _ => column![],
         };
 
-        column![
+        ui! {
+            <col>
+                <view>
+                    <row>
+                        Versions
+                    </row>
+                </view>
+                {self.current_installed_version()}
+                <view>
+                    <col>
+                        <row>
+                            Remote
+                            <scroll spacing={4}>
+                                {rv}
+                            </scroll>
+                        </row>
+                    </col>
+                </view>
+                <view>
+                    <col>
+                        <row>
+                            Local
+                        </row>
+                        <scroll spacing={4}>
+                            {Column::with_children(
+                                    self.local_versions
+                                        .iter()
+                                        .map(|version| self.local_mod_version(version))
+                                        .map(Element::from),
+                            )}
+                        </scroll>
+                    </col>
+                </view>
+            </col>
+        }
+
+        /*column![
             container(row![text("Versions")]),
             self.current_installed_version(),
             container(column![row![text("Remote")], scrollable(rv).spacing(4)]),
@@ -67,7 +104,7 @@ impl VersionsScreen {
                 )
             ])
             .padding(2)
-        ]
+        ]*/
     }
 
     pub fn update(&mut self, msg: Message) -> Task<Message> {
@@ -94,10 +131,12 @@ impl VersionsScreen {
     }
 
     fn remote_mod_version(&self, data: &Version) -> Element<'_, Message> {
-        iced_xml::ui! {
+        ui! {
             <row>
                 <svg src={asset!("network.svg")}/>
-                <text>{data.version.clone()}</text>
+                <text>
+                    <span>{data.version.clone()}</span>
+                </text>
                 <button>
                     <svg src={asset!("hard-drive-download.svg")}/>
                 </button>
@@ -111,20 +150,15 @@ impl VersionsScreen {
     }
 
     fn local_mod_version(&self, data: &Version) -> Element<'_, Message> {
-        iced_xml::ui! {
-            <row padding=2>
-                <svg src={asset!("flask-conical.svg")} width=52 height=52 style={|_theme, _status| svg::Style {
+        ui! {
+            <row padding={2}>
+                <svg src={asset!("flask-conical.svg")} width={52} height={52} style={|_theme, _status| svg::Style {
                     color: Some(color!(0xFFFFFF))
                 }}/>
-                <text padding={2}>
-                    data.version.clone()
-                </text>
-                <text>
-                    data.git_hash.clone()
-                </text>
-                <text>
-                    data.timestamp.clone()
-                </text>
+                <view style={container::rounded_box}>
+                    { iced::Element::from(iced::widget::rich_text![])}
+
+                </view>
 
                 <svg src={asset!("hard-drive-download.svg")}/>
             </row>
