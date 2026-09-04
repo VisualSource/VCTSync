@@ -12,9 +12,9 @@
 
 
 # widgets:
-    [] button        -> <button/>
+    ✔ button        -> <button/> @done(26-09-04 08:25)
     [] canvas        -> <canvas/>
-    [] checkbox      -> <input type="checkbox"/>
+    ✔ checkbox      -> <input type="checkbox"/> @done(26-09-04 08:50)
     [] combo_box     -> 
                         <combobox textShaping onInput onOpen onClose padding font icon size lineHeight width menuHeight inputStyle menuStyle inputClass menuClass onChange={} value={state.favorite} placeholder="">{&state.fruits}</combobox/>
                         <combobox textShaping onOpen onClose padding font icon size lineHeight width onChange={} value={state.favorite} placeholder="">{&state.fruits}
@@ -23,7 +23,7 @@
                                 {&state.fruits}
                             </menu>
                         </combobox/>
-    [] container     -> <view id padding width height maxWidth maxHeight centerX centerY center alignLeft alignRight alignTop alignBottom alignX alignY clip style class/>
+    ✔ container     -> <view id padding width height maxWidth maxHeight centerX centerY center alignLeft alignRight alignTop alignBottom alignX alignY clip style class/> @done(26-09-04 08:25)
     [] float         -> <float scale style class translate/>
     [] grid          -> <grid spacing width height cols={} fluid/>
     [] image-viewer  -> <img-viewer/>
@@ -35,24 +35,24 @@
     [] pick_list     -> <select placeholder="select your favorite fruit..." value={&state.favorite} onChange={Message::FruitSelected}>{fruits}</select>
     [] progress_bar  -> <progress-bar min={0} max={100} value={&state.progress}/>
     [] qr_code       -> <qr-code value={&state.data}/>
-    [] radio         -> <input type="radio" label="A" value={Choice::A} checked={&state.selection} onChange={Message:RadioSelected}  />
-    [] row           -> <row spacing padding width height alignY clip warp/>
+    ✔ radio         -> <input type="radio" label="A" value={Choice::A} checked={&state.selection} onChange={Message:RadioSelected}  /> @done(26-09-04 08:57)
+    ✔ row           -> <row spacing padding width height alignY clip warp/> @done(26-09-04 08:25)
     [] rule          -> <hr style={} class/>
-    [] scrollable    -> <scroll dir="Direction" width={} height={} onScroll={} anchor={top|bottom|left|right} anchorX={Anchor} anchorY={Anchor} spacing={} autoScroll={} style={} class/>
+    ✔ scrollable    -> <scroll dir="Direction" width={} height={} onScroll={} anchor={top|bottom|left|right} anchorX={Anchor} anchorY={Anchor} spacing={} autoScroll={} style={} class/> @done(26-09-04 08:25)
     [] selector      ->
     [] sensor        ->
     [] shader        ->
-    [] slider        -> <input type="range" min={0} max={100} value={&state.value} onChange={Message::ValueChanged}/>
+    ✔ slider        -> <input type="range" min={0} max={100} value={&state.value} onChange={Message::ValueChanged}/> @done(26-09-04 09:15)
     [] space         -> <space orient="horizontal|vertical" />
-    [] svg           -> <svg src=""/>
+    ✔ svg           -> <svg src=""/> @done(26-09-04 08:25)
     [] table         -> <table/>, <tr/>
-    [] text          -> <text/>
+    ✔ text          -> <text/> @done(26-09-04 08:25)
     [] text_editor   -> <textarea onAction={Message::Edit} value={$state.content} placeholder="Type something here..."/>
-    [] text_input    -> <input type="text" placeholder="Type something here..." value={&state.content} onChange={Message::ContentChanged}/>
+    ✔ text_input    -> <input type="text" placeholder="Type something here..." value={&state.content} onChange={Message::ContentChanged}/> @done(26-09-04 08:39)
     [] theme         -> <theme/>
-    [] toggler       -> <switch onChange={Message::Toggled} label="Toggle Me!"/>
+    ✔ toggler       -> <switch onChange={Message::Toggled} label="Toggle Me!"/> @done(26-09-04 09:25)
     [] tooltip         -> <tooltip position={Position::Bottom}></tooltip/>
-    [] vertical_slider  -> <input type="slider" min={0} max={100} value={value} onChange={Message::ValueChanged} orient="vertical"/>
+    ✔ vertical_slider  -> <input type="slider" min={0} max={100} value={value} onChange={Message::ValueChanged} orient="vertical"/> @done(26-09-04 09:15)
 
     [] keyed_column
     [] rich_text

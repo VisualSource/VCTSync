@@ -22,11 +22,11 @@ use syn::spanned::Spanned;
 macro_rules! map_attrs {
     ($attrs:ident, $stream:ident $(,)?) => {};
     ($attrs:ident, $stream:ident, $key:literal => |$v:ident| { $($body:tt)* } $($rest:tt)*) => {
-        $attrs.append_tokens_if_value(&mut $stream, $key, |$v| quote! { $($body)* } )?;
+        $attrs.append_if_value(&mut $stream, $key, |$v| quote! { $($body)* } )?;
         map_attrs!($attrs, $stream $($rest)*);
     };
     ($attrs:ident, $stream:ident, $key:literal => || { $($body:tt)* } $($rest:tt)* ) => {
-        $attrs.append_tokens_if_exists(&mut $stream, $key, || quote! { $($body)* });
+        $attrs.append_if(&mut $stream, $key, || quote! { $($body)* });
         map_attrs!($attrs, $stream $($rest)*);
     };
 }
@@ -72,6 +72,12 @@ macro_rules! required_attr {
                 .value
                 .to_token_stream(),
         )?
+    };
+}
+
+macro_rules! optional_attr {
+    ($attrs:ident, $key:literal) => {
+        $attrs.get_value($key).then(|x| strip_braces(x.value))
     };
 }
 
@@ -205,11 +211,18 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
 
                     return Ok(quote! { iced::Element::from(#btn) });
                 }
+                "rich-text" => {
+                    let rich = quote! {
+                        iced::widget::text::Rich::new()
+                    };
+
+                    Ok(quote! { iced::Element::from(#rich) })
+                }
                 "text" => {
                     let content = required_single_child!(node_element);
                     let attrs = Attributes::new(node_element.attributes());
                     let mut text = quote! {
-                        iced::widget::text::Rich::from_iter([#content])
+                         iced::widget::text(#content)
                     };
 
                     map_attrs!(attrs,text,
@@ -225,7 +238,11 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                         "style" => |value|{.style(#value)},
                         "color" => |value|{.color(#value)},
                         "colorMaybe" => |value| {.color_maybe(#value)},
+                        "font" => |value|{.font(#value)},
+                        "fontMaybe" => |value| {.font_maybe(#value)},
                         "class" => |value|{.class(#value)},
+                        "center" =>||{.center()},
+                        "shaping" => |value|{.shaping(#value)}
                     );
 
                     Ok(quote! {
@@ -239,6 +256,10 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                     let mut text = quote! {
                         iced::widget::text::Span::from(iced::widget::span(#content))
                     };
+
+                    map_attrs!(attrs,text,
+                        "color" => |value|{.color(#value)}
+                    );
 
                     Ok(text)
                 }
@@ -274,7 +295,131 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
 
                     Ok(quote! { iced::Element::from(#container) })
                 } // container
-                "input" => Ok(quote! {}),
+                "input" => {
+                    if !node_element.open_tag.is_self_closed() {
+                        return Err(syn::Error::new(
+                            node_element.span(),
+                            "input is a self closed tag",
+                        ));
+                    }
+                    let attrs = Attributes::new(node_element.attributes());
+
+                    let inputt = match attrs.get_value("type") {
+                        Some(attr) => {
+                            let st = attr.value_literal_string().ok_or_else(|| {
+                                syn::Error::new(attr.span(), "was expecting a literal string")
+                            })?;
+                            st
+                        }
+                        None => {
+                            return Err(syn::Error::new(
+                                node_element.span(),
+                                "a type attribute is required",
+                            ));
+                        }
+                    };
+
+                    let widget = match inputt.as_str() {
+                        "range" => {
+                            let orient = attrs
+                                .get_value("orient")
+                                .and_then(|v| v.value_literal_string());
+
+                            let widget = match orient {
+                                Some(dir) => {
+                                    if &dir == "vertical" {
+                                        quote! {iced::widget::vertical_slider}
+                                    } else {
+                                        quote! {iced::widget::slider}
+                                    }
+                                }
+                                None => quote! {iced::widget::slider},
+                            };
+                            let on_change = required_attr!(attrs, node_element, "onChange");
+                            let value = required_attr!(attrs, node_element, "value");
+
+                            let range = match attrs.get_value("range") {
+                                Some(value) => strip_braces(value.value.to_token_stream())?,
+                                None => {
+                                    let min = required_attr!(attrs, node_element, "min");
+                                    let max = required_attr!(attrs, node_element, "max");
+
+                                    quote! {#min..=#max}
+                                }
+                            };
+
+                            let mut slider = quote! { #widget(#range,#value,#on_change) };
+
+                            map_attrs!(attrs,slider,
+                                "step" => |value|{.step(#value)},
+                                "width" => |value|{.width(#value)},
+                                "height" => |value|{.height(#value)},
+                            );
+
+                            quote! {iced::Element::from(#slider)}
+                        }
+                        "text" => {
+                            let placeholder = required_attr!(attrs, node_element, "placeholder");
+                            let value = required_attr!(attrs, node_element, "value");
+
+                            let mut input = quote! {iced::widget::text_input(#placeholder, #value)};
+
+                            map_attrs!(attrs,input,
+                                "id" => |value|{.id(#value)},
+                                "onChange" => |value|{.on_input(#value)},
+                                "onPaste" => |value|{.on_paste(#value)},
+                                "onSubmit" => |value|{.on_submit(#value)},
+                                "secure" => |value|{.secure(#value)},
+                                "style" => |value|{.style(#value)},
+                                "width" => |value|{.width(#value)},
+                                "lineHeight" => |value|{.line_height(#value)}
+                            );
+
+                            input
+                        }
+                        "radio" => {
+                            let label = required_attr!(attrs, node_element, "label");
+                            let value = required_attr!(attrs, node_element, "value");
+                            let selected = required_attr!(attrs, node_element, "selected");
+                            let on_change = required_attr!(attrs, node_element, "onChange");
+
+                            quote! {iced::widget::radio(#label, #value, #selected, #on_change)}
+                        }
+                        "checkbox" => {
+                            let checked = required_attr!(attrs, node_element, "checked");
+
+                            let mut checkbox = quote! {iced::widget::checkbox(#checked)};
+
+                            map_attrs!(attrs,checkbox,
+                                "onChange" => |value|{.on_toggle(#value)},
+                                "label" => |value|{.label(#value)},
+                                "style" => |value|{.style(#value)},
+                                "width" => |value|{.width(#value)},
+                            );
+
+                            checkbox
+                        }
+                        "switch" => {
+                            let checked = required_attr!(attrs, node_element, "checked");
+
+                            let mut toggler = quote! {iced::widget::toggler(#checked)};
+
+                            map_attrs!(attrs,toggler,
+                                "onChange" => |value|{.on_toggle(#value)},
+                                "label" => |value|{.label(#value)},
+                                "style" => |value|{.style(#value)},
+                                "width" => |value|{.width(#value)},
+                            );
+
+                            quote! {iced::Element::from(#toggler)}
+                        }
+                        _ => {
+                            return Err(syn::Error::new(node_element.span(), "unknown input type"));
+                        }
+                    };
+
+                    Ok(quote! { iced::Element::from(#widget) })
+                }
                 "textarea" => Ok(quote! {}),
                 "canvas" => Ok(quote! {}),
                 "float" => Ok(quote! {}),
@@ -319,7 +464,7 @@ impl<'a> Attributes<'a> {
 
         for attr in attributes {
             match attr {
-                NodeAttribute::Block(node_block) => {}
+                NodeAttribute::Block(_) => unimplemented!(),
                 NodeAttribute::Attribute(keyed_attribute) => {
                     let key = keyed_attribute.key.to_string();
                     attrs.insert(key, keyed_attribute);
@@ -330,7 +475,7 @@ impl<'a> Attributes<'a> {
         Self(attrs)
     }
 
-    fn append_tokens_if_value(
+    fn append_if_value(
         &self,
         stream: &mut proc_macro2::TokenStream,
         key: &str,
@@ -359,7 +504,7 @@ impl<'a> Attributes<'a> {
         }
     }
 
-    fn append_tokens_if_exists(
+    fn append_if(
         &self,
         stream: &mut proc_macro2::TokenStream,
         key: &str,

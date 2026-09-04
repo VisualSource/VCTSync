@@ -134,8 +134,9 @@ impl VersionsScreen {
         ui! {
             <row>
                 <svg src={asset!("network.svg")}/>
+
                 <text>
-                    <span>{data.version.clone()}</span>
+                    {data.version.clone()}
                 </text>
                 <button>
                     <svg src={asset!("hard-drive-download.svg")}/>
@@ -156,8 +157,7 @@ impl VersionsScreen {
                     color: Some(color!(0xFFFFFF))
                 }}/>
                 <view style={container::rounded_box}>
-                    { iced::Element::from(iced::widget::rich_text![])}
-
+                    <row></row>
                 </view>
 
                 <svg src={asset!("hard-drive-download.svg")}/>
