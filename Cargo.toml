@@ -1,5 +1,5 @@
 [workspace]
 resolver = "3"
 
-members = ["crates/iced-proc-ui", "crates/app"]
+members = ["crates/iced-xml", "crates/app"]
 default-members = ["crates/app"]
