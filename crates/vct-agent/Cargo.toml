@@ -1,0 +1,26 @@
+[package]
+name = "vct-agent"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "vct-agent"
+path = "src/main.rs"
+
+[dependencies]
+vct-core.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+time.workspace = true
+
+axum = "0.8"
+tokio-stream = { version = "0.1", features = ["sync"] }
+notify = "8"
+clap = { version = "4", features = ["derive"] }
+reqwest.workspace = true

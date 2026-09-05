@@ -1,0 +1,25 @@
+[package]
+name = "vct-sync"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "vct-sync"
+path = "src/main.rs"
+
+[dependencies]
+vct-core.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+reqwest.workspace = true
+tokio.workspace = true
+time.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+iced = { version = "0.14.0", features = ["svg", "tokio", "sipper"] }
+rfd = "0.15"
+futures = "0.3"
