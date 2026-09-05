@@ -1,32 +1,33 @@
 use crate::{
     query::QueryUpdate,
-    screens::{self, versions::requests::Version},
+    screens::{self, builds::requests::Version},
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub enum Screen {
-    #[default]
+    Builds(screens::builds::Screen),
+
     Logs,
-    Versions(screens::versions::VersionsScreen),
     Files,
 }
-
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct State {
     pub screen: Screen,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum Tab {
     Logs,
-    Versions,
+    #[default]
+    Builds,
     Files,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     SetTab(Tab),
-    Version,
 
-    QueryUpdate(String, QueryUpdate<Vec<Version>>),
+    BuildsMessage(screens::builds::Action),
+
+    Version,
 }

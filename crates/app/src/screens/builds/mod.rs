@@ -1,6 +1,7 @@
 pub mod requests;
 use crate::asset;
-use crate::screens::versions::requests::{Version, VersionType};
+use crate::query::QueryUpdate;
+use crate::screens::builds::requests::{Version, VersionType};
 use crate::{
     query::{self, Query},
     state::Message,
@@ -13,16 +14,21 @@ use iced_xml::ui;
 
 use requests::fetch_remote_version_list;
 
+#[derive(Debug, Clone)]
+pub enum Action {
+    QueryUpdate(String, QueryUpdate<Vec<Version>>),
+}
+
 #[derive(Debug)]
-pub struct VersionsScreen {
+pub struct Screen {
     current_version: Option<Version>,
     remote_versions: Query<Vec<Version>>,
     local_versions: Vec<Version>,
 }
 
-impl Default for VersionsScreen {
+impl Default for Screen {
     fn default() -> Self {
-        VersionsScreen {
+        Screen {
             current_version: None,
             remote_versions: Query::<Vec<Version>>::new(
                 "versions::remote".to_string(),
@@ -39,7 +45,7 @@ impl Default for VersionsScreen {
     }
 }
 
-impl VersionsScreen {
+impl Screen {
     pub fn view(&self) -> Element<'_, Message> {
         let rv = match &self.remote_versions.state {
             query::QueryState::Finished(data) => Column::with_children(
@@ -63,10 +69,10 @@ impl VersionsScreen {
                     <col>
                         <row>
                             Remote
-                            <scroll spacing={4}>
-                                {rv}
-                            </scroll>
                         </row>
+                        <scroll spacing={4}>
+                            {rv}
+                        </scroll>
                     </col>
                 </view>
                 <view>
@@ -86,40 +92,18 @@ impl VersionsScreen {
                 </view>
             </col>
         }
-
-        /*column![
-            container(row![text("Versions")]),
-            self.current_installed_version(),
-            container(column![row![text("Remote")], scrollable(rv).spacing(4)]),
-            container(column![
-                row![text("Local")],
-                scrollable(
-                    Column::with_children(
-                        self.local_versions
-                            .iter()
-                            .map(|version| self.local_mod_version(version))
-                            .map(Element::from),
-                    )
-                    .spacing(4),
-                )
-            ])
-            .padding(2)
-        ]*/
     }
 
-    pub fn update(&mut self, msg: Message) -> Task<Message> {
+    pub fn update(&mut self, msg: Action) -> Task<Message> {
         match msg {
-            Message::QueryUpdate(id, data) => {
+            Action::QueryUpdate(id, data) => {
                 if id == self.remote_versions.id {
                     self.remote_versions.update(data);
                 }
-
                 Task::none()
             }
-            _ => Task::none(),
         }
     }
-
     fn current_installed_version(&self) -> Element<'_, Message> {
         match &self.current_version {
             Some(data) => match data.content_type {
@@ -133,54 +117,52 @@ impl VersionsScreen {
     fn remote_mod_version(&self, data: &Version) -> Element<'_, Message> {
         ui! {
             <row>
-                <svg src={asset!("network.svg")}/>
-
-                <text>
-                    {data.version.clone()}
-                </text>
+                <view width={iced::Shrink}>
+                    <svg src={asset!("network.svg")}  width={32} height={32} style={|_theme, _status| svg::Style {
+                        color: Some(color!(0xFFFFFF))
+                    }}/>
+                </view>
+                <view style={container::rounded_box}>
+                    <text>
+                        {data.version.clone()}
+                    </text>
+                </view>
                 <button>
-                    <svg src={asset!("hard-drive-download.svg")}/>
+                    <svg src={asset!("hard-drive-download.svg")}  width={32} height={32} style={|_theme, _status| svg::Style {
+                        color: Some(color!(0xFFFFFF))
+                    }}/>
                 </button>
             </row>
         }
-        /*row![
-            svg(asset!("network.svg")),
-            text(data.version.clone), // version
-            button(svg(asset!("hard-drive-download.svg")))
-        ]*/
     }
 
     fn local_mod_version(&self, data: &Version) -> Element<'_, Message> {
         ui! {
             <row padding={2}>
-                <svg src={asset!("flask-conical.svg")} width={52} height={52} style={|_theme, _status| svg::Style {
+                <svg src={asset!("flask-conical.svg")} width={32} height={32} style={|_theme, _status| svg::Style {
                     color: Some(color!(0xFFFFFF))
                 }}/>
-                <view style={container::rounded_box}>
-                    <row></row>
+                <view style={container::rounded_box} padding={2}>
+                    <text>{data.version.clone()}</text>
                 </view>
-
+                <view>
+                   <text>{data.git_hash.clone()}</text>
+                </view>
+                <view>
+                   <text>{data.timestamp.clone()}</text>
+                </view>
                 <svg src={asset!("hard-drive-download.svg")}/>
             </row>
         }
-
-        /*row![
-            svg(asset!("flask-conical.svg"))
-                .width(52)
-                .height(52)
-                .style(|_theme, _status| svg::Style {
-                    color: Some(color!(0xFFFFFF))
-                }),
-            container(text(data.version.clone())).padding(2), // version
-            container(text(data.git_hash.clone())),           // git hash
-            container(text(data.timestamp.clone())),          // timestamp
-            button(svg(asset!("hard-drive-download.svg")))
-        ]*/
     }
 
     pub fn fetch(&mut self) -> Vec<Task<Message>> {
         let rt = self.remote_versions.start();
 
-        vec![rt.map(Message::QueryUpdate.with(self.remote_versions.id.clone()))]
+        let quey_task = rt.map(|t| {
+            Message::BuildsMessage(Action::QueryUpdate("versions::remote".to_string(), t))
+        });
+
+        vec![quey_task]
     }
 }
