@@ -15,6 +15,7 @@ macro_rules! asset {
 
 fn main() -> iced::Result {
     iced::application(Application::new, Application::update, Application::view)
+        .title("Terminus Updater")
         .theme(Application::theme)
         .run()
 }

@@ -10,10 +10,6 @@ pub enum Screen {
     Logs,
     Files,
 }
-#[derive(Debug)]
-pub struct State {
-    pub screen: Screen,
-}
 
 #[derive(Debug, Clone, Default)]
 pub enum Tab {

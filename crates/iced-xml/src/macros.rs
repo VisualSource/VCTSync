@@ -54,15 +54,8 @@ macro_rules! required_attr {
     };
 }
 
-macro_rules! optional_attr {
-    ($attrs:ident, $key:literal) => {
-        $attrs.get_value($key).then(|x| strip_braces(x.value))
-    };
-}
-
 pub(crate) use map_attrs;
 pub(crate) use parse_children;
 
-pub(crate) use optional_attr;
 pub(crate) use required_attr;
 pub(crate) use required_single_child;

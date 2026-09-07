@@ -2,21 +2,29 @@ use iced::{Element, Task, Theme};
 
 use crate::{
     screens,
-    state::{Message, Screen, State, Tab},
+    state::{Message, Screen, Tab},
 };
 
-pub struct Application {}
+#[derive(Debug)]
+pub struct Application {
+    pub screen: Screen,
+}
 
 impl Application {
-    pub fn theme(_: &State) -> Theme {
+    pub fn theme(_: &Application) -> Theme {
         Theme::Nord
     }
-    pub fn new() -> State {
-        State {
-            screen: Screen::Builds(screens::builds::Screen::default()),
-        }
+    pub fn new() -> (Self, Task<Message>) {
+        let mut screen = screens::builds::Screen::default();
+        let fetch = screen.fetch();
+
+        let state = Self {
+            screen: Screen::Builds(screen),
+        };
+
+        (state, fetch)
     }
-    pub fn update(state: &mut State, msg: Message) -> Task<Message> {
+    pub fn update(state: &mut Application, msg: Message) -> Task<Message> {
         match msg {
             Message::SetTab(tab) => match tab {
                 Tab::Logs => {
@@ -26,7 +34,7 @@ impl Application {
                 Tab::Builds => {
                     let mut screen = screens::builds::Screen::default();
 
-                    let tasks = Task::batch(screen.fetch());
+                    let tasks = screen.fetch();
                     state.screen = Screen::Builds(screen);
 
                     tasks
@@ -46,7 +54,7 @@ impl Application {
             _ => Task::none(),
         }
     }
-    pub fn view(state: &State) -> Element<'_, Message> {
+    pub fn view(state: &Application) -> Element<'_, Message> {
         iced_xml::ui! {
             <col>
                 <view>

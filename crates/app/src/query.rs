@@ -39,6 +39,11 @@ impl<D: Send + 'static> Query<D> {
         }
     }
 
+    pub fn invalidate(&mut self) -> Task<QueryUpdate<D>> {
+        self.state = QueryState::Idle;
+        self.start()
+    }
+
     pub fn start(&mut self) -> Task<QueryUpdate<D>> {
         match self.state {
             QueryState::Idle | QueryState::Fetching { .. } | QueryState::Error(_) => {

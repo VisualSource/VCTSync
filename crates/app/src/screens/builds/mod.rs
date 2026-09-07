@@ -7,7 +7,7 @@ use crate::{
     state::Message,
 };
 use iced::{
-    Element, Function, Task, color,
+    Element, Task, color,
     widget::{Column, column, container, row, svg, text},
 };
 use iced_xml::ui;
@@ -45,6 +45,74 @@ impl Default for Screen {
     }
 }
 
+/*
+// Recursive expansion of ui! macro
+// =================================
+
+iced::Element::from(
+iced::widget::Column::with_children([
+    iced::Element::from(
+        iced::widget::container(
+            iced::Element::from(
+                iced::widget::Row::with_children([
+                    iced::Element::from(
+                        iced::widget::text("Versions")
+                    )
+                ])
+            )
+        )
+    ),
+    self.current_installed_version(),
+    iced::Element::from(
+        iced::widget::Column::with_children([
+            iced::Element::from(
+                iced::widget::Row::with_children([
+                    iced::Element::from(
+                        iced::widget::text("Remote")
+                    ),
+                    iced::Element::from(
+                        iced::widget::button(
+                            iced::Element::from(
+                                iced::widget::text("Refresh")
+                            )
+                        )
+                    )]
+                )
+            ),
+
+            ,
+            iced::Element::from(
+                iced::widget::Row::with_children([
+                    iced::Element::from(
+                        iced::widget::scrollable(rv)
+                    )
+                ])
+            )
+        ]).width(iced::Fill)
+    ),
+    iced::Element::from(
+        iced::widget::container(
+            iced::Element::from(
+                iced::widget::Column::with_children([
+                    iced::Element::from(
+                        iced::widget::Row::with_children([
+                            iced::Element::from(
+                                iced::widget::text("Local")
+                            )
+                        ])
+                    ),
+                    iced::Element::from(
+                        iced::widget::scrollable(
+                            Column::with_children(self.local_versions.iter().map(|version|self.local_mod_version(version)).map(Element::from)
+                        )
+                    ))
+                ])
+            )
+        )
+    )
+]))
+*/
+
 impl Screen {
     pub fn view(&self) -> Element<'_, Message> {
         let rv = match &self.remote_versions.state {
@@ -65,16 +133,23 @@ impl Screen {
                     </row>
                 </view>
                 {self.current_installed_version()}
-                <view>
-                    <col>
-                        <row>
-                            Remote
-                        </row>
-                        <scroll spacing={4}>
+
+                <col spacing={4}>
+                    <row padding={2}>
+                        <text center alignY={iced::Alignment::Center}>"Remote"</text>
+                        <space width={iced::Fill}/>
+                        <button>
+                            Refresh
+                        </button>
+                    </row>
+                    <hr/>
+                    <row height={256}>
+                        <scroll spacing={4} >
                             {rv}
                         </scroll>
-                    </col>
-                </view>
+                    </row>
+                </col>
+
                 <view>
                     <col>
                         <row>
@@ -85,7 +160,7 @@ impl Screen {
                                     self.local_versions
                                         .iter()
                                         .map(|version| self.local_mod_version(version))
-                                        .map(Element::from),
+                                        .map(Element::from)
                             )}
                         </scroll>
                     </col>
@@ -116,22 +191,34 @@ impl Screen {
 
     fn remote_mod_version(&self, data: &Version) -> Element<'_, Message> {
         ui! {
-            <row>
+            <row padding={2}>
                 <view width={iced::Shrink}>
-                    <svg src={asset!("network.svg")}  width={32} height={32} style={|_theme, _status| svg::Style {
+                    <svg src={asset!("network.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
                         color: Some(color!(0xFFFFFF))
                     }}/>
                 </view>
+                <space width={10}/>
                 <view style={container::rounded_box}>
-                    <text>
+                    <text padding={2} center>
                         {data.version.clone()}
                     </text>
                 </view>
-                <button>
-                    <svg src={asset!("hard-drive-download.svg")}  width={32} height={32} style={|_theme, _status| svg::Style {
-                        color: Some(color!(0xFFFFFF))
-                    }}/>
-                </button>
+                <space width={iced::Fill}/>
+                <row spacing={4}>
+                    <view>
+                        <text>{data.timestamp.clone()}</text>
+                    </view>
+                    <button>
+                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
+                            color: Some(color!(0xFFFFFF))
+                        }}/>
+                    </button>
+                    <button>
+                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
+                            color: Some(color!(0xFFFFFF))
+                        }}/>
+                    </button>
+                </row>
             </row>
         }
     }
@@ -156,13 +243,13 @@ impl Screen {
         }
     }
 
-    pub fn fetch(&mut self) -> Vec<Task<Message>> {
+    pub fn fetch(&mut self) -> Task<Message> {
         let rt = self.remote_versions.start();
 
         let quey_task = rt.map(|t| {
             Message::BuildsMessage(Action::QueryUpdate("versions::remote".to_string(), t))
         });
 
-        vec![quey_task]
+        Task::batch(vec![quey_task])
     }
 }

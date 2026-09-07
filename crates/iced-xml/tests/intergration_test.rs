@@ -36,6 +36,7 @@ fn test_parse() {
                     </col>
                 </scroll>
                 <col>
+                    <hr/>
                     <input type="range" min={0} max={100} value={slider_range_value} onChange={TestEnum::OnSliderChange} orient="vertical"/>
                     <input type="range" min={0} max={100} value={slider_range_value} onChange={TestEnum::OnSliderChange}/>
                     <input type="radio" label="A" value={RadioValue::A} selected={selected_radio_value} onChange={TestEnum::OnRadioChange}/>

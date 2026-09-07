@@ -5,6 +5,14 @@ use quote::{ToTokens, TokenStreamExt, quote};
 use rstml::node::Node;
 use syn::spanned::Spanned;
 
+macro_rules! self_closed {
+    ($node: ident) => {
+        if !$node.open_tag.is_self_closed() {
+            return Err(syn::Error::new($node.span(), "element is self closed"));
+        }
+    };
+}
+
 pub fn parse_xml(stream: proc_macro2::TokenStream) -> syn::Result<proc_macro2::TokenStream> {
     let nodes = rstml::parse2(stream.clone())?;
 
@@ -72,12 +80,7 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                     return Ok(quote! { iced::Element::from(#col) });
                 }
                 "svg" => {
-                    if !node_element.open_tag.is_self_closed() {
-                        return Err(syn::Error::new(
-                            node_element.span(),
-                            "svg is a self closed tag",
-                        ));
-                    }
+                    self_closed!(node_element);
 
                     let attrs = Attributes::new(node_element.attributes());
                     let source = required_attr!(attrs, node_element, "src");
@@ -133,7 +136,19 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                     Ok(quote! { iced::Element::from(#rich) })
                 }
                 "text" => {
-                    let content = required_single_child!(node_element);
+                    let content = {
+                        let children = node_element.children();
+                        if children.len() != 1 {
+                            return Err(syn::Error::new(
+                                node_element.span(),
+                                "element only expects a single child",
+                            ));
+                        }
+
+                        let node = &children[0];
+
+                        strip_braces(node.to_token_stream())
+                    }?;
                     let attrs = Attributes::new(node_element.attributes());
                     let mut text = quote! {
                          iced::widget::text(#content)
@@ -348,9 +363,56 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                 "switch" => Ok(quote! {}),
                 "theme" => Ok(quote! {}),
                 "tooltip" => Ok(quote! {}),
-                "hr" => Ok(quote! {}),
-                "vr" => Ok(quote! {}),
+                "hr" => {
+                    if !node_element.open_tag.is_self_closed() {
+                        return Err(syn::Error::new(
+                            node_element.span(),
+                            "element is self closed",
+                        ));
+                    }
+
+                    let attrs = Attributes::new(node_element.attributes());
+
+                    let attr = attrs
+                        .get_value("height")
+                        .map(|x| x.value.to_token_stream())
+                        .unwrap_or_else(|| quote! {2});
+                    let value = strip_braces(attr)?;
+
+                    Ok(quote! {
+                        iced::Element::from(iced::widget::rule::horizontal(#value))
+                    })
+                }
+                "vr" => {
+                    self_closed!(node_element);
+
+                    let attrs = Attributes::new(node_element.attributes());
+
+                    let attr = attrs
+                        .get_value("width")
+                        .map(|x| x.value.to_token_stream())
+                        .unwrap_or_else(|| quote! {2});
+                    let value = strip_braces(attr)?;
+
+                    Ok(quote! {
+                        iced::Element::from(iced::widget::rule::vertical(#value))
+                    })
+                }
                 "table" => Ok(quote! {}),
+
+                "space" => {
+                    self_closed!(node_element);
+
+                    let attrs = Attributes::new(node_element.attributes());
+                    let mut space = quote! { iced::widget::space() };
+
+                    map_attrs!(attrs,space,
+                        "height" => |value|{.height(#value)},
+                        "width" => |value|{.width(#value)}
+                    );
+
+                    Ok(quote! { iced::Element::from(#space) })
+                }
 
                 _ => unimplemented!(),
             }
