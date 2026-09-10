@@ -60,6 +60,6 @@ impl<D: Send + Sync + 'static> Query<D> {
 
 impl<D> Debug for Query<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Query()")
+        write!(f, "Query({})", self.key)
     }
 }
