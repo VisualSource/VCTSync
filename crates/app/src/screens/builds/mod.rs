@@ -1,22 +1,20 @@
 pub mod requests;
 use crate::asset;
-use crate::query::QueryUpdate;
+
 use crate::screens::builds::requests::{Version, VersionType};
-use crate::{
-    query::{self, Query},
-    state::Message,
-};
+use crate::state::Message;
 use iced::{
     Element, Task, color,
-    widget::{Column, column, container, row, svg, text},
+    widget::{Column, container, row, svg},
 };
+use iced_query::{Query, QueryClient};
 use iced_xml::ui;
 
 use requests::fetch_remote_version_list;
 
 #[derive(Debug, Clone)]
 pub enum Action {
-    QueryUpdate(String, QueryUpdate<Vec<Version>>),
+    RefreshRemoteVersions,
 }
 
 #[derive(Debug)]
@@ -26,13 +24,15 @@ pub struct Screen {
     local_versions: Vec<Version>,
 }
 
-impl Default for Screen {
-    fn default() -> Self {
-        Screen {
+impl Screen {
+    pub fn new(client: &QueryClient) -> Self {
+        Self {
             current_version: None,
             remote_versions: Query::<Vec<Version>>::new(
-                "versions::remote".to_string(),
+                client,
+                "versions::remote",
                 fetch_remote_version_list,
+                None,
             ),
             local_versions: vec![Version::new(
                 "v0.14".into(),
@@ -43,18 +43,27 @@ impl Default for Screen {
             )],
         }
     }
-}
 
-impl Screen {
     pub fn view(&self) -> Element<'_, Message> {
-        let rv = match &self.remote_versions.state {
-            query::QueryState::Finished(data) => Column::with_children(
+        let q = &self.remote_versions.snapshot;
+
+        let rv = match (&q.data, &q.error) {
+            (Some(data), _) => iced::Element::from(Column::with_children(
                 data.iter()
                     .map(|version| self.remote_mod_version(version))
                     .map(Element::from),
-            ),
-            query::QueryState::Error(err) => column![text("Query Error:"), text(err.to_string())],
-            _ => column![],
+            )),
+
+            (None, Some(err)) => {
+                let reason = err.to_string();
+                ui! {
+                    <col>
+                        <text>{reason}</text>
+                    </col>
+                }
+            }
+
+            (None, None) => ui! { <col>Loading</col> },
         };
 
         ui! {
@@ -70,7 +79,7 @@ impl Screen {
                     <row padding={2}>
                         <text center alignY={iced::Alignment::Center}>"Remote"</text>
                         <space width={iced::Fill}/>
-                        <button>
+                        <button onPressMaybe={(!q.is_fetching()).then(|| Message::BuildsMessage(Action::RefreshRemoteVersions))}>
                             Refresh
                         </button>
                     </row>
@@ -101,16 +110,24 @@ impl Screen {
         }
     }
 
-    pub fn update(&mut self, msg: Action) -> Task<Message> {
-        match msg {
-            Action::QueryUpdate(id, data) => {
-                if id == self.remote_versions.id {
-                    self.remote_versions.update(data);
-                }
-                Task::none()
-            }
+    pub fn update(&mut self, ev: Action, client: &QueryClient) -> Task<Message> {
+        match ev {
+            Action::RefreshRemoteVersions => client
+                .invalidate(&self.remote_versions.key)
+                .map(Message::QueryUpdate),
         }
     }
+
+    pub fn sync(&mut self, client: &QueryClient) {
+        self.remote_versions.sync(client);
+    }
+
+    pub fn mount(&self, client: &QueryClient) -> Task<Message> {
+        let rt = self.remote_versions.fetch(client).map(Message::QueryUpdate);
+
+        Task::batch(vec![rt])
+    }
+
     fn current_installed_version(&self) -> Element<'_, Message> {
         match &self.current_version {
             Some(data) => match data.content_type {
@@ -121,7 +138,7 @@ impl Screen {
         }
     }
 
-    fn remote_mod_version(&self, data: &Version) -> Element<'_, Message> {
+    fn remote_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
         ui! {
             <row padding={2}>
                 <view width={iced::Shrink}>
@@ -132,13 +149,13 @@ impl Screen {
                 <space width={10}/>
                 <view style={container::rounded_box}>
                     <text padding={2} center>
-                        {data.version.clone()}
+                        {&data.version}
                     </text>
                 </view>
                 <space width={iced::Fill}/>
                 <row spacing={4}>
                     <view>
-                        <text>{data.timestamp.clone()}</text>
+                        <text>{&data.timestamp}</text>
                     </view>
                     <button>
                         <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
@@ -155,33 +172,23 @@ impl Screen {
         }
     }
 
-    fn local_mod_version(&self, data: &Version) -> Element<'_, Message> {
+    fn local_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
         ui! {
             <row padding={2}>
                 <svg src={asset!("flask-conical.svg")} width={32} height={32} style={|_theme, _status| svg::Style {
                     color: Some(color!(0xFFFFFF))
                 }}/>
                 <view style={container::rounded_box} padding={2}>
-                    <text>{data.version.clone()}</text>
+                    <text>{&data.version}</text>
                 </view>
                 <view>
-                   <text>{data.git_hash.clone()}</text>
+                   <text>{&data.git_hash}</text>
                 </view>
                 <view>
-                   <text>{data.timestamp.clone()}</text>
+                   <text>{&data.timestamp}</text>
                 </view>
                 <svg src={asset!("hard-drive-download.svg")}/>
             </row>
         }
-    }
-
-    pub fn fetch(&mut self) -> Task<Message> {
-        let rt = self.remote_versions.start();
-
-        let quey_task = rt.map(|t| {
-            Message::BuildsMessage(Action::QueryUpdate("versions::remote".to_string(), t))
-        });
-
-        Task::batch(vec![quey_task])
     }
 }

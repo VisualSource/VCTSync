@@ -1,5 +1,12 @@
 [workspace]
 resolver = "3"
 
-members = ["crates/iced-xml", "crates/app"]
+members = ["crates/iced-xml", "crates/app", "crates/iced-query"]
 default-members = ["crates/app"]
+
+[workspace.dependencies]
+anyhow = "1.0"
+iced = "0.14"
+
+[workspace.package]
+edition = "2024"

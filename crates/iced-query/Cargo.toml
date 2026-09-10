@@ -1,0 +1,8 @@
+[package]
+name = "iced-query"
+version = "0.1.0"
+edition = { workspace = true }
+
+[dependencies]
+iced = { workspace = true, features = ["sipper"] }
+anyhow = { workspace = true }

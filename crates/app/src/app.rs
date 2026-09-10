@@ -4,10 +4,12 @@ use crate::{
     state::{Message, Screen, Tab},
 };
 use iced::{Element, Task, Theme};
+use iced_query::QueryClient;
 
 #[derive(Debug)]
 pub struct Application {
     pub screen: Screen,
+    pub query_client: QueryClient,
 }
 
 impl Application {
@@ -15,26 +17,41 @@ impl Application {
         Theme::Nord
     }
     pub fn new() -> (Self, Task<Message>) {
-        let mut screen = screens::builds::Screen::default();
-        let fetch = screen.fetch();
+        let query_client = QueryClient::new();
+
+        let screen = screens::builds::Screen::new(&query_client);
+        let fetch = screen.mount(&query_client);
 
         let state = Self {
             screen: Screen::Builds(screen),
+            query_client: query_client,
         };
 
         (state, fetch)
     }
     pub fn update(state: &mut Application, msg: Message) -> Task<Message> {
         match msg {
+            Message::QueryUpdate(data) => {
+                state.query_client.receive(data);
+
+                match &mut state.screen {
+                    Screen::Builds(screen) => screen.sync(&state.query_client),
+                    Screen::Profiles(screen) => screen.sync(&state.query_client),
+                    Screen::Logs => {}
+                    Screen::Files => {}
+                }
+
+                Task::none()
+            }
             Message::SetTab(tab) => match tab {
                 Tab::Logs => {
                     state.screen = Screen::Logs;
                     Task::none()
                 }
                 Tab::Builds => {
-                    let mut screen = screens::builds::Screen::default();
+                    let screen = screens::builds::Screen::new(&state.query_client);
 
-                    let tasks = screen.fetch();
+                    let tasks = screen.mount(&state.query_client);
                     state.screen = Screen::Builds(screen);
 
                     tasks
@@ -54,14 +71,14 @@ impl Application {
             },
             Message::ProfilesMessage(ev) => {
                 if let Screen::Profiles(screen) = &mut state.screen {
-                    screen.update(ev)
+                    screen.update(ev).map(Message::ProfilesMessage)
                 } else {
                     Task::none()
                 }
             }
             Message::BuildsMessage(event) => {
                 if let Screen::Builds(screen) = &mut state.screen {
-                    screen.update(event)
+                    screen.update(event, &state.query_client)
                 } else {
                     Task::none()
                 }

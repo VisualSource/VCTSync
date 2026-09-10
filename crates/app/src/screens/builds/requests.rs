@@ -58,6 +58,8 @@ pub fn fetch_remote_version_list() -> impl Straw<Vec<Version>, (), Arc<anyhow::E
     sipper(async move |_| {
         let client = http::get_client();
 
+        println!("Making request");
+
         let response = client
             .get("https://api.github.com/repos/VisualSource/VoidCrewTerminus/releases")
             .header("Accept", "application/vnd.github+json")

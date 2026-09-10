@@ -1,6 +1,5 @@
 mod app;
 mod http;
-mod query;
 mod screens;
 mod state;
 

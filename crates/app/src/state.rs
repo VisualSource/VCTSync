@@ -1,4 +1,5 @@
 use crate::screens::{self};
+use iced_query::QueryEvent;
 
 #[derive(Debug)]
 pub enum Screen {
@@ -21,6 +22,8 @@ pub enum Tab {
 #[derive(Debug, Clone)]
 pub enum Message {
     SetTab(Tab),
+
+    QueryUpdate(QueryEvent),
 
     BuildsMessage(screens::builds::Action),
     ProfilesMessage(screens::profiles::state::Action),
