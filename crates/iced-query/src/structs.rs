@@ -1,5 +1,5 @@
 use crate::{QueryData, QueryError, QueryFetcher, QueryKey};
-use iced::task;
+use iced_runtime::task;
 use std::{
     any::TypeId,
     fmt::Debug,

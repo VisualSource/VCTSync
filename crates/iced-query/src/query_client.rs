@@ -2,7 +2,7 @@ use crate::{
     QueryFetcher, QueryKey,
     structs::{Entry, QueryEvent, QueryOptions, QueryState, QueryStatus, QueryUpdate},
 };
-use iced::Task;
+use iced_runtime::Task;
 use std::{any::TypeId, cell::RefCell, collections::HashMap, fmt::Debug, sync::Arc, time::Instant};
 
 #[derive(Debug)]

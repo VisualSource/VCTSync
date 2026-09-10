@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use iced::{Task, task::Straw};
+use iced_runtime::{Task, task::Straw};
 
 /// local query data accessor
 pub struct Query<D> {

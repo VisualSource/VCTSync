@@ -2,7 +2,7 @@ mod query;
 mod query_client;
 mod structs;
 
-use iced::{Task, task};
+use iced_runtime::{Task, task};
 use std::{any::Any, borrow::Cow, rc::Rc, sync::Arc};
 use structs::QueryUpdate;
 
