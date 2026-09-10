@@ -3,6 +3,7 @@ use crate::asset;
 
 use crate::screens::builds::requests::{Version, VersionType};
 use crate::state::Message;
+use crate::traits::IcedScreen;
 use iced::{
     Element, Task, color,
     widget::{Column, container, row, svg},
@@ -44,7 +45,73 @@ impl Screen {
         }
     }
 
-    pub fn view(&self) -> Element<'_, Message> {
+    fn current_installed_version(&self) -> Element<'_, Message> {
+        match &self.current_version {
+            Some(data) => match data.content_type {
+                VersionType::Local => self.local_mod_version(&data),
+                VersionType::Remote => self.remote_mod_version(&data),
+            },
+            None => row![].into(),
+        }
+    }
+
+    fn remote_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
+        ui! {
+            <row padding={2}>
+                <view width={iced::Shrink}>
+                    <svg src={asset!("network.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
+                        color: Some(color!(0xFFFFFF))
+                    }}/>
+                </view>
+                <space width={10}/>
+                <view style={container::rounded_box} padding={[4,8]}>
+                    <text center>
+                        {&data.version}
+                    </text>
+                </view>
+                <space width={iced::Fill}/>
+                <row spacing={4}>
+                    <view>
+                        <text>{&data.timestamp}</text>
+                    </view>
+                    <button>
+                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
+                            color: Some(color!(0xFFFFFF))
+                        }}/>
+                    </button>
+                    <button>
+                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
+                            color: Some(color!(0xFFFFFF))
+                        }}/>
+                    </button>
+                </row>
+            </row>
+        }
+    }
+
+    fn local_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
+        ui! {
+            <row padding={2}>
+                <svg src={asset!("flask-conical.svg")} width={32} height={32} style={|_theme, _status| svg::Style {
+                    color: Some(color!(0xFFFFFF))
+                }}/>
+                <view style={container::rounded_box} padding={2}>
+                    <text>{&data.version}</text>
+                </view>
+                <view>
+                   <text>{&data.git_hash}</text>
+                </view>
+                <view>
+                   <text>{&data.timestamp}</text>
+                </view>
+                <svg src={asset!("hard-drive-download.svg")}/>
+            </row>
+        }
+    }
+}
+
+impl IcedScreen<Action> for Screen {
+    fn view(&self) -> iced::Element<'_, Message> {
         let q = &self.remote_versions.snapshot;
 
         let rv = match (&q.data, &q.error) {
@@ -110,7 +177,7 @@ impl Screen {
         }
     }
 
-    pub fn update(&mut self, ev: Action, client: &QueryClient) -> Task<Message> {
+    fn update(&mut self, ev: Action, client: &QueryClient) -> Task<Message> {
         match ev {
             Action::RefreshRemoteVersions => client
                 .invalidate(&self.remote_versions.key)
@@ -118,77 +185,13 @@ impl Screen {
         }
     }
 
-    pub fn sync(&mut self, client: &QueryClient) {
-        self.remote_versions.sync(client);
-    }
-
-    pub fn mount(&self, client: &QueryClient) -> Task<Message> {
+    fn mount(&self, client: &QueryClient) -> Task<Message> {
         let rt = self.remote_versions.fetch(client).map(Message::QueryUpdate);
 
         Task::batch(vec![rt])
     }
 
-    fn current_installed_version(&self) -> Element<'_, Message> {
-        match &self.current_version {
-            Some(data) => match data.content_type {
-                VersionType::Local => self.local_mod_version(&data),
-                VersionType::Remote => self.remote_mod_version(&data),
-            },
-            None => row![].into(),
-        }
-    }
-
-    fn remote_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
-        ui! {
-            <row padding={2}>
-                <view width={iced::Shrink}>
-                    <svg src={asset!("network.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
-                        color: Some(color!(0xFFFFFF))
-                    }}/>
-                </view>
-                <space width={10}/>
-                <view style={container::rounded_box}>
-                    <text padding={2} center>
-                        {&data.version}
-                    </text>
-                </view>
-                <space width={iced::Fill}/>
-                <row spacing={4}>
-                    <view>
-                        <text>{&data.timestamp}</text>
-                    </view>
-                    <button>
-                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
-                            color: Some(color!(0xFFFFFF))
-                        }}/>
-                    </button>
-                    <button>
-                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
-                            color: Some(color!(0xFFFFFF))
-                        }}/>
-                    </button>
-                </row>
-            </row>
-        }
-    }
-
-    fn local_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
-        ui! {
-            <row padding={2}>
-                <svg src={asset!("flask-conical.svg")} width={32} height={32} style={|_theme, _status| svg::Style {
-                    color: Some(color!(0xFFFFFF))
-                }}/>
-                <view style={container::rounded_box} padding={2}>
-                    <text>{&data.version}</text>
-                </view>
-                <view>
-                   <text>{&data.git_hash}</text>
-                </view>
-                <view>
-                   <text>{&data.timestamp}</text>
-                </view>
-                <svg src={asset!("hard-drive-download.svg")}/>
-            </row>
-        }
+    fn sync(&mut self, client: &QueryClient) {
+        self.remote_versions.sync(client);
     }
 }

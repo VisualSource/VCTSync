@@ -2,6 +2,7 @@ mod app;
 mod http;
 mod screens;
 mod state;
+mod traits;
 
 use crate::app::Application;
 

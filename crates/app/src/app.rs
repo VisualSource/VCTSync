@@ -1,10 +1,30 @@
 use crate::asset;
+use crate::traits::IcedScreen;
 use crate::{
     screens,
     state::{Message, Screen, Tab},
 };
 use iced::{Element, Task, Theme};
 use iced_query::QueryClient;
+
+macro_rules! mount_page {
+    ($state:ident, $enum:path, $screen: expr) => {{
+        let screen = $screen;
+        let tasks = screen.mount(&$state.query_client);
+        $state.screen = $enum(screen);
+
+        tasks
+    }};
+}
+macro_rules! page_update {
+    ($state: ident, $enum:path, $ev:expr) => {
+        if let $enum(screen) = &mut $state.screen {
+            screen.update($ev, &$state.query_client)
+        } else {
+            Task::none()
+        }
+    };
+}
 
 #[derive(Debug)]
 pub struct Application {
@@ -48,40 +68,29 @@ impl Application {
                     state.screen = Screen::Logs;
                     Task::none()
                 }
-                Tab::Builds => {
-                    let screen = screens::builds::Screen::new(&state.query_client);
+                Tab::Builds => mount_page!(
+                    state,
+                    Screen::Builds,
+                    screens::builds::Screen::new(&state.query_client)
+                ),
 
-                    let tasks = screen.mount(&state.query_client);
-                    state.screen = Screen::Builds(screen);
-
-                    tasks
-                }
-                Tab::Profiles => {
-                    let mut screen = screens::profiles::Screen::default();
-
-                    let tasks = screen.init();
-                    state.screen = Screen::Profiles(screen);
-
-                    tasks
-                }
+                Tab::Profiles => mount_page!(
+                    state,
+                    Screen::Profiles,
+                    screens::profiles::Screen::default()
+                ),
                 Tab::Settings => {
-                    state.screen = Screen::Settings(screens::settings::Screen::new());
-                    Task::none()
+                    mount_page!(state, Screen::Settings, screens::settings::Screen::new())
                 }
             },
             Message::ProfilesMessage(ev) => {
-                if let Screen::Profiles(screen) = &mut state.screen {
-                    screen.update(ev).map(Message::ProfilesMessage)
-                } else {
-                    Task::none()
-                }
+                page_update!(state, Screen::Profiles, ev)
             }
             Message::BuildsMessage(event) => {
-                if let Screen::Builds(screen) = &mut state.screen {
-                    screen.update(event, &state.query_client)
-                } else {
-                    Task::none()
-                }
+                page_update!(state, Screen::Builds, event)
+            }
+            Message::SettingsMessage(event) => {
+                page_update!(state, Screen::Settings, event)
             }
         }
     }

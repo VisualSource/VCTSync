@@ -1,8 +1,8 @@
-use iced::{Element, Task};
+use iced::Task;
 use iced_query::QueryClient;
 use iced_xml::ui;
 
-use crate::{asset, state::Message};
+use crate::{asset, state::Message, traits::IcedScreen};
 
 pub mod state;
 
@@ -12,18 +12,8 @@ pub struct Screen {
     active_profile: Option<()>,
 }
 
-impl Screen {
-    pub fn init(&mut self) -> Task<Message> {
-        Task::none()
-    }
-
-    pub fn update(&mut self, state: state::Action) -> Task<state::Action> {
-        Task::none()
-    }
-
-    pub fn sync(&mut self, client: &QueryClient) {}
-
-    pub fn view(&self) -> Element<'_, Message> {
+impl IcedScreen<state::Action> for Screen {
+    fn view(&self) -> iced::Element<'_, Message> {
         ui! {
            <col>
             <row>
@@ -59,4 +49,14 @@ impl Screen {
            </col>
         }
     }
+
+    fn update(&mut self, ev: state::Action, client: &QueryClient) -> Task<Message> {
+        Task::none()
+    }
+
+    fn mount(&self, client: &QueryClient) -> Task<Message> {
+        Task::none()
+    }
+
+    fn sync(&mut self, client: &QueryClient) {}
 }
