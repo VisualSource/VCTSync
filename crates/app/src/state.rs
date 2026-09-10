@@ -1,11 +1,9 @@
-use crate::{
-    query::QueryUpdate,
-    screens::{self, builds::requests::Version},
-};
+use crate::screens::{self};
 
 #[derive(Debug)]
 pub enum Screen {
     Builds(screens::builds::Screen),
+    Profiles(screens::profiles::Screen),
 
     Logs,
     Files,
@@ -17,6 +15,7 @@ pub enum Tab {
     #[default]
     Builds,
     Files,
+    Profiles,
 }
 
 #[derive(Debug, Clone)]
@@ -24,6 +23,5 @@ pub enum Message {
     SetTab(Tab),
 
     BuildsMessage(screens::builds::Action),
-
-    Version,
+    ProfilesMessage(screens::profiles::state::Action),
 }
