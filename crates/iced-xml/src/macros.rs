@@ -17,7 +17,9 @@ macro_rules! parse_children {
         for child in $node.children() {
             let item = handle_node(&child)?;
 
-            results.push(item);
+            if !item.is_empty() {
+                results.push(item);
+            }
         }
         children.append_separated(results, quote! {,});
 

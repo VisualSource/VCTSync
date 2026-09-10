@@ -29,7 +29,7 @@ pub fn parse_xml(stream: proc_macro2::TokenStream) -> syn::Result<proc_macro2::T
 
 fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
     match node {
-        Node::Comment(_) => Ok(quote! {}),
+        Node::Comment(_) => Ok(proc_macro2::TokenStream::default()),
         Node::Doctype(_) => unimplemented!(),
         Node::Fragment(_) => unimplemented!(),
         Node::Element(node_element) => {
@@ -38,8 +38,15 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
             match name.to_string().as_str() {
                 "row" => {
                     let children = parse_children!(node_element);
-                    let mut row = quote! {
-                        iced::widget::Row::with_children([#children])
+
+                    let mut row = if !children.is_empty() {
+                        quote! {
+                            iced::widget::Row::with_children([#children])
+                        }
+                    } else {
+                        quote! {
+                            iced::widget::Row::new()
+                        }
                     };
 
                     let attrs = Attributes::new(node_element.attributes());
@@ -61,8 +68,15 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                 "col" => {
                     let children = parse_children!(node_element);
                     let attrs = Attributes::new(node_element.attributes());
-                    let mut col = quote! {
-                        iced::widget::Column::with_children([#children])
+
+                    let mut col = if children.is_empty() {
+                        quote! {
+                            iced::widget::Column::new()
+                        }
+                    } else {
+                        quote! {
+                            iced::widget::Column::with_children([#children])
+                        }
                     };
 
                     map_attrs!(
@@ -362,7 +376,6 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                 "qr-code" => Ok(quote! {}),
                 "switch" => Ok(quote! {}),
                 "theme" => Ok(quote! {}),
-                "tooltip" => Ok(quote! {}),
                 "hr" => {
                     if !node_element.open_tag.is_self_closed() {
                         return Err(syn::Error::new(
@@ -412,6 +425,31 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                     );
 
                     Ok(quote! { iced::Element::from(#space) })
+                }
+
+                "tooltip" => {
+                    let attrs = Attributes::new(node_element.attributes());
+                    let content = required_single_child!(node_element);
+                    let tip = required_attr!(attrs, node_element, "content");
+
+                    let pos = strip_braces(attrs.get_value("position").map_or_else(
+                        || quote! { iced::widget::tooltip::Position::FollowCursor },
+                        |v| v.value.to_token_stream(),
+                    ))?;
+
+                    let mut tooltip = quote! {
+                        iced::widget::tooltip(#content, #tip, #pos)
+                    };
+
+                    map_attrs!(attrs,tooltip,
+                        "style" => |value|{.style(#value)},
+                        "gap" => |value|{.gap(#value)},
+                        "padding" => |value|{.padding(#value)},
+                        "delay" => |value|{.delay(#value)},
+                        "snapWithinViewport" => |value|{.snap_within_viewport(#value)}
+                    );
+
+                    Ok(quote! { iced::Element::from(#tooltip) })
                 }
 
                 _ => unimplemented!(),

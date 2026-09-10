@@ -28,8 +28,10 @@ fn test_parse() {
 
     let _result: iced::Element<'_, TestEnum> = ui! {
         <view>
+
             <row spacing=4>
                 <svg src={asset!("network.svg")} width={50} height={50}/>
+                <!-- -->
                 <scroll>
                     <col>
                         Hello
