@@ -5,9 +5,9 @@ use iced_query::QueryEvent;
 pub enum Screen {
     Builds(screens::builds::Screen),
     Profiles(screens::profiles::Screen),
+    Settings(screens::settings::Screen),
 
     Logs,
-    Files,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -15,7 +15,7 @@ pub enum Tab {
     Logs,
     #[default]
     Builds,
-    Files,
+    Settings,
     Profiles,
 }
 
@@ -27,4 +27,5 @@ pub enum Message {
 
     BuildsMessage(screens::builds::Action),
     ProfilesMessage(screens::profiles::state::Action),
+    SettingsMessage(screens::settings::state::Action),
 }

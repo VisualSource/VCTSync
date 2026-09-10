@@ -3,6 +3,13 @@
 //! Write iced ui element using xml like syntax
 //!
 //!
+//! ```
+//!  ui!{
+//!     <view>
+//!         <text>Hello</text>
+//!     </view>
+//! }
+//! ```
 
 mod attribute;
 mod macros;

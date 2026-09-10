@@ -14,7 +14,7 @@ pub struct Application {
 
 impl Application {
     pub fn theme(_: &Application) -> Theme {
-        Theme::Nord
+        Theme::Dark
     }
     pub fn new() -> (Self, Task<Message>) {
         let query_client = QueryClient::new();
@@ -38,7 +38,7 @@ impl Application {
                     Screen::Builds(screen) => screen.sync(&state.query_client),
                     Screen::Profiles(screen) => screen.sync(&state.query_client),
                     Screen::Logs => {}
-                    Screen::Files => {}
+                    Screen::Settings(screen) => screen.sync(&state.query_client),
                 }
 
                 Task::none()
@@ -64,8 +64,8 @@ impl Application {
 
                     tasks
                 }
-                Tab::Files => {
-                    state.screen = Screen::Files;
+                Tab::Settings => {
+                    state.screen = Screen::Settings(screens::settings::Screen::new());
                     Task::none()
                 }
             },
@@ -110,7 +110,7 @@ impl Application {
                         </tooltip>
                         <space height={iced::Fill}/>
                         <tooltip content={tooltip_label("Settings")} position={iced::widget::tooltip::Position::Right}>
-                            <button onPress={Message::SetTab(Tab::Files)}>
+                            <button onPress={Message::SetTab(Tab::Settings)}>
                                 <svg width={18} height={18} src={asset!("settings.svg")}/>
                             </button>
                         </tooltip>
@@ -124,7 +124,7 @@ impl Application {
                         Screen::Logs => iced_xml::ui! { <col/> },
                         Screen::Builds(screen) => screen.view(),
                         Screen::Profiles(screen) => screen.view(),
-                        Screen::Files => iced_xml::ui! { <col/> },
+                        Screen::Settings(screen) => screen.view(),
                     }}
                 </view>
             </row>
