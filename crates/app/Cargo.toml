@@ -12,5 +12,5 @@ anyhow = { workspace = true }
 iced-xml = { path = "../iced-xml" }
 iced-query = { path = "../iced-query" }
 iced = { workspace = true, features = ["svg", "tokio", "sipper"] }
-reqwest = { version = "0.13", features = ["stream", "json"] }
+reqwest = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
