@@ -30,12 +30,12 @@ impl IcedScreen<state::Action> for Screen {
             <text>"Dev Agent"</text>
             <col>
                 Agent Address
-                <input onChange={|value|Message::SettingsMessage(Action::AgentAddressChange(value))} type="text" value={&self.agent_address} placeholder="192.168.1.94:9787" />
+                <input onChange={|value|Action::AgentAddressChange(value).into()} type="text" value={&self.agent_address} placeholder="192.168.1.94:9787" />
 
                 Token
-                <input onChange={|value|Message::SettingsMessage(Action::AgentTokenChange(value))} type="text" value={&self.agent_token} placeholder="shared bearer token"/>
+                <input onChange={|value|Action::AgentTokenChange(value).into()} type="text" value={&self.agent_token} placeholder="shared bearer token"/>
                 <text>"Save Dir (default downloads)"</text>
-                <input onChange={|value|Message::SettingsMessage(Action::AgentSaveDirChange(value))} type="text" value={&self.agent_save_dir}  placeholder="C:\\Downloads"/>
+                <input onChange={|value|Action::AgentSaveDirChange(value).into()} type="text" value={&self.agent_save_dir}  placeholder="C:\\Downloads"/>
 
                 <space height={8}/>
             </col>

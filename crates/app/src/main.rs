@@ -1,3 +1,8 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
+
 mod app;
 mod http;
 mod screens;
@@ -15,7 +20,7 @@ macro_rules! asset {
 
 fn main() -> iced::Result {
     iced::application(Application::new, Application::update, Application::view)
-        .title("Terminus Updater")
+        .title("VC Launcher")
         .theme(Application::theme)
         .run()
 }

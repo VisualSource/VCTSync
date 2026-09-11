@@ -1,3 +1,5 @@
+use crate::state::Message;
+
 #[derive(Debug, Clone)]
 pub enum Action {
     AgentAddressChange(String),
@@ -5,4 +7,10 @@ pub enum Action {
     AgentSaveDirChange(String),
 
     SaveSettings,
+}
+
+impl Into<Message> for Action {
+    fn into(self) -> Message {
+        Message::SettingsMessage(self)
+    }
 }
