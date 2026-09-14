@@ -4,9 +4,12 @@ use crate::asset;
 use crate::screens::builds::requests::{Version, VersionType};
 use crate::state::Message;
 use crate::traits::IcedScreen;
+use crate::utils::{style_svg, tooltip_label};
+
+use iced::{Alignment, Font};
 use iced::{
-    Element, Task, color,
-    widget::{Column, container, row, svg},
+    Element, Task,
+    widget::{Column, container},
 };
 use iced_query::{Query, QueryClient};
 use iced_xml::ui;
@@ -46,22 +49,41 @@ impl Screen {
     }
 
     fn current_installed_version(&self) -> Element<'_, Message> {
-        match &self.current_version {
-            Some(data) => match data.content_type {
-                VersionType::Local => self.local_mod_version(&data),
-                VersionType::Remote => self.remote_mod_version(&data),
-            },
-            None => row![].into(),
+        if self.current_version.is_none() {
+            return ui! {
+            <row padding={4}>
+                Installed:
+                <space width={6}/>
+                No Installed Version
+            </row>
+            };
+        }
+
+        ui! {
+            <row padding={4}>
+                Installed:
+
+                <space width={6}/>
+
+                <row spacing={4}>
+                    <view width={iced::Shrink}>
+                        <svg src={asset!("network.svg")} width={18} height={18} style={style_svg}/>
+                    </view>
+                    <view style={container::rounded_box} padding={[4,8]}>
+                        <text center>
+                            "0.0.22"
+                        </text>
+                    </view>
+                </row>
+            </row>
         }
     }
 
     fn remote_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
         ui! {
-            <row padding={2}>
+            <row padding={[4,8]} alignY={Alignment::Center}>
                 <view width={iced::Shrink}>
-                    <svg src={asset!("network.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
-                        color: Some(color!(0xFFFFFF))
-                    }}/>
+                    <svg src={asset!("network.svg")} width={24} height={24} style={style_svg}/>
                 </view>
                 <space width={10}/>
                 <view style={container::rounded_box} padding={[4,8]}>
@@ -70,20 +92,15 @@ impl Screen {
                     </text>
                 </view>
                 <space width={iced::Fill}/>
-                <row spacing={4}>
+                <row spacing={4} alignY={Alignment::Center}>
                     <view>
-                        <text>{&data.timestamp}</text>
+                        <text center>{&data.timestamp}</text>
                     </view>
-                    <button>
-                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
-                            color: Some(color!(0xFFFFFF))
-                        }}/>
-                    </button>
-                    <button>
-                        <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={|_theme, _status| svg::Style {
-                            color: Some(color!(0xFFFFFF))
-                        }}/>
-                    </button>
+                    <tooltip content={tooltip_label("Install")} position={iced::widget::tooltip::Position::Left}>
+                        <button>
+                            <svg src={asset!("hard-drive-download.svg")}  width={24} height={24} style={style_svg}/>
+                        </button>
+                    </tooltip>
                 </row>
             </row>
         }
@@ -91,20 +108,28 @@ impl Screen {
 
     fn local_mod_version<'a>(&self, data: &'a Version) -> Element<'a, Message> {
         ui! {
-            <row padding={2}>
-                <svg src={asset!("flask-conical.svg")} width={32} height={32} style={|_theme, _status| svg::Style {
-                    color: Some(color!(0xFFFFFF))
-                }}/>
-                <view style={container::rounded_box} padding={2}>
-                    <text>{&data.version}</text>
+            <row padding={[4,8]} alignY={Alignment::Center}>
+                <view width={iced::Shrink}>
+                    <svg src={asset!("flask-conical.svg")} width={24} height={24} style={style_svg}/>
                 </view>
-                <view>
-                   <text>{&data.git_hash}</text>
+                <space width={10}/>
+                <view style={container::rounded_box} padding={[4,8]}>
+                    <text center>
+                        {&data.version}
+                    </text>
                 </view>
-                <view>
-                   <text>{&data.timestamp}</text>
-                </view>
-                <svg src={asset!("hard-drive-download.svg")}/>
+                <space width={iced::Fill}/>
+                <row spacing={4} alignY={Alignment::Center}>
+                    <view>
+                        <text center>{&data.git_hash}</text>
+                    </view>
+                    <view>
+                        <text center>{&data.timestamp}</text>
+                    </view>
+                    <button>
+                        <svg src={asset!("hard-drive-download.svg")} width={24} height={24} style={style_svg}/>
+                    </button>
+                </row>
             </row>
         }
     }
@@ -137,14 +162,16 @@ impl IcedScreen<Action> for Screen {
             <col>
                 <view>
                     <row>
-                        Versions
+                        <text size={24} font={Font{ weight: iced::font::Weight::Bold, ..Font::DEFAULT }}>"Versions"</text>
                     </row>
                 </view>
                 {self.current_installed_version()}
 
+                <space height={15}/>
+
                 <col spacing={4}>
-                    <row padding={2}>
-                        <text center alignY={iced::Alignment::Center}>"Remote"</text>
+                    <row padding={2} alignY={Alignment::Center}>
+                        <text>"Remote"</text>
                         <space width={iced::Fill}/>
                         <button onPressMaybe={(!q.is_fetching()).then(|| Message::BuildsMessage(Action::RefreshRemoteVersions))}>
                             Refresh
@@ -158,12 +185,19 @@ impl IcedScreen<Action> for Screen {
                     </row>
                 </col>
 
-                <view>
-                    <col>
-                        <row>
-                            Local
-                        </row>
-                        <scroll spacing={4}>
+                <space height={15}/>
+
+                <col spacing={4}>
+                    <row padding={2} alignY={Alignment::Center}>
+                        <text>"Local"</text>
+                        <space width={iced::Fill}/>
+                         <button onPressMaybe={(!q.is_fetching()).then(|| Message::BuildsMessage(Action::RefreshRemoteVersions))}>
+                            Refresh
+                        </button>
+                    </row>
+                     <hr/>
+                       <row height={256}>
+                        <scroll spacing={4} >
                             {Column::with_children(
                                     self.local_versions
                                         .iter()
@@ -171,8 +205,8 @@ impl IcedScreen<Action> for Screen {
                                         .map(Element::from)
                             )}
                         </scroll>
-                    </col>
-                </view>
+                    </row>
+                </col>
             </col>
         }
     }

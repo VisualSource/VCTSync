@@ -48,7 +48,10 @@ macro_rules! required_attr {
             $attrs
                 .get_value($key)
                 .ok_or_else(|| {
-                    syn::Error::new($node.open_tag.span(), "missing required attribute")
+                    syn::Error::new(
+                        $node.span(),
+                        format!("missing required attribute: '{}'", $key),
+                    )
                 })?
                 .value
                 .to_token_stream(),

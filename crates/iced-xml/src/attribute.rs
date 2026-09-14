@@ -38,9 +38,9 @@ impl<'a> Attributes<'a> {
         Ok(())
     }
 
-    pub fn has_attr(&self, key: &str) -> bool {
+    /*pub fn has_attr(&self, key: &str) -> bool {
         self.0.contains_key(key)
-    }
+    }*/
 
     pub fn get_value(&self, key: &str) -> Option<&'a AttributeValueExpr> {
         if let Some(r) = self.0.get(key) {

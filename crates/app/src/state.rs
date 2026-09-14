@@ -7,7 +7,7 @@ pub enum Screen {
     Profiles(screens::profiles::Screen),
     Settings(screens::settings::Screen),
 
-    Logs,
+    Logs(screens::logs::Screen),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -21,6 +21,8 @@ pub enum Tab {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    FontLoad(Result<(), iced::font::Error>),
+
     SetTab(Tab),
 
     QueryUpdate(QueryEvent),
@@ -28,4 +30,5 @@ pub enum Message {
     BuildsMessage(screens::builds::Action),
     ProfilesMessage(screens::profiles::state::Action),
     SettingsMessage(screens::settings::state::Action),
+    LogMessage(screens::logs::state::Action),
 }

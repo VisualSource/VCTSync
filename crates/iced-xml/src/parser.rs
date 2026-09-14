@@ -114,10 +114,28 @@ fn handle_node(node: &Node) -> syn::Result<proc_macro2::TokenStream> {
                 }
                 "scroll" => {
                     let content = required_single_child!(node_element);
-
-                    let scroll = quote! {
+                    let attrs = Attributes::new(node_element.attributes());
+                    let mut scroll = quote! {
                         iced::widget::scrollable(#content)
                     };
+
+                    map_attrs!(attrs,scroll,
+                        "anchorBottom" => ||{.anchor_bottom()},
+                        "anchorLeft" => ||{.anchor_left()},
+                        "anchorRight" => ||{.anchor_right()},
+                        "anchorTop" => ||{.anchor_top()},
+                        "anchorX" => |value|{.anchor_x(#value)},
+                        "anchorY" => |value|{.anchor_y(#value)},
+                        "autoScroll" => |value|{.auto_scroll(#value)},
+                        "direction" => |value|{.direction(#value)},
+                        "height" => |value|{.height(#value)},
+                        "horizontal" => ||{.horizontal()},
+                        "id" => |value|{.id(#value)},
+                        "onScroll" => |value|{.on_scroll(#value)},
+                        "spacing" => |value|{.spacing(#value)},
+                        "style" => |value|{.style(#value)},
+                        "width" => |value|{.width(#value)},
+                    );
 
                     Ok(quote! { iced::Element::from(#scroll) })
                 }

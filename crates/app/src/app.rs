@@ -1,5 +1,8 @@
+use core::task;
+
 use crate::asset;
 use crate::traits::IcedScreen;
+use crate::utils::{style_svg, tooltip_label};
 use crate::{
     screens,
     state::{Message, Screen, Tab},
@@ -47,33 +50,38 @@ impl Application {
             query_client: query_client,
         };
 
-        (state, fetch)
+        let tasks = Task::batch([fetch]);
+
+        (state, tasks)
     }
     pub fn update(state: &mut Application, msg: Message) -> Task<Message> {
         match msg {
+            Message::FontLoad(font) => {
+                if let Err(err) = font {
+                    eprintln!("{:#?}", err);
+                }
+
+                Task::none()
+            }
             Message::QueryUpdate(data) => {
                 state.query_client.receive(data);
 
                 match &mut state.screen {
                     Screen::Builds(screen) => screen.sync(&state.query_client),
                     Screen::Profiles(screen) => screen.sync(&state.query_client),
-                    Screen::Logs => {}
+                    Screen::Logs(screen) => screen.sync(&state.query_client),
                     Screen::Settings(screen) => screen.sync(&state.query_client),
                 }
 
                 Task::none()
             }
             Message::SetTab(tab) => match tab {
-                Tab::Logs => {
-                    state.screen = Screen::Logs;
-                    Task::none()
-                }
+                Tab::Logs => mount_page!(state, Screen::Logs, screens::logs::Screen::default()),
                 Tab::Builds => mount_page!(
                     state,
                     Screen::Builds,
                     screens::builds::Screen::new(&state.query_client)
                 ),
-
                 Tab::Profiles => mount_page!(
                     state,
                     Screen::Profiles,
@@ -92,6 +100,7 @@ impl Application {
             Message::SettingsMessage(event) => {
                 page_update!(state, Screen::Settings, event)
             }
+            Message::LogMessage(ev) => page_update!(state, Screen::Logs, ev),
         }
     }
     pub fn view(state: &Application) -> Element<'_, Message> {
@@ -102,25 +111,27 @@ impl Application {
                         <!-- Profile list -->
                         <tooltip content={tooltip_label("Profiles")} position={iced::widget::tooltip::Position::Right}>
                             <button onPress={Message::SetTab(Tab::Profiles)}>
-                                <svg width={18} height={18} src={asset!("library.svg")}/>
+                                <svg width={18} height={18} src={asset!("library.svg")} style={style_svg}/>
                             </button>
                         </tooltip>
 
                         <!-- Thunder store install version install list  -->
+
                         <tooltip content={tooltip_label("Builds")} position={iced::widget::tooltip::Position::Right}>
                             <button onPress={Message::SetTab(Tab::Builds)}>
-                                <svg width={18} height={18} src={asset!("boxes.svg")}/>
+                                <svg width={18} height={18} src={asset!("boxes.svg")} style={style_svg}/>
                             </button>
                         </tooltip>
+
                         <tooltip content={tooltip_label("Logs")} position={iced::widget::tooltip::Position::Right}>
                             <button onPress={Message::SetTab(Tab::Logs)}>
-                                <svg width={18} height={18} src={asset!("scroll-text.svg")}/>
+                                <svg width={18} height={18} src={asset!("scroll-text.svg")} style={style_svg}/>
                             </button>
                         </tooltip>
                         <space height={iced::Fill}/>
                         <tooltip content={tooltip_label("Settings")} position={iced::widget::tooltip::Position::Right}>
                             <button onPress={Message::SetTab(Tab::Settings)}>
-                                <svg width={18} height={18} src={asset!("settings.svg")}/>
+                                <svg width={18} height={18} src={asset!("settings.svg")} style={style_svg}/>
                             </button>
                         </tooltip>
                         <space height={4}/>
@@ -130,7 +141,7 @@ impl Application {
                 <space width={4}/>
                 <view>
                     {match &state.screen {
-                        Screen::Logs => iced_xml::ui! { <col/> },
+                        Screen::Logs(screen) => screen.view(),
                         Screen::Builds(screen) => screen.view(),
                         Screen::Profiles(screen) => screen.view(),
                         Screen::Settings(screen) => screen.view(),
@@ -138,13 +149,5 @@ impl Application {
                 </view>
             </row>
         }
-    }
-}
-
-fn tooltip_label(text: &str) -> Element<'_, Message> {
-    iced_xml::ui! {
-        <view padding={[4,8]} style={iced::widget::container::rounded_box}>
-            <text>{text}</text>
-        </view>
     }
 }

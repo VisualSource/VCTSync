@@ -1,8 +1,8 @@
-use iced::Task;
+use iced::{Alignment, Length, Task};
 use iced_query::QueryClient;
 use iced_xml::ui;
 
-use crate::{asset, state::Message, traits::IcedScreen};
+use crate::{asset, state::Message, traits::IcedScreen, utils::style_svg};
 
 pub mod state;
 
@@ -16,10 +16,8 @@ impl IcedScreen<state::Action> for Screen {
     fn view(&self) -> iced::Element<'_, Message> {
         ui! {
            <col>
-            <row>
-                <row>
-                    <text>"Active Profile: None"</text>
-                </row>
+            <row padding={4} alignY={Alignment::Center}>
+                <text>"Active Profile: None"</text>
                 <space width={iced::Fill}/>
                 <button>Launch</button>
             </row>
@@ -27,15 +25,17 @@ impl IcedScreen<state::Action> for Screen {
             <space height={10}/>
             {if self.profiles.is_empty() {
                ui!{
-                 <col>
-                    <text center>"No profiles"</text>
-                    <button>
-                        <row>
-                            Create
-                            <svg src={asset!("layers-plus.svg")}/>
-                        </row>
-                    </button>
-                 </col>
+                <view height={iced::Fill} center={Length::Fill} width={Length::Fill}>
+                    <col center alignX={Alignment::Center} spacing={6}>
+                        <text center>"No profiles"</text>
+                        <button>
+                            <row center width={iced::Shrink} spacing={6}>
+                                Create
+                                <svg src={asset!("layers-plus.svg")} style={style_svg}/>
+                            </row>
+                        </button>
+                    </col>
+                </view>
                }
             } else {
                 ui! {
