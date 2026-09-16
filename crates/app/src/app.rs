@@ -1,5 +1,3 @@
-use core::task;
-
 use crate::asset;
 use crate::traits::IcedScreen;
 use crate::utils::{style_svg, tooltip_label};
@@ -56,13 +54,6 @@ impl Application {
     }
     pub fn update(state: &mut Application, msg: Message) -> Task<Message> {
         match msg {
-            Message::FontLoad(font) => {
-                if let Err(err) = font {
-                    eprintln!("{:#?}", err);
-                }
-
-                Task::none()
-            }
             Message::QueryUpdate(data) => {
                 state.query_client.receive(data);
 
@@ -85,7 +76,7 @@ impl Application {
                 Tab::Profiles => mount_page!(
                     state,
                     Screen::Profiles,
-                    screens::profiles::Screen::default()
+                    screens::profiles::Screen::new(&state.query_client)
                 ),
                 Tab::Settings => {
                     mount_page!(state, Screen::Settings, screens::settings::Screen::new())

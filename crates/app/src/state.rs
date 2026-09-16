@@ -21,8 +21,6 @@ pub enum Tab {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    FontLoad(Result<(), iced::font::Error>),
-
     SetTab(Tab),
 
     QueryUpdate(QueryEvent),

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use iced::task::{Straw, sipper};
+use chrono_humanize::HumanTime;
+use iced::task::{self, Straw, sipper};
 use serde::Deserialize;
 
 use crate::http;
@@ -19,6 +20,7 @@ pub(crate) struct Version {
     pub timestamp: String,
     pub content_type: VersionType,
     pub source_url: String,
+    pub branch: Option<String>,
 }
 
 impl Version {
@@ -35,6 +37,7 @@ impl Version {
             timestamp,
             content_type: ct,
             source_url: source,
+            branch: None,
         }
     }
 }
@@ -79,9 +82,12 @@ pub fn fetch_remote_version_list() -> impl Straw<Vec<Version>, (), Arc<anyhow::E
             .map(|item| Version {
                 version: item.tag_name,
                 git_hash: "".into(),
-                timestamp: item.published_at,
+                timestamp: chrono::DateTime::parse_from_rfc3339(&item.published_at)
+                    .map_or_else(|_| item.published_at, |v| HumanTime::from(v).to_string()),
+
                 content_type: VersionType::Remote,
                 source_url: "".into(),
+                branch: Some("master".into()),
             })
             .collect();
 
@@ -89,9 +95,13 @@ pub fn fetch_remote_version_list() -> impl Straw<Vec<Version>, (), Arc<anyhow::E
     })
 }
 
+pub fn fetch_active_version() -> impl Straw<Option<Version>, (), Arc<anyhow::Error>> {
+    sipper(async move |_| Ok(None))
+}
+
 pub fn fetch_local_version_list() -> impl Straw<Vec<Version>, (), Arc<anyhow::Error>> {
     sipper(async move |_| {
-        let client = http::get_client();
+        /* let client = http::get_client();
 
         let response = client
             .get("http://localhost/version")
@@ -106,6 +116,32 @@ pub fn fetch_local_version_list() -> impl Straw<Vec<Version>, (), Arc<anyhow::Er
             .await
             .map_err(|err| Arc::new(anyhow::Error::from(err)))?;
 
-        Ok(releases)
+        Ok(releases)*/
+
+        Ok(vec![Version {
+            version: "0.1.1".into(),
+            source_url: "".into(),
+            content_type: VersionType::Local,
+            git_hash: "013f33".into(),
+            timestamp: HumanTime::from(chrono::Local::now()).to_string(),
+            branch: Some("features/leech".into()),
+        }])
+    })
+}
+
+#[derive(Debug, Clone)]
+pub enum Progress {
+    Inc(u64),
+    Done,
+    Error(Arc<anyhow::Error>),
+}
+
+pub fn install_build(build: Version) -> impl Straw<Progress, Progress, Arc<anyhow::Error>> {
+    task::sipper(|mut sender| async move {
+        sender.send(Progress::Inc(1)).await;
+
+        println!("Installing: {}", build.version);
+
+        Ok(Progress::Done)
     })
 }

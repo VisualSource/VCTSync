@@ -9,6 +9,7 @@ use structs::QueryUpdate;
 pub use query::Query;
 pub use query_client::QueryClient;
 pub use structs::QueryEvent;
+pub use structs::QueryOptions;
 
 pub type QueryKey = Cow<'static, str>;
 pub type QueryData = Arc<dyn Any + Send + Sync>;
