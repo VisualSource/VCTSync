@@ -1,14 +1,22 @@
-[] 
-[] file server
-    - allow configure of folders being shared
-[] deploy
-    - support delopying from github version
-    - support depploying from local version
-[] log sharing
-    - allow for live log reading
-    - allow collecting log
-[] allow sharing of files
-[] live unity runtime viewing?
+Pages:
+    Builds:
+        [] install button
+        [] current install query
+    Logs:
+        [] lines toggle
+        [] export button impl
+        [] show logs lines
+    Profiles:
+        [] select active profile
+        [] launch game
+        [] create profile
+        [] edit profile
+        [] delete profile
+    Settings:
+        [] finish settings  
+
+
+
 
 
 # widgets:
@@ -17,8 +25,8 @@
     ✔ checkbox      -> <input type="checkbox"/> @done(26-09-04 08:50)
     [] combo_box     -> 
                         <combobox textShaping onInput onOpen onClose padding font icon size lineHeight width menuHeight inputStyle menuStyle inputClass menuClass onChange={} value={state.favorite} placeholder="">{&state.fruits}</combobox/>
-                        <combobox textShaping onOpen onClose padding font icon size lineHeight width onChange={} value={state.favorite} placeholder="">{&state.fruits}
-                            <input onChange={} style={} class={}/>
+                        <combobox textShaping onOpen onClose padding font icon size lineHeight width onChange={}>{&state.fruits}
+                            <input onChange={} style={} class={}  placeholder="" value={state.favorite}/>
                             <menu height={} style={} class={}>
                                 {&state.fruits}
                             </menu>
@@ -57,4 +65,4 @@
     [] keyed_column
     [] rich_text
 
-    [] custom => <custom-view/> -> custom-view() | <Custom::view/> -> Custom::view()
+    [] custom => <custom-view/> -> custom_view() | <Custom::view/> -> Custom::view()

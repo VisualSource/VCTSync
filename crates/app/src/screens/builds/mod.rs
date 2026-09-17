@@ -278,7 +278,7 @@ impl IcedScreen<Action> for Screen {
                 .map(Message::BuildsMessage)
             }
             Action::InstallProgress(state) => match state {
-                Progress::Inc(_) => Task::none(),
+                Progress::Inc(_curr, _max) => Task::none(),
                 Progress::Done => client
                     .invalidate(&self.current_version.key)
                     .map(Message::QueryUpdate),

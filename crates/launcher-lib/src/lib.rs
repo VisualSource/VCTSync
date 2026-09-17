@@ -1,16 +1,66 @@
 mod error;
 
 use std::{
+    env::temp_dir,
     fs,
     path::{Path, PathBuf},
     process::Command,
     time::Duration,
 };
 
+use reqwest::{Response, Url};
+use tokio::io::AsyncWriteExt;
+
 use crate::error::LibError;
 
 const STREAM_VOID_CREW_APPID: &str = "1063420";
 const BEPINEX_PRELOADER_PATH: &str = "BepInEx\\core\\BepInEx.Preloader.dll";
+
+pub async fn install_build<F>(
+    http_client: &reqwest::Client,
+    source: &str,
+    out_dir: &Path,
+    progress: F,
+) -> Result<(), LibError>
+where
+    F: AsyncFnMut(u64, u64),
+{
+    let url = Url::parse(source).map_err(|err| LibError::UrlParse(err.to_string()))?;
+    let resp = http_client.get(url).send().await?.error_for_status()?;
+    let temp = temp_dir().join("temp_file.zip");
+
+    let result = download_zip(resp, &temp, out_dir, progress).await;
+
+    if temp.exists() {
+        // insure we cleanup
+        tokio::fs::remove_file(temp).await?;
+    }
+
+    result
+}
+
+async fn download_zip<F>(
+    mut resp: Response,
+    temp_file: &Path,
+    out_dir: &Path,
+    mut progress: F,
+) -> Result<(), LibError>
+where
+    F: AsyncFnMut(u64, u64),
+{
+    let mut file = tokio::fs::File::create(&temp_file).await?;
+
+    while let Some(chunk) = resp.chunk().await? {
+        file.write_all(&chunk).await?;
+        progress(0, 0).await;
+    }
+
+    let mut zip = s_zip::AsyncStreamingZipReader::open(&temp_file).await?;
+
+    zip.extract_all(out_dir).await?;
+
+    Ok(())
+}
 
 pub async fn install_bepin(
     version: &str,
@@ -20,9 +70,17 @@ pub async fn install_bepin(
 ) -> Result<(), LibError> {
     // 1. fetch version from github release
 
-    let response = http_client.get("").send().await?;
+    let response = http_client.get("").send().await?.error_for_status()?;
 
-    let stream = response.bytes_stream();
+    let bepin_dir = PathBuf::new();
+    let temp = temp_dir().join("bepin.zip");
+    let result = download_zip(response, &temp, &bepin_dir, async |_a, _b| {}).await;
+
+    if temp.exists() {
+        tokio::fs::remove_file(temp).await?;
+    }
+
+    result?;
 
     // 2. extract to profile
 

@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use chrono_humanize::HumanTime;
 use iced::task::{self, Straw, sipper};
 use serde::Deserialize;
 
-use crate::http;
+use crate::http::{self, get_client};
 
 #[derive(Debug, Default, Deserialize, Clone)]
 pub enum VersionType {
@@ -131,16 +131,27 @@ pub fn fetch_local_version_list() -> impl Straw<Vec<Version>, (), Arc<anyhow::Er
 
 #[derive(Debug, Clone)]
 pub enum Progress {
-    Inc(u64),
+    Inc(u64, u64),
     Done,
     Error(Arc<anyhow::Error>),
 }
 
 pub fn install_build(build: Version) -> impl Straw<Progress, Progress, Arc<anyhow::Error>> {
     task::sipper(|mut sender| async move {
-        sender.send(Progress::Inc(1)).await;
+        let client = get_client();
 
-        println!("Installing: {}", build.version);
+        let out_dir = PathBuf::from("");
+
+        launcher_lib::install_build(
+            client,
+            &build.source_url,
+            &out_dir,
+            async move |curr, max| {
+                sender.send(Progress::Inc(curr, max)).await;
+            },
+        )
+        .await
+        .map_err(|err| Arc::new(anyhow::Error::from(err)))?;
 
         Ok(Progress::Done)
     })

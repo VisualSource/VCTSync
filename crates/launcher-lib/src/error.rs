@@ -8,4 +8,10 @@ pub enum LibError {
 
     #[error(transparent)]
     Http(#[from] reqwest::Error),
+
+    #[error("url parse: {0}")]
+    UrlParse(String),
+
+    #[error(transparent)]
+    Zip(#[from] s_zip::SZipError),
 }

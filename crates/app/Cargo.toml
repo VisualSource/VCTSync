@@ -11,11 +11,16 @@ path = "src/main.rs"
 anyhow = { workspace = true }
 iced-xml = { path = "../iced-xml" }
 iced-query = { path = "../iced-query" }
+launcher-lib = { path = "../launcher-lib" }
 iced = { workspace = true, features = ["svg", "tokio", "sipper"] }
+iced_aw = { version = "0.14.0", features = ["drop_down", "menu"] }
 reqwest = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
 chrono = "0.4"
 chrono-humanize = "0.2"
-tokio = { version = "1.53", features = ["fs"] }
+tokio = { workspace = true, features = ["fs"] }
 
 [features]
+default = ["dev-agent"]
+dev-agent = []
+vct = []

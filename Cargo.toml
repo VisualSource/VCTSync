@@ -13,6 +13,6 @@ default-members = ["crates/app"]
 anyhow = "1.0"
 iced = "0.14"
 reqwest = { version = "0.13", features = ["stream", "json"] }
-
+tokio = "1.53"
 [workspace.package]
 edition = "2024"

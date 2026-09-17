@@ -7,3 +7,4 @@ edition = { workspace = true }
 thiserror = "2.0"
 reqwest = { workspace = true }
 s-zip = { version = "0.13", features = ["async"] }
+tokio = { workspace = true, features = ["fs", "io-util"] }
