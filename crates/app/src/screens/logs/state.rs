@@ -2,7 +2,7 @@ use crate::state::Message;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
-    ToggleVCTLinesOnly,
+    ToggleVCTLinesOnly(bool),
     ExportLogFile,
     ExportToAgent,
 

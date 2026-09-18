@@ -67,7 +67,11 @@ impl Application {
                 Task::none()
             }
             Message::SetTab(tab) => match tab {
-                Tab::Logs => mount_page!(state, Screen::Logs, screens::logs::Screen::default()),
+                Tab::Logs => mount_page!(
+                    state,
+                    Screen::Logs,
+                    screens::logs::Screen::new(&state.query_client)
+                ),
                 Tab::Builds => mount_page!(
                     state,
                     Screen::Builds,
