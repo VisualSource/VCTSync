@@ -2,20 +2,20 @@ import { createContext } from "react";
 import Reconciler, { type HostConfig, type ReactContext, type EventPriority } from "react-reconciler";
 
 
-declare function setTimeout(fn: ()=>void,ms?: number): number;
+declare function setTimeout(fn: () => void, ms?: number): number;
 declare function clearTimeout(id: number): void;
-declare function queueMicrotask(cb: ()=>void) : void;
+declare function queueMicrotask(cb: () => void): void;
 
 type IcedTag = string;
 
-type IcedProps = Record<string,string>;
+type IcedProps = Record<string, string>;
 type IcedNode = { type: IcedTag, props: IcedProps, children: IcedChild[] };
 type IcedText = { text: string }
 type IcedChild = IcedNode | IcedText;
 type IcedContainer = { commit(children: readonly IcedChild[]): void }
 
 
-type IcedHostConfig = HostConfig<IcedTag,IcedProps,IcedContainer,IcedNode,IcedText,never,never,never,IcedNode,null,IcedChild[],number,-1,null>;
+type IcedHostConfig = HostConfig<IcedTag, IcedProps, IcedContainer, IcedNode, IcedText, never, never, never, IcedNode, null, IcedChild[], number, -1, null>;
 
 const DefaultEventPriority: EventPriority = 0;
 
@@ -25,67 +25,67 @@ const config: IcedHostConfig = {
     supportsHydration: false,
     supportsMicrotasks: true,
     supportsPersistence: true,
-    
+
 
     /** Persistent Mode: main hooks  */
     createInstance(type, props, rootContainer, hostContext, internalHandle) {
-        
+
     },
     createTextInstance(text, rootContainer, hostContext, internalHandle) {
-        
+
     },
     appendInitialChild(parentInstance, child) {
         parentInstance.children.push(child);
     },
     cloneInstance(instance, type, oldProps, newProps, keepChildren, recyclableInstance) {
-        
+
     },
     createContainerChildSet(container) {
         return [];
     },
     appendChildToContainer(container, child) {
-        
+
     },
     finalizeContainerChildren(container, newChildren) {
-        
+
     },
     replaceContainerChildren(container, newChildren) {
-        
+
     },
     clearContainer(container) {
-        
+
     },
     cloneHiddenInstance(instance, type, props, internalInstanceHandle) {
-        
+
     },
     cloneHiddenTextInstance(instance, text, internalInstanceHandle) {
-        
+
     },
     shouldSetTextContent(type, props) {
         return false;
     },
     getPublicInstance(instance) {
-        
+
     },
 
     /** Context/commit hooks  */
-    getRootHostContext(){
+    getRootHostContext() {
         return null;
     },
     getChildHostContext(parentHostContext, type, rootContainer) {
         return null;
-    },  
+    },
     finalizeInitialChildren(instance, type, props, rootContainer, hostContext) {
         return false;
     },
-    prepareForCommit(){
+    prepareForCommit() {
         return null;
     },
     resetAfterCommit(containerInfo) {
-    
+
     },
     preparePortalMount(containerInfo) {
-        
+
     },
     isPrimaryRenderer: true,
 
@@ -94,7 +94,7 @@ const config: IcedHostConfig = {
     scheduleTimeout: setTimeout,
     cancelTimeout: clearTimeout,
     noTimeout: -1,
-    scheduleMicrotask:queueMicrotask,
+    scheduleMicrotask: queueMicrotask,
 
 
     /**Update Priority */
@@ -117,31 +117,31 @@ const config: IcedHostConfig = {
         return null;
     },
     beforeActiveInstanceBlur() {
-        
+
     },
     afterActiveInstanceBlur() {
-        
+
     },
     prepareScopeUpdate(scopeInstance, instance) {
-        
+
     },
     getInstanceFromScope(scopeInstance) {
         return null;
     },
     detachDeletedInstance(node) {
-        
+
     },
     resetFormInstance(form) {
-        
+
     },
     requestPostPaintCallback(callback) {
-        
+
     },
     shouldAttemptEagerTransition() {
-        return false;    
+        return false;
     },
     trackSchedulerEvent() {
-        
+
     },
     resolveEventType() {
         return null;
@@ -156,31 +156,34 @@ const config: IcedHostConfig = {
         return true;
     },
     startSuspendingCommit() {
-        
+
     },
     suspendInstance(type, props) {
-        
+
     },
     waitForCommitToBeReady() {
         return null;
     },
-    
+
 };
 
 const reconciler = Reconciler(config);
 
-const onError = () => {}
+const onError = () => { }
 
 const container: IcedContainer = {
     commit(children) {
-        
+
     },
 }
 
 export const createRoot = () => {
-    const root = reconciler.createContainer(container,1,null,false,null,"",onError,onError,onError,()=>{});
+    const root = reconciler.createContainer(container, 1, null, false, null, "", onError, onError, onError, () => { });
 
     return {
-        render: (children: React.ReactNode) => reconciler.updateContainer(children,root,null,null)
+        render: (children: React.ReactNode) => reconciler.updateContainer(children, root, null, null)
     }
 }
+
+
+export const createElement = () => { }

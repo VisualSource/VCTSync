@@ -1,8 +1,12 @@
 {
-  "include": ["js/**/*"],
-
+  "include": [
+    "js/**/*",
+    "example/**/*"
+  ],
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "useDefineForClassFields": true,
     // File Layout
     // "rootDir": "./src",
     // "outDir": "./dist",
@@ -11,24 +15,23 @@
     "module": "esnext",
     "target": "es2020",
     "types": [
-      "react","react-reconciler"
+      "react",
+      "react-reconciler"
     ],
-    "lib": ["ES2020"],
-    
+    "lib": [
+      "ES2020"
+    ],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
     // and npm install -D @types/node
-
     // Other Outputs
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
     // Style Options
     // "noImplicitReturns": true,
     // "noImplicitOverride": true,
@@ -36,7 +39,6 @@
     // "noUnusedParameters": true,
     // "noFallthroughCasesInSwitch": true,
     // "noPropertyAccessFromIndexSignature": true,
-
     // Recommended Options
     "strict": true,
     "jsx": "react-jsx",
