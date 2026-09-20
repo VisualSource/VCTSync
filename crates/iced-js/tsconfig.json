@@ -19,7 +19,7 @@
       "react-reconciler"
     ],
     "lib": [
-      "ES2020"
+      "ES2020",
     ],
     // For nodejs:
     // "lib": ["esnext"],

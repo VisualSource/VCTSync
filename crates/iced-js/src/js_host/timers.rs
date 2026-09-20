@@ -21,7 +21,7 @@ use rquickjs::{
 };
 use tokio::time::{Instant, sleep_until};
 
-const TARGET: &str = "timers";
+const TARGET: &str = "iced_js::timers";
 
 /// Node clamps a delay of `0`/`NaN`/out-of-range to 1ms; matching that also
 /// keeps a zero-delay interval from spinning the scheduler.

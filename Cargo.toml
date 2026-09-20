@@ -5,7 +5,7 @@ members = [
     "crates/iced-xml",
     "crates/app",
     "crates/iced-query",
-    "crates/launcher-lib", "crates/iced-js",
+    "crates/launcher-lib", "crates/iced-js", "crates/iced-js-example-app",
 ]
 default-members = ["crates/app"]
 

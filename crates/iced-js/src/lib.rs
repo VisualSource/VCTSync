@@ -4,6 +4,7 @@ mod render;
 mod runtime;
 mod view;
 
+pub use host::Host;
 pub use runtime::{Event, js_worker};
 pub use view::view;
 

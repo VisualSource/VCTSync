@@ -1,9 +1,12 @@
 use crate::host::Host;
+use crate::render::render_tree;
 use crate::runtime::Event;
 use iced::Element;
 
 pub fn view<'a>(rt: &'a Host, id: &str) -> Element<'a, Event> {
-    //TODO: convert Node tree into Element
+    let Some(tree) = rt.trees.get(id) else {
+        return iced::widget::space().into();
+    };
 
-    unimplemented!()
+    render_tree(tree)
 }

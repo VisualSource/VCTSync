@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use iced::futures::{SinkExt, Stream, StreamExt, channel::mpsc};
-use rquickjs::{AsyncContext, AsyncRuntime, Function, Module, embed, loader::Bundle};
+use rquickjs::{AsyncContext, AsyncRuntime, Module, embed, loader::Bundle};
 
 use crate::{RootId, js_host, render::Node};
 
@@ -9,8 +9,12 @@ static BUNDLED_LIBS: Bundle = embed! {
     "iced-dom": "js/dist/iced-dom.js"
 };
 
-pub enum Payload {}
+#[derive(Debug, Clone)]
+pub enum Payload {
+    None,
+}
 
+#[derive(Clone)]
 pub enum Event {
     Ready(mpsc::Sender<JsCmd>),
     Error {
@@ -43,9 +47,11 @@ pub fn js_worker() -> impl Stream<Item = Event> {
             .await
             .expect("failed ot init the js context");
 
+        let tx = output.clone();
         ctx.async_with(async |ctx| {
             js_host::timers::init(&ctx).expect("failed to init timer");
             js_host::console::init(&ctx).expect("failed to init console");
+            js_host::react_reconciler::init(&ctx, tx).expect("failed to init host object");
         })
         .await;
         // should be able to use
@@ -106,8 +112,12 @@ pub fn js_worker() -> impl Stream<Item = Event> {
 
                     let result: Result<(), String> = ctx
                         .async_with(async |ctx| {
-                            let user = Module::declare(ctx.clone(), "user_script", source_file)
-                                .map_err(|err| err.to_string())?;
+                            let user = Module::declare(
+                                ctx.clone(),
+                                format!("script::{}", root_id),
+                                source_file,
+                            )
+                            .map_err(|err| err.to_string())?;
 
                             let (_user, p) = user.eval().map_err(|err| err.to_string())?;
                             p.into_future::<()>().await.map_err(|err| err.to_string())?;
@@ -115,7 +125,6 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                             // since createRoot is in module global scope it should
                             // register its self
                             // maybe check ctx for rootId before exiting?
-
                             Ok(())
                         })
                         .await;

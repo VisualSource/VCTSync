@@ -6,7 +6,7 @@ pub use self::formatter::Formatter;
 
 use crate::js_host::formatter;
 
-const TARGET: &str = "console";
+const TARGET: &str = "iced_js::console";
 
 /// A console object to print messages to the [`log`] crate.
 ///

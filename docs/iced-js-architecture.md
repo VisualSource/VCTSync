@@ -345,17 +345,40 @@ that blocking read.
 
 ## Implementation
 
-### 1. Owned tree type — `src/tree.rs` (new)
+### 1. Owned tree type — `src/render.rs`
 
 ```rust
-pub enum Node { Element { tag: Box<str>, props: Props, children: Vec<Node> }, Text(Box<str>) }
+pub enum Tag { Row, Col, Text, Button, Svg, Scroll }
+
+pub enum Node {
+    Element { tag: Tag, props: Props, children: Vec<Node> },
+    Text(Box<str>),
+}
+
 pub enum PropValue { Str(Box<str>), Num(f64), Bool(bool), Callback(u64) }
 pub type Props = Vec<(Box<str>, PropValue)>;   // small; linear scan beats a HashMap here
 ```
 
 No lifetimes, no `rquickjs` types. Conversion from the JS tree walks it once at commit time.
 
-### 2. Host globals — `src/host.rs` (new)
+**Tags are an enum, not strings.** `view()` runs every frame, so a match on an enum is a jump
+table where a string compare per node is not. Adding a tag becomes a compile error everywhere it
+must be handled rather than a silent fallthrough. Most importantly, an unrecognised tag is
+rejected **at commit time**, where the `root_id` is still in hand and the failure can surface as
+`Event::Error`; by `view()` there is nowhere for an error to go. The same argument applies to
+prop keys, though there are enough of them that it is more of a judgement call.
+
+**Strings stay `Box<str>`.** Text content and string prop values are freshly allocated from JS on
+every commit, so a `Cow<'static, str>` would always be `Owned` — no saving, and 24 bytes against
+16. Note that iced's `Fragment<'a>` *is* `Cow<'a, str>` (`iced_core/src/text.rs:603`) and
+`IntoFragment` is implemented for `&'a str`, `&'a String`, `String` and `Cow` — but **not for
+`&Box<str>`**. So render through a deref:
+
+```rust
+Node::Text(txt) => iced::widget::text(&**txt).into(),
+```
+
+### 2. Host globals — `src/js_host/` (`console.rs`, `timers.rs`, `react_reconciler.rs`)
 
 QuickJS ships none of these; React's scheduler will not run without them.
 
@@ -375,7 +398,7 @@ why both are worth providing anyway.
 With `parallel` on, `ParallelSend: Send` (`rquickjs-core/src/markers.rs`), so every closure
 handed to `Func::from` must be `Send`. A captured `mpsc::Sender` is; a `Persistent` is not.
 
-### 3. Runtime setup — `src/runtime.rs` (new)
+### 3. Runtime setup — `src/runtime.rs`
 
 ```rust
 let rt = AsyncRuntime::new()?;
@@ -411,7 +434,7 @@ Load-bearing details:
 Module names are keyed by `root_id` so two surfaces can load the *same* file as independent
 roots without colliding in the module registry.
 
-### 4. Subscription — `src/subscription.rs` (new)
+### 4. Subscription — `src/runtime.rs` (`js_worker`)
 
 ```rust
 Subscription::run_with(self.generation, |gen| {
@@ -428,11 +451,15 @@ The first message out is `JsEvent::Ready(Sender<JsCommand>)` (the standard iced 
 after which the task loops on incoming `JsCommand`s — `Mount`, `Unmount`, `Dispatch` — while
 `__iced_commit` pushes `JsEvent::Committed { root_id, tree }` back out.
 
-### 5. Tree → `Element` — `src/render.rs` (new)
+### 5. Tree → `Element` — `src/render.rs` and `src/view.rs`
 
 Pure, synchronous, no JS. Match on `tag`, build the widget, recurse. Start with `text`, `col`,
 `row`, `button`. The public entry point is `iced_js::view(&host, id) -> Element<'_, JsEvent>`,
 which looks the tree up by `root_id` and renders a placeholder when there is not one yet.
+
+The recursive helper must tie its output lifetime to the borrowed tree —
+`fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event>`. An unconstrained `'a` with a
+plain `&Node` argument cannot be satisfied by any borrowed widget, whatever the string types are.
 
 Reuse the **vocabulary**, not the code, from `crates/iced-xml/src/parser.rs`. It already fixes
 tag names (`row`, `col`, `text`, `button`, `svg`, `scroll`) and their attribute sets (`padding`,
@@ -476,11 +503,13 @@ correct. The exception seen earlier came from `EvalOptions::default()` setting `
 error. Loading as a module makes it a non-issue; `EvalOptions { global: false, .. }` would also
 fix it for plain eval.
 
-### 8. Wire up — `src/lib.rs`
+### 8. Wire up — `src/host.rs` and `src/lib.rs`
 
 `IcedJsRuntime` becomes `Host`, app-side state keyed by root rather than holding a single tree:
 
 ```rust
+type RootId = String;                       // caller-chosen name, e.g. "sidebar"
+
 pub struct Host {
     generation: u64,                        // subscription identity; bump to restart
     tx: Option<Sender<JsCommand>>,          // arrives with JsEvent::Ready
