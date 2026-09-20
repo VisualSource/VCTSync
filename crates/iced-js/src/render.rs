@@ -171,7 +171,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 for (key, value) in props {
                     match (&**key, value) {
                         ("onPress", PropValue::Callback(id)) => {
-                            btn = btn.on_press(Event::Callback(id.clone(), Payload::None));
+                            btn = btn.on_press(Event::Callback(id.clone(), Payload::Click));
                         }
                         _ => {}
                     }

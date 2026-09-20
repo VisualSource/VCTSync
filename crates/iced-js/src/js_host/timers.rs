@@ -181,10 +181,25 @@ fn clear_timer(ctx: Ctx<'_>, id: Opt<Value<'_>>) {
     with_timers(&ctx, |timers| timers.cancel(id as u32));
 }
 
-fn queue_microtask<'js>(cb: Function<'js>) -> Result<()> {
+fn queue_microtask<'js>(ctx: Ctx<'js>, cb: Function<'js>) -> Result<()> {
     // `defer` enqueues onto quickjs' own job queue, which is exactly the
     // microtask checkpoint promise reactions run on.
-    cb.defer(())
+    cb.defer(())?;
+
+    // ...but the job queue has no waker. `AsyncRuntime::drive` parks on the
+    // *spawner*, and is woken only by `Spawner::push`, so a job queued from
+    // Rust while the driver is parked sits there until something unrelated
+    // wakes it. Pushing an empty future is that wake-up: the driver's loop
+    // drains pending jobs before polling the scheduler, so the microtask runs
+    // on the very next pass.
+    //
+    // Without this, anything that chains microtask -> microtask stalls
+    // non-deterministically. React's root scheduling does exactly that when
+    // `supportsMicrotasks` is set, which made the reconciler commit only when
+    // it happened to win the race with an unrelated wake-up.
+    ctx.spawn(async {});
+
+    Ok(())
 }
 
 /// Install the timer globals and the per-context registry they use.

@@ -70,7 +70,13 @@ impl Host {
             Event::Committed { root_id, tree } => {
                 self.trees.insert(root_id, tree);
             }
-            Event::Callback(_, payload) => todo!(),
+            Event::Callback(id, payload) => {
+                if let Some(tx) = &mut self.tx {
+                    if let Err(err) = tx.try_send(JsCmd::Dispatch(id, payload)) {
+                        log::error!("{}", err);
+                    }
+                }
+            }
         }
         Task::none()
     }

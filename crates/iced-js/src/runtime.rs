@@ -1,17 +1,32 @@
 use std::path::PathBuf;
 
 use iced::futures::{SinkExt, Stream, StreamExt, channel::mpsc};
-use rquickjs::{AsyncContext, AsyncRuntime, Module, embed, loader::Bundle};
+use rquickjs::{
+    AsyncContext, AsyncRuntime, CatchResultExt, Module, context::EvalOptions, embed, loader::Bundle,
+};
 
 use crate::{RootId, js_host, render::Node};
 
-static BUNDLED_LIBS: Bundle = embed! {
-    "iced-dom": "js/dist/iced-dom.js"
+pub(crate) static BUNDLED_LIBS: Bundle = embed! {
+    "iced-dom": "js/dist/iced-dom.js",
+    "react": "js/dist/react.js",
+    "react/jsx-runtime": "js/dist/jsx-runtime.js"
 };
 
 #[derive(Debug, Clone)]
 pub enum Payload {
     None,
+    Click,
+}
+
+impl ToString for Payload {
+    fn to_string(&self) -> String {
+        match self {
+            Payload::None => "{}",
+            Payload::Click => r#"{ type: "click" }"#,
+        }
+        .to_string()
+    }
 }
 
 #[derive(Clone)]
@@ -67,7 +82,30 @@ pub fn js_worker() -> impl Stream<Item = Event> {
 
             match cmd {
                 JsCmd::Dispatch(id, payload) => {
-                    let result: Result<(), String> = ctx.async_with(async |_ctx| Ok(())).await;
+                    let result: Result<(), String> = ctx
+                        .async_with(async |ctx| {
+                            let mut opts = EvalOptions::default();
+                            opts.strict = true;
+                            opts.global = false;
+                            opts.filename = Some("host::dispatch".to_string());
+
+                            ctx.eval_with_options::<(), _>(
+                                format!(
+                                    r#"
+                                        import {{ dispatch }} from "iced-dom";
+                                        dispatch({},{});
+                                    "#,
+                                    id,
+                                    payload.to_string()
+                                ),
+                                opts,
+                            )
+                            .catch(&ctx)
+                            .map_err(|err| err.to_string())?;
+
+                            Ok(())
+                        })
+                        .await;
 
                     if let Err(err) = result {
                         log::error!("{:#?}", err);
@@ -81,7 +119,29 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                     }
                 }
                 JsCmd::Unmount(root_id) => {
-                    let result: Result<(), String> = ctx.async_with(async |_ctx| Ok(())).await;
+                    let result: Result<(), String> = ctx
+                        .async_with(async |ctx| {
+                            let mut opts = EvalOptions::default();
+                            opts.strict = true;
+                            opts.global = false;
+                            opts.filename = Some("host::dispatch".to_string());
+
+                            ctx.eval_with_options::<(), _>(
+                                format!(
+                                    r#"
+                                        import {{ destroyRoot }} from "iced-dom";
+                                        destroyRoot("{}");
+                                    "#,
+                                    root_id,
+                                ),
+                                opts,
+                            )
+                            .catch(&ctx)
+                            .map_err(|err| err.to_string())?;
+
+                            Ok(())
+                        })
+                        .await;
 
                     if let Err(err) = result {
                         log::error!("{:#?}", err);
@@ -117,10 +177,15 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                                 format!("script::{}", root_id),
                                 source_file,
                             )
+                            .catch(&ctx)
                             .map_err(|err| err.to_string())?;
 
-                            let (_user, p) = user.eval().map_err(|err| err.to_string())?;
-                            p.into_future::<()>().await.map_err(|err| err.to_string())?;
+                            let (_user, p) =
+                                user.eval().catch(&ctx).map_err(|err| err.to_string())?;
+                            p.into_future::<()>()
+                                .await
+                                .catch(&ctx)
+                                .map_err(|err| err.to_string())?;
 
                             // since createRoot is in module global scope it should
                             // register its self

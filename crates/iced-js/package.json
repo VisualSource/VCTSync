@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:dev": "pnpm esbuild ./js/iced-dom.ts --bundle --outfile=./js/dist/iced-dom.js --format=esm --target=es2020 --minify",
-    "build:prod": "pnpm esbuild ./js/iced-dom.ts --bundle --outfile=./js/dist/iced-dom.js --format=esm --target=es2020 --define:process.env.NODE_ENV=\"production\" --minify --sourcemap"
+    "build:dev": "pnpm esbuild ./js/iced-dom.ts --bundle --outfile=./js/dist/iced-dom.js --format=esm --target=es2020 --define:process.env.NODE_ENV=\\\"development\\\" && pnpm run bundle:facades",
+    "build:prod": "pnpm esbuild ./js/iced-dom.ts --bundle --outfile=./js/dist/iced-dom.js --format=esm --target=es2020 --define:process.env.NODE_ENV=\\\"production\\\" --minify --sourcemap && pnpm run bundle:facades",
+    "bundle:facades": "pnpm esbuild ./js/vendor/react.ts ./js/vendor/jsx-runtime.ts --bundle --external:iced-dom --outdir=./js/dist --format=esm --target=es2020 --minify"
   },
   "keywords": [],
   "author": "",

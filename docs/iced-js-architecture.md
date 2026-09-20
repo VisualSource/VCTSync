@@ -378,6 +378,58 @@ every commit, so a `Cow<'static, str>` would always be `Owned` — no saving, an
 Node::Text(txt) => iced::widget::text(&**txt).into(),
 ```
 
+#### JS → Node conversion
+
+`FromJs` is implemented for `StdString` (`rquickjs-core/src/value/convert/from.rs:39`) but not for
+`Box<str>` — `from_js` returns `Self`, so the type must be `Sized`, and `str` is not. (There *is*
+`impl FromJs for Box<T> where T: FromJs` at `from.rs:297`, but that needs a sized `T`.) So go
+through `String` and convert:
+
+```rust
+let tag: Box<str> = obj.get::<_, String>("type")?.into_boxed_str();
+```
+
+This does not double-allocate. `String::to_string()` ends in `str::from_utf8(bytes).map(|s| s.into())`
+(`rquickjs-core/src/value/string.rs:23`), and `&str → String` allocates exactly `len` bytes with
+no spare capacity, so `into_boxed_str()` finds `capacity == len` and does not realloc.
+
+**Write a plain recursive function, not a `FromJs` impl.** The `FromJs` derive only covers
+plain-data structs, and while the trait can be hand-implemented for an enum, two things argue
+against it here:
+
+- `FromJs` must return `rquickjs::Error`, whose `FromJs` variant is
+  `{ from: &'static str, to: &'static str, message: Option<String> }`. `Event::Error` wants the
+  offending tag, the script, and the path within the tree; through `rquickjs::Error` that
+  collapses into one string.
+- The tree comes from user JS, so recursion needs a **depth guard** — an over-nested tree
+  overflows the stack inside a QuickJS callback, which aborts rather than raising a catchable
+  error. A plain function can thread a depth counter; `FromJs` has nowhere to put one.
+
+Parse `Tag` in this same function, so an unrecognised tag is rejected at commit time while the
+`root_id` is still in hand.
+
+#### Known optimizations, deliberately deferred
+
+Persistent mode reuses unchanged instances *by reference* across commits, but the conversion
+above re-walks the whole JS tree every commit regardless. Two ways to exploit the sharing, both
+worth doing only once the tree shape and update pattern are known:
+
+- **Id + memo table.** Stamp a monotonic `__id` in `createInstance`/`cloneInstance`; Rust keeps
+  `HashMap<u64, Arc<Node>>` and, on hitting a cached id, reuses the `Arc` without descending.
+  Little machinery, gets the sharing.
+- **Rust-backed instances.** `#[rquickjs::class] IcedNode { tag, props, children: Vec<Arc<Node>> }`,
+  so an unchanged subtree *is* the same `Arc` and commit converts only the changed spine. It also
+  moves tag/prop validation into `createInstance`, where it throws during React's render and so
+  gets a component stack and error-boundary handling — neither of which exists at commit time.
+
+  If this is taken up, the rule is **keep JS values out of the class**. `JsClass` requires
+  `Trace + JsLifetime` (`rquickjs-core/src/class.rs:87`); both derive trivially for pure-Rust
+  fields, whereas storing `Class<'js, IcedNode>` children means tracing each one by hand, and an
+  incorrect `Trace` leaks silently — the cycle collector simply never breaks the cycle. Note also
+  that `Class` is `Rc<RefCell<_>>`-like, so `try_borrow_mut()` rather than `borrow_mut()`, and
+  that instances become opaque to `console.log`, which bites while the reconciler is still being
+  brought up.
+
 ### 2. Host globals — `src/js_host/` (`console.rs`, `timers.rs`, `react_reconciler.rs`)
 
 QuickJS ships none of these; React's scheduler will not run without them.

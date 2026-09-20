@@ -1,34 +1,17 @@
 {
   "include": [
-    "js/**/*",
-    "example/**/*"
+    "js/**/*.tsx"
   ],
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    "erasableSyntaxOnly": true,
-    "useDefineForClassFields": true,
     // File Layout
     // "rootDir": "./src",
     // "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "esnext",
+    "module": "nodenext",
     "target": "es2020",
-    // `js/vendor/*` import "iced-dom" so the built façades keep that bare
-    // specifier for the QuickJS loader to resolve. TS needs to be told where
-    // it lives; esbuild is told to leave it external.
-    "paths": {
-      "iced-dom": [
-        "./js/iced-dom.ts"
-      ]
-    },
-    "types": [
-      "react",
-      "react-reconciler"
-    ],
-    "lib": [
-      "ES2020",
-    ],
+    "types": [],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

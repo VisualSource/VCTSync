@@ -22,6 +22,8 @@ impl IcedHost {
     fn comment_tree(&mut self, id: String<'_>, tree: Object<'_>) -> Result<()> {
         let root_id = id.to_string()?;
 
+        log::info!("Commited tree: {}", root_id);
+
         let tree = to_node(tree, 0)?;
 
         if let Err(err) = self.pipe.try_send(Event::Committed {
