@@ -182,6 +182,17 @@ impl Formatter {
             Type::Undefined => {
                 write!(out, "undefined",).map_err(|_| Error::Unknown)?;
             }
+            Type::Exception => {
+                let exc = unsafe { value.ref_exception() };
+                let message = exc.get::<_, String>("message");
+
+                write!(
+                    out,
+                    "Expection: {}",
+                    message.unwrap_or_else(|err| err.to_string())
+                )
+                .map_err(|_| Error::Unknown)?;
+            }
             _ => {}
         };
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 const View = () => {
     const [count, setCount] = useState(0);
     return (
-        <view height="full" width="full" alignX="center" alignY="center">
+        <view width="fill" height="fill" alignX="center" alignY="center">
             <col>
                 <text>Hello, From JS</text>
                 <row>

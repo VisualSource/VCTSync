@@ -1,5 +1,6 @@
 mod host;
 mod js_host;
+mod nodes;
 mod render;
 mod runtime;
 mod view;
@@ -45,7 +46,9 @@ mod tests {
 
         ctx.async_with(async |ctx| {
             let src = r#"setImmediate(() => { iced.comment_tree("main", { text: "fired" }); });"#;
-            let m = Module::declare(ctx.clone(), "probe", src).catch(&ctx).unwrap();
+            let m = Module::declare(ctx.clone(), "probe", src)
+                .catch(&ctx)
+                .unwrap();
             let (_m, p) = m.eval().catch(&ctx).unwrap();
             p.into_future::<()>().await.catch(&ctx).unwrap();
         })
@@ -77,7 +80,9 @@ mod tests {
 
         ctx.async_with(async |ctx| {
             let src = r#"queueMicrotask(() => { iced.comment_tree("main", { text: "fired" }); });"#;
-            let m = Module::declare(ctx.clone(), "probe", src).catch(&ctx).unwrap();
+            let m = Module::declare(ctx.clone(), "probe", src)
+                .catch(&ctx)
+                .unwrap();
             let (_m, p) = m.eval().catch(&ctx).unwrap();
             p.into_future::<()>().await.catch(&ctx).unwrap();
         })
@@ -118,7 +123,8 @@ mod tests {
         })
         .await;
 
-        let Ok(committed) = tokio::time::timeout(std::time::Duration::from_secs(2), rx.next()).await
+        let Ok(committed) =
+            tokio::time::timeout(std::time::Duration::from_secs(2), rx.next()).await
         else {
             panic!("timed out waiting for a commit — React scheduled work that never ran");
         };

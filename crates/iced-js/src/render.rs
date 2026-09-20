@@ -1,65 +1,43 @@
 use iced::Element;
-use rquickjs::{Error, Filter, Object, Value};
+use rquickjs::{Error, Object};
 
-use crate::{Event, runtime::Payload};
+use crate::{
+    Event,
+    nodes::{ButtonProps, CommonProps, TextProps, ViewProps},
+    runtime::Payload,
+};
 
+#[derive(Debug)]
 pub enum Tag {
-    Col,
-    Row,
-    View,
-    Button,
-    Text,
+    Col(CommonProps),
+    Row(CommonProps),
+    View(ViewProps),
+    Button(ButtonProps),
+    Text(TextProps),
 }
 
 impl Tag {
     fn valid_child_count(&self, len: usize) -> bool {
         match self {
-            Tag::View | Tag::Button | Tag::Text => len == 1,
+            Tag::View(_) | Tag::Button(_) | Tag::Text(_) => len == 1,
             _ => true,
         }
     }
 }
 
-impl TryInto<Tag> for String {
-    type Error = Error;
-
-    fn try_into(self) -> Result<Tag, Self::Error> {
-        match self.as_str() {
-            "row" => Ok(Tag::Row),
-            "col" => Ok(Tag::Col),
-            "view" => Ok(Tag::View),
-            "button" => Ok(Tag::Button),
-            "text" => Ok(Tag::Text),
-            _ => Err(Error::Unknown),
-        }
-    }
-}
-
+#[derive(Debug)]
 pub enum Node {
-    Element {
-        tag: Tag,
-        props: Props,
-        children: Vec<Node>,
-    },
+    Element { tag: Tag, children: Vec<Node> },
     Text(Box<str>),
 }
-
-pub enum PropValue {
-    Str(Box<str>),
-    Num(f64),
-    Int(i32),
-    Bool(bool),
-    Callback(u64),
-}
-pub type Props = Vec<(Box<str>, PropValue)>;
 
 static MAX_DEPTH: u32 = 256;
 
 pub fn to_node(node: Object<'_>, depth: u32) -> Result<Node, Error> {
     if depth >= MAX_DEPTH {
         return Err(Error::FromJs {
-            from: "",
-            to: "",
+            from: "react object tree",
+            to: "Node",
             message: Some("Max component depth".into()),
         });
     }
@@ -68,53 +46,43 @@ pub fn to_node(node: Object<'_>, depth: u32) -> Result<Node, Error> {
         return Ok(Node::Text(text));
     }
 
-    let tag: Tag = node.get::<_, String>("type")?.try_into()?;
-
-    let mut props = Vec::default();
-
-    let d = node.get::<_, Object<'_>>("props")?;
-    for prop in d.own_props::<String, Value<'_>>(Filter::new().enum_only()) {
-        let (key, value) = prop?;
-
-        let key = key.into_boxed_str();
-
-        let value = match value.type_of() {
-            rquickjs::Type::Undefined => todo!(),
-            rquickjs::Type::Null => todo!(),
-            rquickjs::Type::Bool => {
-                let v = value.as_bool().expect("should have been a bool");
-                PropValue::Bool(v)
-            }
-            rquickjs::Type::Int => {
-                let i = value.as_int().expect("should have been a int");
-                PropValue::Int(i)
-            }
-            rquickjs::Type::Float => {
-                let f = value.as_float().expect("should have been a float");
-                PropValue::Num(f)
-            }
-            rquickjs::Type::String => {
-                let s = value.as_string().expect("should have been a string");
-                let r = s.to_string()?.into_boxed_str();
-
-                PropValue::Str(r)
-            }
-
-            _ => {
-                log::warn!("unsupported value type in prop");
-                continue;
-            }
-        };
-
-        props.push((key, value));
-    }
+    let tag = node.get::<_, String>("type")?;
+    let el_tag = match tag.as_str() {
+        "col" => {
+            let props = node.get::<_, CommonProps>("props")?;
+            Tag::Col(props)
+        }
+        "row" => {
+            let props = node.get::<_, CommonProps>("props")?;
+            Tag::Row(props)
+        }
+        "view" => {
+            let props = node.get::<_, ViewProps>("props")?;
+            Tag::View(props)
+        }
+        "button" => {
+            let props = node.get::<_, ButtonProps>("props")?;
+            Tag::Button(props)
+        }
+        "text" => {
+            let props = node.get::<_, TextProps>("props")?;
+            Tag::Text(props)
+        }
+        _ => {
+            return Err(Error::FromJs {
+                from: "object",
+                to: "Tag",
+                message: Some("unknown tag name".to_string()),
+            });
+        }
+    };
 
     let mut children = Vec::default();
     let items = node.get::<_, Vec<Object<'_>>>("children")?;
-    if !tag.valid_child_count(items.len()) {
+    if !el_tag.valid_child_count(items.len()) {
         return Err(Error::FromJs {
-            from: "",
-            to: "",
+            from: "children",
+            to: "children",
             message: Some("invalid child count for tag".into()),
         });
     }
@@ -124,62 +92,99 @@ pub fn to_node(node: Object<'_>, depth: u32) -> Result<Node, Error> {
     }
 
     Ok(Node::Element {
-        tag,
-        props,
+        tag: el_tag,
         children,
     })
 }
 
+macro_rules! apply_prop {
+    ($node: ident, $props: ident, $name: ident) => {
+        if let Some(prop) = $props.$name {
+            $node = $node.$name(prop);
+        }
+    };
+}
+
 pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
     match tree {
-        Node::Element {
-            tag,
-            props,
-            children,
-        } => match tag {
-            Tag::Row => {
-                if children.is_empty() {
-                    iced::widget::Row::new().into()
+        Node::Element { tag, children } => match tag {
+            Tag::Row(props) => {
+                let mut node = if children.is_empty() {
+                    iced::widget::Row::new()
                 } else {
                     let items = children.iter().map(render_tree);
 
-                    iced::widget::Row::with_children(items).into()
-                }
+                    iced::widget::Row::with_children(items)
+                };
+
+                apply_prop!(node, props, height);
+                apply_prop!(node, props, width);
+                apply_prop!(node, props, clip);
+                apply_prop!(node, props, align_y);
+                apply_prop!(node, props, padding);
+
+                node.into()
             }
-            Tag::Col => {
-                if children.is_empty() {
-                    iced::widget::Column::new().into()
+            Tag::Col(props) => {
+                let mut node = if children.is_empty() {
+                    iced::widget::Column::new()
                 } else {
                     let items = children.iter().map(render_tree);
 
-                    iced::widget::Column::with_children(items).into()
-                }
+                    iced::widget::Column::with_children(items)
+                };
+
+                apply_prop!(node, props, height);
+                apply_prop!(node, props, width);
+                apply_prop!(node, props, clip);
+                apply_prop!(node, props, align_x);
+                apply_prop!(node, props, padding);
+
+                node.into()
             }
-            Tag::View => {
+            Tag::View(props) => {
                 debug_assert_eq!(children.len(), 1);
 
                 let content = render_tree(&children[0]);
 
-                iced::widget::container(content).into()
+                let mut node = iced::widget::container(content);
+
+                apply_prop!(node, props, align_bottom);
+                apply_prop!(node, props, align_left);
+                apply_prop!(node, props, align_right);
+                apply_prop!(node, props, align_top);
+                apply_prop!(node, props, align_x);
+                apply_prop!(node, props, align_y);
+                apply_prop!(node, props, center);
+                apply_prop!(node, props, center_x);
+                apply_prop!(node, props, center_y);
+                apply_prop!(node, props, clip);
+                apply_prop!(node, props, height);
+                //apply_prop!(node, props, id);
+                apply_prop!(node, props, max_height);
+                apply_prop!(node, props, max_width);
+                apply_prop!(node, props, padding);
+                apply_prop!(node, props, width);
+
+                node.into()
             }
-            Tag::Button => {
+            Tag::Button(props) => {
                 debug_assert_eq!(children.len(), 1);
                 let content = render_tree(&children[0]);
 
                 let mut btn = iced::widget::button(content);
 
-                for (key, value) in props {
-                    match (&**key, value) {
-                        ("onPress", PropValue::Callback(id)) => {
-                            btn = btn.on_press(Event::Callback(id.clone(), Payload::Click));
-                        }
-                        _ => {}
-                    }
+                if let Some(on_press) = props.on_press {
+                    btn = btn.on_press(Event::Callback(on_press, Payload::Click))
+                }
+
+                if let Some(width) = props.width {
+                    btn = btn.width(width);
                 }
 
                 btn.into()
             }
-            Tag::Text => {
+            Tag::Text(props) => {
                 debug_assert_eq!(children.len(), 1);
 
                 let text = match &children[0] {
@@ -189,7 +194,17 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                     }
                 };
 
-                iced::widget::text(&**text).into()
+                let mut node = iced::widget::text(&**text);
+
+                apply_prop!(node, props, align_x);
+                apply_prop!(node, props, align_y);
+                apply_prop!(node, props, size);
+                apply_prop!(node, props, width);
+                apply_prop!(node, props, height);
+                apply_prop!(node, props, color);
+                apply_prop!(node, props, line_height);
+
+                node.into()
             }
         },
         Node::Text(txt) => iced::widget::text(&**txt).into(),
