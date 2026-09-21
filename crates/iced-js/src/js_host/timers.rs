@@ -70,6 +70,12 @@ impl Timers {
             cancelled.set(true);
         }
     }
+
+    fn cancel_all(&self) {
+        for (_, cancelled) in self.live.borrow_mut().drain() {
+            cancelled.set(true);
+        }
+    }
 }
 
 /// Look up the registry for this context. Missing userdata means [`init`] was
@@ -179,6 +185,15 @@ fn clear_timer(ctx: Ctx<'_>, id: Opt<Value<'_>>) {
         return;
     }
     with_timers(&ctx, |timers| timers.cancel(id as u32));
+}
+
+/// Cancel every pending timer on `ctx`.
+///
+/// A spawned timer future holds a duplicated [`Ctx`], so an interval left
+/// running keeps its context alive — and firing — after that context has been
+/// replaced. Cancelling lets those futures complete and drop their reference.
+pub fn cancel_all(ctx: &Ctx<'_>) {
+    with_timers(ctx, |timers| timers.cancel_all());
 }
 
 fn queue_microtask<'js>(ctx: Ctx<'js>, cb: Function<'js>) -> Result<()> {

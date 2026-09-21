@@ -1,14 +1,21 @@
 use env_logger::{Builder, Target};
 use iced::{
-    Element, Size, Subscription, Task, Theme,
+    Element, Size, Subscription, Task, Theme, event,
+    keyboard::{
+        self,
+        key::{self, Named},
+    },
     widget::{column, row},
 };
 use iced_js::{Event, Host, js_worker, view};
 use std::env;
 
+use crate::Message::Reload;
+
 #[derive(Clone)]
 enum Message {
     Js(Event),
+    Reload,
 }
 
 struct App {
@@ -27,6 +34,7 @@ impl App {
     }
     pub fn update(state: &mut App, msg: Message) -> Task<Message> {
         match msg {
+            Reload => state.js.reload().map(Message::Js),
             Message::Js(ev) => state.js.update(ev).map(Message::Js), // pipe update event to host handler
         }
     }
@@ -40,6 +48,23 @@ impl App {
     pub fn theme(_: &App) -> Theme {
         Theme::Dark
     }
+}
+
+fn keyboard_listener(_state: &App) -> Subscription<Message> {
+    event::listen().filter_map(|event| match event {
+        iced::event::Event::Keyboard(keyboard::Event::KeyReleased {
+            key: key::Key::Named(named),
+            modifiers,
+            ..
+        }) => {
+            if modifiers.is_empty() && named == Named::F5 {
+                Some(Message::Reload)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    })
 }
 
 fn main() -> iced::Result {
@@ -63,6 +88,14 @@ fn main() -> iced::Result {
         .title("Iced JS Example")
         .theme(App::theme)
         .window(win_settings)
-        .subscription(|_| Subscription::run(js_worker).map(Message::Js)) // setup js worker thread
+        // One call only: `subscription` replaces whatever was set before it
+        // rather than adding to it, so a second call would silently drop the js
+        // worker and leave the app with nothing to render.
+        .subscription(|state| {
+            Subscription::batch([
+                Subscription::run(js_worker).map(Message::Js), // setup js worker thread
+                keyboard_listener(state),
+            ])
+        })
         .run()
 }

@@ -23,6 +23,24 @@ export const jsxRuntime = JsxRuntimeNamespace;
 declare function setTimeout(fn: () => void, ms?: number): number;
 declare function clearTimeout(id: number): void;
 declare function queueMicrotask(cb: () => void): void;
+
+
+declare global {
+    /** The host object Rust installs. */
+    var iced: {
+        comment_tree(rootId: string, tree: IcedChild): void;
+    }
+
+    /** This module's entry points, published as a global for Rust to call
+     *  directly. Reaching them through an `import` instead would mean a
+     *  module-type eval per call, and every one of those registers a module
+     *  def that is never freed until the context dies. */
+    var iced_runtime: {
+        destroyRoot(id: string): void;
+        dispatch(id: number, payload?: unknown): void;
+    }
+}
+
 /** Installed by `js_host::console`, not the DOM — `lib` is ES2020 only. */
 declare const console: {
     debug(...values: unknown[]): void;
@@ -30,10 +48,6 @@ declare const console: {
     warn(...values: unknown[]): void;
     error(...values: unknown[]): void;
 };
-type IcedHost = {
-    comment_tree(rootId: string, tree: IcedChild): void;
-}
-declare const iced: IcedHost;
 
 
 type IcedTag = string;
@@ -69,6 +83,18 @@ const registerCallback = (fn: Function): number => {
     const id = nextCallbackId++;
     callbacks.set(id, fn);
     return id;
+};
+
+/**
+ * Raise the id counter past everything a previous context minted.
+ *
+ * A rebuilt context gets a fresh copy of this module, so ids would otherwise
+ * restart at 1 and a dispatch still in flight from the old tree would land on
+ * an unrelated handler. Staying monotonic keeps `dispatch`'s miss the no-op it
+ * is documented to be.
+ */
+export const setCallbackBase = (n: number): void => {
+    if (n > nextCallbackId) nextCallbackId = n;
 };
 
 /** Collect every callback id reachable from `node` into `live`. */
@@ -307,7 +333,9 @@ const config: IcedHostConfig = {
 
 };
 
-const roots = new Map<string, { root: OpaqueRoot }>();
+/** Each root's last committed tree is kept so callback pruning can see every
+ *  root's live ids, not just the one currently committing. */
+const roots = new Map<string, { root: OpaqueRoot, tree?: IcedChild }>();
 const reconciler = Reconciler(config);
 const onError = (err: Error) => { console.error(err); }
 
@@ -329,13 +357,20 @@ export const createRoot = (id: string) => {
                 tree = { type: "col", props: {}, children: [...children] };
             }
 
-            // Drop callbacks that no longer appear anywhere in the tree. Their
-            // instances were replaced by clones during this render, so nothing
-            // can dispatch to them again.
+            // Drop callbacks that no longer appear in any root's committed
+            // tree. Their instances were replaced by clones during this render,
+            // so nothing can dispatch to them again. The registry is shared
+            // across roots, so the sweep has to consider all of them or this
+            // commit would delete a sibling root's live ids.
+            const entry = roots.get(id);
+            if (entry) entry.tree = tree;
+
             const live = new Set<number>();
-            collectCallbackIds(tree, live);
-            for (const id of callbacks.keys()) {
-                if (!live.has(id)) callbacks.delete(id);
+            for (const other of roots.values()) {
+                if (other.tree) collectCallbackIds(other.tree, live);
+            }
+            for (const callbackId of callbacks.keys()) {
+                if (!live.has(callbackId)) callbacks.delete(callbackId);
             }
 
             iced.comment_tree(id, tree);
@@ -379,3 +414,9 @@ export const dispatch = (id: number, payload?: unknown): void => {
         console.error(err);
     }
 };
+
+
+globalThis.iced_runtime = {
+    destroyRoot,
+    dispatch,
+}

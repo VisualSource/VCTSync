@@ -52,6 +52,16 @@ impl Host {
         Task::none()
     }
 
+    pub fn reload(&mut self) -> Task<Event> {
+        if let Some(tx) = &mut self.tx {
+            if let Err(err) = tx.try_send(JsCmd::Reload) {
+                log::error!("{}", err);
+            }
+        }
+
+        Task::none()
+    }
+
     pub fn update(&mut self, ev: Event) -> Task<Event> {
         match ev {
             Event::Ready(mut sender) => {
@@ -66,6 +76,14 @@ impl Host {
             }
             Event::Error { root_id, reason } => {
                 log::error!("root: {:?}, Reason: {}", root_id, reason);
+
+                // The tree that root last committed belongs to a context that is
+                // gone, so its callback ids resolve to nothing. Drop it rather
+                // than leave widgets on screen that look live and do nothing —
+                // `view` falls back to a space when a root has no tree.
+                if let Some(root_id) = root_id {
+                    self.trees.remove(&root_id);
+                }
             }
             Event::Committed { root_id, tree } => {
                 self.trees.insert(root_id, tree);
