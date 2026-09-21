@@ -382,7 +382,7 @@ export const createRoot = (id: string) => {
     roots.set(id, { root, });
 
     return {
-        destory() {
+        destroy() {
             destroyRoot(id);
         },
         render: (children: React.ReactNode) => {
