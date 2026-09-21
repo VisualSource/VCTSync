@@ -1,3 +1,8 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
+
 use env_logger::{Builder, Target};
 use iced::{
     Element, Size, Subscription, Task, Theme, event,
@@ -68,6 +73,13 @@ fn keyboard_listener(_state: &App) -> Subscription<Message> {
 }
 
 fn main() -> iced::Result {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        if env::var_os("WGPU_BACKEND").is_none() {
+            env::set_var("WGPU_BACKEND", "dx12");
+        }
+    }
+
     let mut builder = Builder::new();
     builder.filter_level(log::LevelFilter::Off); // silence everything by default
     builder.filter_module("iced_js", log::LevelFilter::Debug);

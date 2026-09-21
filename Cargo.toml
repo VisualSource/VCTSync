@@ -16,3 +16,18 @@ reqwest = { version = "0.13", features = ["stream", "json"] }
 tokio = "1.53"
 [workspace.package]
 edition = "2024"
+
+[profile.release]
+opt-level = 3          # Max speed optimizations (default)
+lto = "fat"            # Cross-crate link-time optimization (slows compile, max runtime perf)
+codegen-units = 1      # Single codegen unit for best global optimization (disables parallel codegen)
+panic = "abort"        # Disable stack unwinding on panic, smaller/faster code
+strip = true           # Remove debug symbols from binary
+
+[profile.min-size]
+inherits = "release"
+opt-level = "z"        # Optimize aggressively for size ("s" is balanced)
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
