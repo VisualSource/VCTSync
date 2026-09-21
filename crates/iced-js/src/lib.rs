@@ -7,7 +7,7 @@ mod view;
 
 pub use host::Host;
 pub use runtime::{Event, js_worker};
-pub use view::view;
+pub use view::surface;
 
 type RootId = String;
 
@@ -183,8 +183,7 @@ mod tests {
 
         let mut stream = Box::pin(js_worker());
 
-        let Ok(Some(Event::Ready(mut tx))) =
-            timeout(Duration::from_secs(2), stream.next()).await
+        let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
         else {
             panic!("worker never became ready");
         };
@@ -273,7 +272,9 @@ mod tests {
                             return found;
                         }
                     }
-                    Ok(Some(Event::Error { reason, .. })) => panic!("js reported an error: {reason}"),
+                    Ok(Some(Event::Error { reason, .. })) => {
+                        panic!("js reported an error: {reason}")
+                    }
                     Ok(Some(_)) => {}
                     _ => panic!("{missing}"),
                 }

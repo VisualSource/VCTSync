@@ -12,7 +12,7 @@ use iced::{
     },
     widget::{column, row},
 };
-use iced_js::{Event, Host, js_worker, view};
+use iced_js::{Event, Host, js_worker, surface};
 use std::env;
 
 use crate::Message::Reload;
@@ -46,7 +46,7 @@ impl App {
     fn view(state: &App) -> Element<'_, Message> {
         column![row![
             // render it into iced tree
-            view(&state.js, "main").map(Message::Js)
+            surface(&state.js, "main").map(Message::Js)
         ]]
         .into()
     }
