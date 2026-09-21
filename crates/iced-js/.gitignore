@@ -1,3 +1,5 @@
 node_modules
 js/dist/*
-example/*.d.*
+example/*.js
+example/*.map
+example/*.d.ts
