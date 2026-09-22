@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
-use iced::futures::{SinkExt, Stream, StreamExt, channel::mpsc};
+use iced::futures::{SinkExt, StreamExt, channel::mpsc};
+use rquickjs::Error;
+use rquickjs::loader::{Resolver, ScriptLoader};
 use rquickjs::{AsyncContext, AsyncRuntime, CatchResultExt, IntoJs, Module, embed, loader::Bundle};
 
 use crate::{RootId, js_host, render::Node};
@@ -48,8 +51,36 @@ pub enum Event {
     Callback(u64, Payload),
 }
 
+#[derive(Debug, Clone)]
+pub enum ModuleSource {
+    Path(PathBuf),
+    Raw(String),
+    Embed(Vec<u8>),
+    EsmImport(String),
+}
+
+impl Into<ModuleSource> for &str {
+    fn into(self) -> ModuleSource {
+        ModuleSource::EsmImport(self.to_string())
+    }
+}
+
+impl Into<ModuleSource> for String {
+    fn into(self) -> ModuleSource {
+        ModuleSource::EsmImport(self)
+    }
+}
+impl Into<ModuleSource> for PathBuf {
+    fn into(self) -> ModuleSource {
+        ModuleSource::Path(self)
+    }
+}
+
 pub enum JsCmd {
-    Mount { root_id: RootId, path: PathBuf },
+    Mount {
+        root_id: RootId,
+        module: ModuleSource,
+    },
     Unmount(RootId),
     Dispatch(u64, Payload),
     Reload,
@@ -97,6 +128,14 @@ async fn new_context(
         js_host::timers::init(&ctx).expect("failed to init timer");
         js_host::console::init(&ctx).expect("failed to init console");
         js_host::react_reconciler::init(&ctx, tx).expect("failed to init host object");
+
+        let globals = ctx.globals();
+        globals
+            .set(
+                "__ICED_HOST__",
+                rquickjs::Object::new_proto(ctx.clone(), None),
+            )
+            .expect("failed to register user host functions");
     })
     .await;
 
@@ -117,21 +156,119 @@ async fn new_context(
     Ok(ctx)
 }
 
-/// Read a script off disk and evaluate it into `ctx`. `createRoot` runs in the
-/// module's global scope, so the root registers itself as a side effect.
-async fn mount_root(ctx: &AsyncContext, root_id: &RootId, path: &Path) -> Result<(), String> {
+async fn mount_via_eval(ctx: &AsyncContext, root_id: &RootId, path: &Path) -> Result<(), String> {
     let source = tokio::fs::read(path).await.map_err(|err| err.to_string())?;
 
     eval_module(ctx, format!("script::{}", root_id), source).await
 }
 
-pub fn js_worker() -> impl Stream<Item = Event> {
-    iced::stream::channel(100, async |mut output| {
+async fn mount_via_import(ctx: &AsyncContext, esm_import: &str) -> Result<(), String> {
+    ctx.async_with(async |ctx| {
+        let module = Module::import(&ctx, esm_import)
+            .catch(&ctx)
+            .map_err(|err| err.to_string())?;
+
+        module
+            .into_future::<()>()
+            .await
+            .catch(&ctx)
+            .map_err(|err| err.to_string())?;
+
+        Ok(())
+    })
+    .await
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AssetDir {
+    root: PathBuf,
+}
+
+impl AssetDir {
+    pub fn new(root: PathBuf) -> Self {
+        Self { root }
+    }
+}
+
+impl Default for AssetDir {
+    fn default() -> Self {
+        Self {
+            root: Default::default(),
+        }
+    }
+}
+
+impl Resolver for AssetDir {
+    fn resolve<'js>(
+        &mut self,
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        module_name: &str, // quickjs module name
+        import_path: &str, // esm import path
+        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+    ) -> rquickjs::Result<String> {
+        if self.root.is_empty() {
+            return Err(Error::new_resolving_message(
+                module_name,
+                import_path,
+                "no asset dir was configured",
+            ));
+        }
+
+        let path = PathBuf::from_str(import_path).map_err(|_| {
+            Error::new_resolving_message(module_name, import_path, "failed to create path buff")
+        })?;
+
+        let mut asset_path = self.root.clone();
+        for comp in path.components() {
+            use std::path::Component;
+
+            match comp {
+                Component::RootDir | Component::Prefix(_) => {
+                    return Err(Error::new_resolving(module_name, import_path));
+                }
+                Component::CurDir => {} // . part in a path like ./
+                Component::ParentDir => {
+                    asset_path.pop();
+
+                    if !asset_path.starts_with(&self.root) {
+                        return Err(Error::new_resolving(module_name, import_path));
+                    }
+
+                    if asset_path.exists() {
+                        if !asset_path.starts_with(&self.root) {
+                            return Err(Error::new_resolving(module_name, import_path));
+                        }
+                    } else if asset_path.is_symlink() {
+                        return Err(Error::new_resolving(module_name, import_path));
+                    }
+                }
+                Component::Normal(os_str) => {
+                    asset_path.push(os_str);
+
+                    if asset_path.exists() {
+                        if !asset_path.starts_with(&self.root) {
+                            return Err(Error::new_resolving(module_name, import_path));
+                        }
+                    } else if asset_path.is_symlink() {
+                        return Err(Error::new_resolving(module_name, import_path));
+                    }
+                }
+            }
+        }
+
+        Ok(asset_path.to_string_lossy().to_string())
+    }
+}
+
+pub fn js_worker(asset_dir: &AssetDir) -> iced::futures::stream::BoxStream<'static, Event> {
+    let resolver = asset_dir.clone();
+    Box::pin(iced::stream::channel(100, async |mut output| {
         let (sender, mut receiver) = mpsc::channel(100);
+        let script_loader = ScriptLoader::default(); // loader for import in user scripts.
 
         let rt = AsyncRuntime::new().expect("js runtime failed to init");
-        rt.set_loader(BUNDLED_LIBS, BUNDLED_LIBS).await;
-
+        rt.set_loader((BUNDLED_LIBS, resolver), (BUNDLED_LIBS, script_loader))
+            .await;
         let _handle = tokio::spawn(rt.drive()); // async loop
 
         let mut ctx = new_context(&rt, &output, 0)
@@ -141,7 +278,7 @@ pub fn js_worker() -> impl Stream<Item = Event> {
         // Every mounted root, kept so a reload can re-read the scripts. A root
         // whose script failed stays here, so fixing the file and reloading
         // again recovers it.
-        let mut mounted: HashMap<RootId, PathBuf> = HashMap::new();
+        let mut mounted: HashMap<RootId, ModuleSource> = HashMap::new();
         let mut generation: u64 = 0;
 
         output
@@ -159,7 +296,7 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                             let global = ctx.globals();
 
                             let iced = global
-                                .get::<_, rquickjs::Object<'_>>("iced_runtime")
+                                .get::<_, rquickjs::Object<'_>>("__ICED_REACT_RUNTIME__")
                                 .catch(&ctx)
                                 .map_err(|err| err.to_string())?;
 
@@ -196,7 +333,7 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                             let global = ctx.globals();
 
                             let iced = global
-                                .get::<_, rquickjs::Object<'_>>("iced_runtime")
+                                .get::<_, rquickjs::Object<'_>>("__ICED_REACT_RUNTIME__")
                                 .catch(&ctx)
                                 .map_err(|err| err.to_string())?;
 
@@ -225,18 +362,40 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                             .expect("failed to send event from js worker");
                     }
                 }
-                JsCmd::Mount { root_id, path } => {
-                    mounted.insert(root_id.clone(), path.clone());
+                JsCmd::Mount { root_id, module } => {
+                    log::debug!("Mount ({},{:#?})", root_id, module);
+                    match module {
+                        ModuleSource::Path(path) => {
+                            if let Err(err) = mount_via_eval(&ctx, &root_id, &path).await {
+                                log::error!("{:#?}", err);
+                                output
+                                    .send(Event::Error {
+                                        root_id: Some(root_id),
+                                        reason: err,
+                                    })
+                                    .await
+                                    .expect("failed to send event from js worker");
+                                return;
+                            }
 
-                    if let Err(err) = mount_root(&ctx, &root_id, &path).await {
-                        log::error!("{:#?}", err);
-                        output
-                            .send(Event::Error {
-                                root_id: Some(root_id),
-                                reason: err,
-                            })
-                            .await
-                            .expect("failed to send event from js worker");
+                            mounted.insert(root_id, ModuleSource::Path(path));
+                        }
+                        ModuleSource::EsmImport(path) => {
+                            if let Err(err) = mount_via_import(&ctx, &path).await {
+                                log::error!("{:#?}", err);
+                                output
+                                    .send(Event::Error {
+                                        root_id: Some(root_id),
+                                        reason: err,
+                                    })
+                                    .await
+                                    .expect("failed to send event from js worker");
+                                return;
+                            }
+
+                            mounted.insert(root_id, ModuleSource::EsmImport(path));
+                        }
+                        _ => unimplemented!(),
                     }
                 }
                 JsCmd::Reload => {
@@ -267,8 +426,18 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                         .await;
                     ctx = next;
 
-                    for (root_id, path) in &mounted {
-                        if let Err(err) = mount_root(&ctx, root_id, path).await {
+                    for (root_id, source) in &mounted {
+                        let result = match source {
+                            ModuleSource::Path(path_buf) => {
+                                mount_via_eval(&ctx, root_id, path_buf).await
+                            }
+                            ModuleSource::EsmImport(esm) => mount_via_import(&ctx, esm).await,
+                            _ => {
+                                continue;
+                            }
+                        };
+
+                        if let Err(err) = result {
                             log::error!("{:#?}", err);
                             output
                                 .send(Event::Error {
@@ -282,5 +451,5 @@ pub fn js_worker() -> impl Stream<Item = Event> {
                 }
             }
         }
-    })
+    }))
 }

@@ -12,7 +12,7 @@ use iced::{
     },
     widget::{column, row},
 };
-use iced_js::{Event, Host, js_worker, surface};
+use iced_js::{AssetDir, Event, Host, js_worker, surface};
 use std::env;
 
 use crate::Message::Reload;
@@ -30,7 +30,7 @@ struct App {
 impl App {
     fn new() -> (Self, Task<Message>) {
         let mut state = Self {
-            js: Host::new([("main", concat!(env!("CARGO_MANIFEST_DIR"), "/js/view.js",))]),
+            js: Host::new([("main", "./view.js")]),
         };
 
         let mount_task = state.js.mount("main");
@@ -96,6 +96,12 @@ fn main() -> iced::Result {
         ..Default::default()
     };
 
+    let mut dir = env::current_exe().expect("failed to get current exe dir");
+    dir.pop();
+    let root = dir.join("../../crates/iced-js-example-app/js");
+
+    let asset_dir = AssetDir::new(root);
+
     iced::application(App::new, App::update, App::view)
         .title("Iced JS Example")
         .theme(App::theme)
@@ -103,9 +109,10 @@ fn main() -> iced::Result {
         // One call only: `subscription` replaces whatever was set before it
         // rather than adding to it, so a second call would silently drop the js
         // worker and leave the app with nothing to render.
-        .subscription(|state| {
+        .subscription(move |state| {
+            let a = asset_dir.clone();
             Subscription::batch([
-                Subscription::run(js_worker).map(Message::Js), // setup js worker thread
+                Subscription::run_with(a, js_worker).map(Message::Js), // setup js worker thread
                 keyboard_listener(state),
             ])
         })

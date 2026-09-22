@@ -1,15 +1,15 @@
-use crate::RootId;
 use crate::render::Node;
 use crate::runtime::{Event, JsCmd};
+use crate::{ModuleSource, RootId};
 
 use iced::Task;
 use iced::futures::channel::mpsc::Sender;
+use std::collections::HashMap;
 use std::sync::Arc;
-use std::{collections::HashMap, path::PathBuf};
 pub struct Host {
     id: u64,
     tx: Option<Sender<JsCmd>>,
-    pending: Vec<(RootId, PathBuf)>,
+    pending: Vec<(RootId, ModuleSource)>,
     pub trees: HashMap<RootId, Arc<Node>>,
 }
 
@@ -17,7 +17,7 @@ impl Host {
     pub fn new<K, P>(scripts: impl IntoIterator<Item = (K, P)>) -> Self
     where
         K: Into<RootId>,
-        P: Into<PathBuf>,
+        P: Into<ModuleSource>,
     {
         let pending = scripts
             .into_iter()
@@ -39,7 +39,10 @@ impl Host {
 
         if let Some(tx) = &mut self.tx {
             let (root_id, path) = self.pending.swap_remove(idx);
-            let _ = tx.try_send(JsCmd::Mount { root_id, path });
+            let _ = tx.try_send(JsCmd::Mount {
+                root_id,
+                module: path,
+            });
         }
 
         Task::none()
@@ -68,7 +71,7 @@ impl Host {
                 for (root_id, path) in &self.pending {
                     let _ = sender.try_send(JsCmd::Mount {
                         root_id: root_id.to_owned(),
-                        path: path.to_owned(),
+                        module: path.to_owned(),
                     });
                 }
                 self.tx = Some(sender);

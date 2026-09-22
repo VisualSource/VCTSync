@@ -27,7 +27,7 @@ declare function queueMicrotask(cb: () => void): void;
 
 declare global {
     /** The host object Rust installs. */
-    var iced: {
+    var __ICED_INTERNALS__: {
         comment_tree(rootId: string, tree: IcedChild): void;
     }
 
@@ -35,7 +35,7 @@ declare global {
      *  directly. Reaching them through an `import` instead would mean a
      *  module-type eval per call, and every one of those registers a module
      *  def that is never freed until the context dies. */
-    var iced_runtime: {
+    var __ICED_REACT_RUNTIME__: {
         destroyRoot(id: string): void;
         dispatch(id: number, payload?: unknown): void;
     }
@@ -373,7 +373,7 @@ export const createRoot = (id: string) => {
                 if (!live.has(callbackId)) callbacks.delete(callbackId);
             }
 
-            iced.comment_tree(id, tree);
+            __ICED_INTERNALS__.comment_tree(id, tree);
         },
     }
 
@@ -416,7 +416,7 @@ export const dispatch = (id: number, payload?: unknown): void => {
 };
 
 
-globalThis.iced_runtime = {
+globalThis.__ICED_REACT_RUNTIME__ = {
     destroyRoot,
     dispatch,
 }

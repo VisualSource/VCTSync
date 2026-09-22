@@ -38,7 +38,7 @@ impl IcedHost {
 pub fn init(ctx: &Ctx, pipe: mpsc::Sender<Event>) -> Result<()> {
     let globals = ctx.globals();
 
-    globals.set("iced", IcedHost::new(pipe))?;
+    globals.set("__ICED_INTERNALS__", IcedHost::new(pipe))?;
 
     Ok(())
 }

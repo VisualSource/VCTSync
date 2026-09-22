@@ -6,14 +6,14 @@ mod runtime;
 mod view;
 
 pub use host::Host;
-pub use runtime::{Event, js_worker};
+pub use runtime::{AssetDir, Event, ModuleSource, js_worker};
 pub use view::surface;
 
 type RootId = String;
 
 #[cfg(test)]
 mod tests {
-    use crate::{Event, js_host, runtime::BUNDLED_LIBS};
+    use crate::{AssetDir, Event, js_host, runtime::BUNDLED_LIBS};
     use iced::futures::{StreamExt, channel::mpsc};
     use rquickjs::{AsyncContext, AsyncRuntime, CatchResultExt, Module};
 
@@ -181,7 +181,7 @@ mod tests {
         let path = std::env::temp_dir().join(format!("iced-js-reload-{}.js", std::process::id()));
         std::fs::write(&path, ticker("A")).unwrap();
 
-        let mut stream = Box::pin(js_worker());
+        let mut stream = Box::pin(js_worker(&AssetDir::default()));
 
         let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
         else {
@@ -190,7 +190,7 @@ mod tests {
 
         tx.try_send(JsCmd::Mount {
             root_id: "main".to_string(),
-            path: path.clone(),
+            module: crate::ModuleSource::Path(path.clone()),
         })
         .unwrap();
 
@@ -286,7 +286,7 @@ mod tests {
         let path = std::env::temp_dir().join(format!("iced-js-dispatch-{}.js", std::process::id()));
         std::fs::write(&path, CLICKABLE).unwrap();
 
-        let mut stream = Box::pin(js_worker());
+        let mut stream = Box::pin(js_worker(&AssetDir::default()));
 
         let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
         else {
@@ -295,7 +295,7 @@ mod tests {
 
         tx.try_send(JsCmd::Mount {
             root_id: "main".to_string(),
-            path: path.clone(),
+            module: crate::ModuleSource::Path(path.clone()),
         })
         .unwrap();
 
