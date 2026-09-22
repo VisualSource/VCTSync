@@ -128,7 +128,7 @@ async fn new_context(
     ctx.async_with(async |ctx| {
         js_host::timers::init(&ctx).expect("failed to init timer");
         js_host::console::init(&ctx).expect("failed to init console");
-        js_host::react_reconciler::init(&ctx, tx).expect("failed to init host object");
+        js_host::iced_host::init(&ctx, tx).expect("failed to init host object");
 
         let globals = ctx.globals();
         globals

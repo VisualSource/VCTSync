@@ -40,12 +40,12 @@ mod tests {
         ctx.async_with(async |ctx| {
             js_host::timers::init(&ctx).unwrap();
             js_host::console::init(&ctx).unwrap();
-            js_host::react_reconciler::init(&ctx, tx).unwrap();
+            js_host::iced_host::init(&ctx, tx).unwrap();
         })
         .await;
 
         ctx.async_with(async |ctx| {
-            let src = r#"setImmediate(() => { iced.comment_tree("main", { text: "fired" }); });"#;
+            let src = r#"setImmediate(() => { __ICED_INTERNALS__.comment_tree("main", { text: "fired" }); });"#;
             let m = Module::declare(ctx.clone(), "probe", src)
                 .catch(&ctx)
                 .unwrap();
@@ -74,12 +74,12 @@ mod tests {
         ctx.async_with(async |ctx| {
             js_host::timers::init(&ctx).unwrap();
             js_host::console::init(&ctx).unwrap();
-            js_host::react_reconciler::init(&ctx, tx).unwrap();
+            js_host::iced_host::init(&ctx, tx).unwrap();
         })
         .await;
 
         ctx.async_with(async |ctx| {
-            let src = r#"queueMicrotask(() => { iced.comment_tree("main", { text: "fired" }); });"#;
+            let src = r#"queueMicrotask(() => { __ICED_INTERNALS__.comment_tree("main", { text: "fired" }); });"#;
             let m = Module::declare(ctx.clone(), "probe", src)
                 .catch(&ctx)
                 .unwrap();
@@ -110,7 +110,7 @@ mod tests {
         ctx.async_with(async |ctx| {
             js_host::timers::init(&ctx).unwrap();
             js_host::console::init(&ctx).unwrap();
-            js_host::react_reconciler::init(&ctx, tx).unwrap();
+            js_host::iced_host::init(&ctx, tx).unwrap();
         })
         .await;
 

@@ -29,6 +29,7 @@ declare global {
     /** The host object Rust installs. */
     var __ICED_INTERNALS__: {
         comment_tree(rootId: string, tree: IcedChild): void;
+        invoke(cmd: string, obj: object): void;
     }
 
     /** This module's entry points, published as a global for Rust to call
