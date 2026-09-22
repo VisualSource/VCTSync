@@ -95,6 +95,7 @@ impl Host {
                     }
                 }
             }
+            _ => {}
         }
         Task::none()
     }

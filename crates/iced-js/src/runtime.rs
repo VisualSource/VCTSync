@@ -36,6 +36,7 @@ impl<'js> IntoJs<'js> for Payload {
 
 #[derive(Clone)]
 pub enum Event {
+    Ipc(String),
     Ready(mpsc::Sender<JsCmd>),
     Error {
         root_id: Option<RootId>,
