@@ -1,5 +1,5 @@
 use iced::futures::channel::mpsc;
-use rquickjs::{Ctx, JsLifetime, Object, Result, String, class::Trace};
+use rquickjs::{Ctx, Function, JsLifetime, Object, Result, String, class::Trace};
 use std::sync::Arc;
 
 use crate::{Event, render::to_node};
@@ -28,6 +28,16 @@ impl IcedHost {
             root_id,
             tree: Arc::new(tree),
         }) {
+            log::error!("{}", err);
+        }
+
+        Ok(())
+    }
+
+    fn invoke(&mut self, cmd: String<'_>, _payload: Object<'_>) -> Result<()> {
+        let cmd = cmd.to_string()?;
+
+        if let Err(err) = self.pipe.try_send(Event::Ipc(cmd)) {
             log::error!("{}", err);
         }
 

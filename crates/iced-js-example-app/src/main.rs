@@ -40,7 +40,13 @@ impl App {
     pub fn update(state: &mut App, msg: Message) -> Task<Message> {
         match msg {
             Reload => state.js.reload().map(Message::Js),
-            Message::Js(ev) => state.js.update(ev).map(Message::Js), // pipe update event to host handler
+            Message::Js(ev) => {
+                if let Event::Ipc(_cmd) = ev {
+                    Task::none()
+                } else {
+                    state.js.update(ev).map(Message::Js)
+                }
+            } // pipe update event to host handler
         }
     }
     fn view(state: &App) -> Element<'_, Message> {
