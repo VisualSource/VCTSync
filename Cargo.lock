@@ -1738,6 +1738,7 @@ dependencies = [
  "iced",
  "log",
  "once_cell",
+ "reqwest",
  "rquickjs",
  "tokio",
 ]

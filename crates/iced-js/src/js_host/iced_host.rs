@@ -1,5 +1,5 @@
 use iced::futures::channel::mpsc;
-use rquickjs::{Ctx, Function, JsLifetime, Object, Result, String, class::Trace};
+use rquickjs::{Ctx, JsLifetime, Object, Result, String, class::Trace};
 use std::sync::Arc;
 
 use crate::{Event, render::to_node};

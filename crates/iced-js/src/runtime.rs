@@ -126,8 +126,8 @@ async fn new_context(
 
     let tx = output.clone();
     ctx.async_with(async |ctx| {
-        js_host::timers::init(&ctx).expect("failed to init timer");
-        js_host::console::init(&ctx).expect("failed to init console");
+        js_host::init_browser_apis(&ctx).expect("failed to init apis");
+
         js_host::iced_host::init(&ctx, tx).expect("failed to init host object");
 
         let globals = ctx.globals();

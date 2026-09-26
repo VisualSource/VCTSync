@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use iced::Element;
 use rquickjs::{Error, Object};
 
@@ -14,6 +16,18 @@ pub enum Tag {
     View(ViewProps),
     Button(ButtonProps),
     Text(TextProps),
+}
+
+impl Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Tag::Col(_) => write!(f, "col"),
+            Tag::Row(_) => write!(f, "row"),
+            Tag::View(_) => write!(f, "view"),
+            Tag::Button(_) => write!(f, "button"),
+            Tag::Text(_) => write!(f, "text"),
+        }
+    }
 }
 
 impl Tag {
@@ -83,7 +97,7 @@ pub fn to_node(node: Object<'_>, depth: u32) -> Result<Node, Error> {
         return Err(Error::FromJs {
             from: "children",
             to: "children",
-            message: Some("invalid child count for tag".into()),
+            message: Some(format!("invalid count tag '{}'", el_tag)),
         });
     }
     for item in items {

@@ -30,7 +30,7 @@ struct App {
 impl App {
     fn new() -> (Self, Task<Message>) {
         let mut state = Self {
-            js: Host::new([("main", "./view.js")]),
+            js: Host::new([("main", "./view-BPC76AFv.js")]),
         };
 
         let mount_task = state.js.mount("main");
@@ -104,7 +104,7 @@ fn main() -> iced::Result {
 
     let mut dir = env::current_exe().expect("failed to get current exe dir");
     dir.pop();
-    let root = dir.join("../../crates/iced-js-example-app/js");
+    let root = dir.join("../../crates/iced-js-example-app/dist/assets");
 
     let asset_dir = AssetDir::new(root);
 

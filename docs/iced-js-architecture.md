@@ -9,7 +9,7 @@
 
 An iced app points at a script path. The script renders through a custom React reconciler
 (`js/iced-dom.ts`) whose host instances are plain data. Rust receives the committed tree and
-turns it into iced widgets, which the app returns from `view()`.
+turns it into iced widgets, which the app returns from `surface()`.
 
 A JS-rendered region is a *surface*, not the whole window: it composes inside an ordinary iced
 tree, and an app may host several at once on one shared JS runtime.
