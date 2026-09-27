@@ -47,8 +47,16 @@ impl<'js> AbortSignal<'js> {
         Ok(())
     }
 
-    fn add_event_listener() {}
-    fn remove_event_listener(func: Function<'js>) {}
+    fn add_event_listener(&mut self, func: Function<'js>) {
+        self.listeners.push(func);
+    }
+    fn remove_event_listener(&mut self, func: Function<'js>) {
+        let i = self.listeners.iter().position(|fun| fun.eq(&func));
+
+        if let Some(idx) = i {
+            self.listeners.swap_remove(idx);
+        }
+    }
 }
 
 #[rquickjs::class]

@@ -2,6 +2,10 @@ import { createRoot } from "iced-dom";
 import { useState } from "react";
 import { QueryClientProvider, QueryClient, useQuery } from "@tanstack/react-query";
 
+for (const item in globalThis) {
+    console.log("global:", item);
+}
+
 const client = new QueryClient();
 
 const App = () => {
@@ -11,15 +15,16 @@ const App = () => {
         </QueryClientProvider>
     );
 }
-fetch("");
-
-new Response()
 
 const View = () => {
     const { data, isLoading } = useQuery({
         queryKey: ["hello"],
-        queryFn: () => {
-            return new Promise<string>((ok) => setTimeout(() => ok("Hello"), 1000));
+        queryFn: async () => {
+            const data = await fetch("https://jsonplaceholder.typicode.com/todos/1");
+
+            const content = await data.json() as { userId: number; id: number; title: string; completed: boolean };
+
+            return content;
         }
     })
     const [count, setCount] = useState(0);
@@ -32,7 +37,12 @@ const View = () => {
                     <text>{count.toString()}</text>
                     <button onPress={() => { setCount(prev => prev + 1) }}>Add</button>
                 </row>
-                {isLoading && data ? <text>Loading</text> : <text>{data ?? "missing"}</text>}
+                {isLoading ? <col /> : data ? (
+                    <col>
+                        <text>{data?.title}</text>
+                        <text>{data?.completed ? "uncompleted" : "Completed"}</text>
+                    </col>
+                ) : <col />}
             </col>
         </view>
     );
