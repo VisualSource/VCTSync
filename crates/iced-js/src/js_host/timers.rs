@@ -1,5 +1,6 @@
-//! Timer globals (`setTimeout`, `setInterval`, `setImmediate`, `queueMicrotask`)
+//! Timer globals (`setTimeout`, `setInterval`, `setImmediate`)
 //! implemented directly on top of rquickjs 0.14 and tokio.
+//! `queueMicrotask` is quickjs-ng's built-in and needs no override.
 //!
 //! Every timer is a future spawned onto the runtime's own scheduler via
 //! [`Ctx::spawn`], so it is driven by whatever is driving the runtime
@@ -196,28 +197,8 @@ pub fn cancel_all(ctx: &Ctx<'_>) {
     with_timers(ctx, |timers| timers.cancel_all());
 }
 
-fn queue_microtask<'js>(ctx: Ctx<'js>, cb: Function<'js>) -> Result<()> {
-    // `defer` enqueues onto quickjs' own job queue, which is exactly the
-    // microtask checkpoint promise reactions run on.
-    cb.defer(())?;
-
-    // ...but the job queue has no waker. `AsyncRuntime::drive` parks on the
-    // *spawner*, and is woken only by `Spawner::push`, so a job queued from
-    // Rust while the driver is parked sits there until something unrelated
-    // wakes it. Pushing an empty future is that wake-up: the driver's loop
-    // drains pending jobs before polling the scheduler, so the microtask runs
-    // on the very next pass.
-    //
-    // Without this, anything that chains microtask -> microtask stalls
-    // non-deterministically. React's root scheduling does exactly that when
-    // `supportsMicrotasks` is set, which made the reconciler commit only when
-    // it happened to win the race with an unrelated wake-up.
-    ctx.spawn(async {});
-
-    Ok(())
-}
-
 /// Install the timer globals and the per-context registry they use.
+/// `queueMicrotask` is quickjs-ng's own built-in and is left untouched.
 pub fn init(ctx: &Ctx<'_>) -> Result<()> {
     if ctx.userdata::<Timers>().is_none() {
         // The error case is "userdata is currently borrowed", which cannot
@@ -233,7 +214,6 @@ pub fn init(ctx: &Ctx<'_>) -> Result<()> {
     globals.set("clearTimeout", Func::from(clear_timer))?;
     globals.set("clearInterval", Func::from(clear_timer))?;
     globals.set("clearImmediate", Func::from(clear_timer))?;
-    globals.set("queueMicrotask", Func::from(queue_microtask))?;
 
     Ok(())
 }

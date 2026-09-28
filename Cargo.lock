@@ -1737,7 +1737,6 @@ dependencies = [
  "futures",
  "iced",
  "log",
- "once_cell",
  "reqwest",
  "rquickjs",
  "rust-silos",
