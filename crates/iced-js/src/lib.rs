@@ -1,19 +1,27 @@
 mod host;
 mod js_host;
+mod loaders;
 mod nodes;
 mod render;
 mod runtime;
 mod view;
 
+#[cfg(feature = "embed")]
+pub use rust_silos; // reexport
+
 pub use host::Host;
-pub use runtime::{AssetDir, Event, ModuleSource, js_worker};
+pub use runtime::{Event, js_worker};
 pub use view::surface;
+
+pub use loaders::FsAssets;
+#[cfg(feature = "embed")]
+pub use loaders::SiloAssets;
 
 type RootId = String;
 
 #[cfg(test)]
 mod tests {
-    use crate::{AssetDir, Event, js_host, runtime::BUNDLED_LIBS};
+    use crate::{Event, FsAssets, js_host, runtime::BUNDLED_LIBS};
     use iced::futures::{StreamExt, channel::mpsc};
     use rquickjs::{AsyncContext, AsyncRuntime, CatchResultExt, Module};
 
@@ -181,7 +189,7 @@ mod tests {
         let path = std::env::temp_dir().join(format!("iced-js-reload-{}.js", std::process::id()));
         std::fs::write(&path, ticker("A")).unwrap();
 
-        let mut stream = Box::pin(js_worker(&AssetDir::default()));
+        let mut stream = Box::pin(js_worker(&FsAssets::default()));
 
         let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
         else {
@@ -190,7 +198,7 @@ mod tests {
 
         tx.try_send(JsCmd::Mount {
             root_id: "main".to_string(),
-            module: crate::ModuleSource::Path(path.clone()),
+            module: path.clone().to_string_lossy().to_string(),
         })
         .unwrap();
 
@@ -286,7 +294,7 @@ mod tests {
         let path = std::env::temp_dir().join(format!("iced-js-dispatch-{}.js", std::process::id()));
         std::fs::write(&path, CLICKABLE).unwrap();
 
-        let mut stream = Box::pin(js_worker(&AssetDir::default()));
+        let mut stream = Box::pin(js_worker(&FsAssets::default()));
 
         let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
         else {
@@ -295,7 +303,7 @@ mod tests {
 
         tx.try_send(JsCmd::Mount {
             root_id: "main".to_string(),
-            module: crate::ModuleSource::Path(path.clone()),
+            module: path.clone().to_string_lossy().to_string(),
         })
         .unwrap();
 

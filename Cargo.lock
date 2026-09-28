@@ -1740,6 +1740,7 @@ dependencies = [
  "once_cell",
  "reqwest",
  "rquickjs",
+ "rust-silos",
  "tokio",
 ]
 
@@ -3691,6 +3692,41 @@ dependencies = [
  "syn 3.0.4",
  "syn_derive",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "rust-silos"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5f98b221f2938e279d17d336643c524e6dc00f924c0b80d0dfa3f084e46b127"
+dependencies = [
+ "rust-silos-macros",
+ "thiserror 1.0.69",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-silos-macros"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6575eb15c547b310278051639fee91b7d37664e0becaf332ad9d88e67e1aed11"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "rust-silos-macros-impl",
+]
+
+[[package]]
+name = "rust-silos-macros-impl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5dee52facb2ba6b5770c612d2bd955bae83cf0aa7728dd05473686b1dfceb180"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+ "walkdir",
 ]
 
 [[package]]

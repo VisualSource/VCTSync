@@ -1,15 +1,15 @@
+use crate::RootId;
 use crate::render::Node;
 use crate::runtime::{Event, JsCmd};
-use crate::{ModuleSource, RootId};
-
 use iced::Task;
 use iced::futures::channel::mpsc::Sender;
 use std::collections::HashMap;
 use std::sync::Arc;
+
 pub struct Host {
-    id: u64,
+    //id: u64,
     tx: Option<Sender<JsCmd>>,
-    pending: Vec<(RootId, ModuleSource)>,
+    pending: Vec<(RootId, String)>,
     pub trees: HashMap<RootId, Arc<Node>>,
 }
 
@@ -17,7 +17,7 @@ impl Host {
     pub fn new<K, P>(scripts: impl IntoIterator<Item = (K, P)>) -> Self
     where
         K: Into<RootId>,
-        P: Into<ModuleSource>,
+        P: Into<String>,
     {
         let pending = scripts
             .into_iter()
@@ -25,7 +25,7 @@ impl Host {
             .collect();
 
         Self {
-            id: 0, // GET value from a global
+            // id: 0, // GET value from a global
             tx: None,
             pending,
             trees: HashMap::new(),

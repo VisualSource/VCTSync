@@ -12,10 +12,11 @@ use iced::{
     },
     widget::{column, row},
 };
-use iced_js::{AssetDir, Event, Host, js_worker, surface};
+use iced_js::{Event, Host, SiloAssets, js_worker, surface};
 use std::env;
 
-use crate::Message::Reload;
+static ASSETS: iced_js::rust_silos::Silo =
+    iced_js::rust_silos::embed_silo!("dist", crate = iced_js::rust_silos);
 
 #[derive(Clone)]
 enum Message {
@@ -39,7 +40,7 @@ impl App {
     }
     pub fn update(state: &mut App, msg: Message) -> Task<Message> {
         match msg {
-            Reload => state.js.reload().map(Message::Js),
+            Message::Reload => state.js.reload().map(Message::Js),
             Message::Js(ev) => {
                 if let Event::Ipc(_cmd) = ev {
                     Task::none()
@@ -102,12 +103,6 @@ fn main() -> iced::Result {
         ..Default::default()
     };
 
-    let mut dir = env::current_exe().expect("failed to get current exe dir");
-    dir.pop();
-    let root = dir.join("../../crates/iced-js-example-app/dist");
-
-    let asset_dir = AssetDir::new(root);
-
     iced::application(App::new, App::update, App::view)
         .title("Iced JS Example")
         .theme(App::theme)
@@ -116,9 +111,8 @@ fn main() -> iced::Result {
         // rather than adding to it, so a second call would silently drop the js
         // worker and leave the app with nothing to render.
         .subscription(move |state| {
-            let a = asset_dir.clone();
             Subscription::batch([
-                Subscription::run_with(a, js_worker).map(Message::Js), // setup js worker thread
+                Subscription::run_with(SiloAssets::new(&ASSETS), js_worker).map(Message::Js), // setup js worker thread
                 keyboard_listener(state),
             ])
         })
