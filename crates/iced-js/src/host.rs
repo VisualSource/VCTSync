@@ -67,6 +67,13 @@ impl Host {
 
     pub fn update(&mut self, ev: Event) -> Task<Event> {
         match ev {
+            Event::IpcDispatch(cmd) => {
+                if let Some(tx) = &mut self.tx {
+                    if let Err(err) = tx.try_send(JsCmd::IpcDispatch(cmd)) {
+                        log::error!("{}", err);
+                    }
+                }
+            }
             Event::Ready(mut sender) => {
                 for (root_id, path) in &self.pending {
                     let _ = sender.try_send(JsCmd::Mount {

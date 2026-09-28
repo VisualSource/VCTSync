@@ -28,8 +28,10 @@ declare function queueMicrotask(cb: () => void): void;
 declare global {
     /** The host object Rust installs. */
     var __ICED_INTERNALS__: {
-        comment_tree(rootId: string, tree: IcedChild): void;
+        commentTree(rootId: string, tree: IcedChild): void;
         invoke(cmd: string, obj: object): void;
+        addEventListener(type: string, cb: (ev: unknown) => void, opts?: { once: boolean }): void;
+        removeEventListener(type: string, cb: (ev: unknown) => void): void;
     }
 
     /** This module's entry points, published as a global for Rust to call
@@ -374,7 +376,7 @@ export const createRoot = (id: string) => {
                 if (!live.has(callbackId)) callbacks.delete(callbackId);
             }
 
-            __ICED_INTERNALS__.comment_tree(id, tree);
+            __ICED_INTERNALS__.commentTree(id, tree);
         },
     }
 

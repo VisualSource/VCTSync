@@ -1,3 +1,4 @@
+use crate::js_host::iced_host::IcedHost;
 use crate::{RootId, js_host, render::Node};
 use iced::futures::{SinkExt, StreamExt, channel::mpsc};
 use rquickjs::loader::{Loader, Resolver};
@@ -34,6 +35,7 @@ impl<'js> IntoJs<'js> for Payload {
 
 #[derive(Clone)]
 pub enum Event {
+    IpcDispatch(String),
     Ipc(String),
     Ready(mpsc::Sender<JsCmd>),
     Error {
@@ -51,6 +53,7 @@ pub enum JsCmd {
     Mount { root_id: RootId, module: String },
     Unmount(RootId),
     Dispatch(u64, Payload),
+    IpcDispatch(String),
     Reload,
 }
 
@@ -96,14 +99,6 @@ async fn new_context(
         js_host::init_browser_apis(&ctx).expect("failed to init apis");
 
         js_host::iced_host::init(&ctx, tx).expect("failed to init host object");
-
-        let globals = ctx.globals();
-        globals
-            .set(
-                "__ICED_HOST__",
-                rquickjs::Object::new_proto(ctx.clone(), None),
-            )
-            .expect("failed to register user host functions");
     })
     .await;
 
@@ -173,6 +168,35 @@ where
             let cmd = receiver.select_next_some().await;
 
             match cmd {
+                JsCmd::IpcDispatch(cmd) => {
+                    let result: Result<(), String> = ctx
+                        .async_with(async |ctx| {
+                            let globals = ctx.globals();
+
+                            let host_obj = globals
+                                .get::<_, rquickjs::Class<'_, IcedHost>>("__ICED_INTERNALS__")
+                                .catch(&ctx)
+                                .map_err(|err| err.to_string())?;
+
+                            let mut host = host_obj.borrow_mut();
+
+                            host.dispatch(&ctx, cmd);
+
+                            Ok(())
+                        })
+                        .await;
+
+                    if let Err(err) = result {
+                        log::error!("{:#?}", err);
+                        output
+                            .send(Event::Error {
+                                root_id: None,
+                                reason: err.to_string(),
+                            })
+                            .await
+                            .expect("failed to send event from js worker");
+                    }
+                }
                 JsCmd::Dispatch(id, payload) => {
                     let result: Result<(), String> = ctx
                         .async_with(async |ctx| {

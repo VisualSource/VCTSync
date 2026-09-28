@@ -53,7 +53,7 @@ mod tests {
         .await;
 
         ctx.async_with(async |ctx| {
-            let src = r#"setImmediate(() => { __ICED_INTERNALS__.comment_tree("main", { text: "fired" }); });"#;
+            let src = r#"setImmediate(() => { __ICED_INTERNALS__.commentTree("main", { text: "fired" }); });"#;
             let m = Module::declare(ctx.clone(), "probe", src)
                 .catch(&ctx)
                 .unwrap();
@@ -87,7 +87,7 @@ mod tests {
         .await;
 
         ctx.async_with(async |ctx| {
-            let src = r#"queueMicrotask(() => { __ICED_INTERNALS__.comment_tree("main", { text: "fired" }); });"#;
+            let src = r#"queueMicrotask(() => { __ICED_INTERNALS__.commentTree("main", { text: "fired" }); });"#;
             let m = Module::declare(ctx.clone(), "probe", src)
                 .catch(&ctx)
                 .unwrap();
@@ -157,7 +157,9 @@ mod tests {
         /// A script that commits `marker` every 10ms for as long as its context
         /// lives.
         fn ticker(marker: &str) -> String {
-            format!(r#"setInterval(() => iced.comment_tree("main", {{ text: "{marker}" }}), 10);"#)
+            format!(
+                r#"setInterval(() => __ICED_INTERNALS__.commentTree("main", {{ text: "{marker}" }}), 10);"#
+            )
         }
 
         /// Collect the markers committed over `window`, ignoring everything else.
@@ -246,7 +248,7 @@ mod tests {
             import { jsx as _jsx } from "react/jsx-runtime";
 
             const View = () => _jsx("button", {
-                onPress: (payload) => iced.comment_tree("main", { text: "pressed:" + payload.type }),
+                onPress: (payload) => __ICED_INTERNALS__.commentTree("main", { text: "pressed:" + payload.type }),
                 children: _jsx("text", { children: "press me" }),
             });
 
