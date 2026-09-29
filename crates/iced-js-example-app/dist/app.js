@@ -2,7 +2,7 @@ import { createRoot as e } from "iced-dom";
 import * as t from "react";
 import { useState as n } from "react";
 import { jsx as r, jsxs as i } from "react/jsx-runtime";
-import a from "./boxes.svg" with { type: "svg" };
+import a from "./boxes.svg";
 //#region node_modules/.pnpm/@tanstack+react-query@5.103.2_react@19.3.0/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js
 var o = t.createContext(void 0), s = (e) => {
 	let n = t.useContext(o);

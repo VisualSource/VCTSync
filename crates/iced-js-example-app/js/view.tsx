@@ -2,7 +2,7 @@ import { createRoot } from "iced-dom";
 import { useState } from "react";
 import { QueryClientProvider, QueryClient, useQuery } from "@tanstack/react-query";
 
-import Boxes from "./boxes.svg" with { type: "svg" };
+import Boxes from "./boxes.svg" /* @vite-ignore */with { type: "svg" };
 
 for (const item in globalThis) {
     console.log("global:", item);

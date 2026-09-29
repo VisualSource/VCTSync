@@ -11,8 +11,11 @@ export default defineConfig({
             fileName: "app",
             formats: ["es"],
         },
+        emptyOutDir: false,
+        
         minify: true,
         rolldownOptions: {
+            
             output: {
                 // minify: true
             },
