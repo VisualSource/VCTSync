@@ -52,7 +52,7 @@ impl Resolver for SiloAssets {
         _ctx: &rquickjs::prelude::Ctx<'js>,
         base: &str, // quickjs module name
         name: &str, // es
-        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+        attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
     ) -> rquickjs::Result<String> {
         let Some(import_path) = normalize_path(base, name) else {
             return Err(Error::new_resolving_message(
@@ -62,11 +62,35 @@ impl Resolver for SiloAssets {
             ));
         };
 
+        let file_type = if let Some(attrs) = attributes {
+            attrs.get_type()?
+        } else {
+            None
+        }
+        .unwrap_or_else(|| "javascript".to_string());
+
+        if file_type != "javascript" && file_type != "json" && file_type != "svg" {
+            return Err(Error::new_resolving_message(
+                base,
+                name,
+                "unsupported loader type",
+            ));
+        }
+
+        #[cfg(not(feature = "svg-element"))]
+        if file_type == "svg" {
+            return Err(Error::new_resolving_message(
+                base,
+                name,
+                "unable load to svg as it's not enabled",
+            ));
+        }
+
         let Some(file) = self.slio.get_file(&import_path) else {
             return Err(Error::new_resolving_message(
                 base,
                 name,
-                "failed to find give file",
+                "failed to find given file",
             ));
         };
 
@@ -81,7 +105,7 @@ impl Loader for SiloAssets {
         &mut self,
         ctx: &rquickjs::prelude::Ctx<'js>,
         path: &str,
-        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+        attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
     ) -> rquickjs::Result<rquickjs::Module<'js, rquickjs::module::Declared>> {
         let Some(file) = self.slio.get_file(path) else {
             return Err(Error::new_loading_message(
@@ -98,6 +122,13 @@ impl Loader for SiloAssets {
         reader
             .read_to_end(&mut source)
             .map_err(|err| Error::new_loading_message(path, err.to_string()))?;
+
+        #[cfg(feature = "svg-element")]
+        if crate::loaders::is_svg(path, &attributes) {
+            let handle = iced::widget::svg::Handle::from_memory(source);
+
+            return super::svg::declare_svg_module(ctx, path, handle);
+        }
 
         Module::declare(ctx.clone(), path, source)
     }

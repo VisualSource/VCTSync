@@ -14,7 +14,7 @@ rquickjs = { version = "0.14.0", features = [
     "parallel",
 ] }
 tokio = { workspace = true, features = ["macros", "fs", "sync", "time"] }
-iced = { workspace = true, features = ["svg", "tokio"] }
+iced = { workspace = true, features = ["tokio"] }
 reqwest = { workspace = true, optional = true }
 rust-silos = { version = "0.3.2", optional = true }
 
@@ -24,6 +24,7 @@ env_logger = "0.11"
 tokio = { workspace = true, features = ["full"] }
 
 [features]
-default = ["fetch", "embed"]
+default = ["fetch", "embed", "svg-element"]
 fetch = ["dep:reqwest"]
 embed = ["dep:rust-silos"]
+svg-element = ["iced/svg"]

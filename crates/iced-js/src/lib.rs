@@ -188,10 +188,11 @@ mod tests {
 
         let _ = env_logger::builder().is_test(true).try_init();
 
-        let path = std::env::temp_dir().join(format!("iced-js-reload-{}.js", std::process::id()));
+        let name = format!("iced-js-reload-{}.js", std::process::id());
+        let path = std::env::temp_dir().join(&name);
         std::fs::write(&path, ticker("A")).unwrap();
 
-        let mut stream = Box::pin(js_worker(&FsAssets::default()));
+        let mut stream = Box::pin(js_worker(&FsAssets::new(std::env::temp_dir())));
 
         let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
         else {
@@ -200,7 +201,7 @@ mod tests {
 
         tx.try_send(JsCmd::Mount {
             root_id: "main".to_string(),
-            module: path.clone().to_string_lossy().to_string(),
+            module: name,
         })
         .unwrap();
 
@@ -293,10 +294,11 @@ mod tests {
 
         let _ = env_logger::builder().is_test(true).try_init();
 
-        let path = std::env::temp_dir().join(format!("iced-js-dispatch-{}.js", std::process::id()));
+        let name = format!("iced-js-dispatch-{}.js", std::process::id());
+        let path = std::env::temp_dir().join(&name);
         std::fs::write(&path, CLICKABLE).unwrap();
 
-        let mut stream = Box::pin(js_worker(&FsAssets::default()));
+        let mut stream = Box::pin(js_worker(&FsAssets::new(std::env::temp_dir())));
 
         let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
         else {
@@ -305,7 +307,7 @@ mod tests {
 
         tx.try_send(JsCmd::Mount {
             root_id: "main".to_string(),
-            module: path.clone().to_string_lossy().to_string(),
+            module: name,
         })
         .unwrap();
 
@@ -327,5 +329,140 @@ mod tests {
         let _ = std::fs::remove_file(&path);
 
         assert_eq!(pressed, "pressed:click");
+    }
+
+    /// Mirrors the example app's failure mode: an svg asset in the tree plus
+    /// state-driven re-renders. Every re-render mints fresh callback ids and
+    /// prunes the old ones, so dispatch only keeps working if every commit
+    /// actually reaches Rust — a silently rejected commit leaves Rust holding
+    /// ids the registry no longer knows.
+    #[cfg(feature = "svg-element")]
+    #[tokio::test(flavor = "multi_thread")]
+    async fn svg_tree_keeps_dispatch_working_across_commits() {
+        use crate::{
+            js_worker,
+            render::{Node, Tag},
+            runtime::{JsCmd, Payload},
+        };
+        use std::time::Duration;
+        use tokio::time::timeout;
+
+        const COUNTER: &str = r#"
+            import { createRoot } from "iced-dom";
+            import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+            import { useState } from "react";
+            import icon from "./iced-js-test-icon.svg" with { type: "svg" };
+
+            const View = () => {
+                const [n, setN] = useState(0);
+                return _jsxs("col", { children: [
+                    _jsx("svg", { src: icon, width: 10, height: 10 }),
+                    _jsx("button", {
+                        onPress: () => setN((p) => p + 1),
+                        children: _jsx("text", { children: "add" }),
+                    }),
+                    _jsx("text", { children: "count:" + n }),
+                ]});
+            };
+
+            createRoot("main").render(_jsx(View, {}));
+        "#;
+
+        const ICON: &str =
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>"#;
+
+        fn on_press_of(node: &Node) -> Option<u64> {
+            match node {
+                Node::Text(_) => None,
+                Node::Element { tag, children } => {
+                    if let Tag::Button(props) = tag {
+                        if let Some(id) = props.on_press {
+                            return Some(id);
+                        }
+                    }
+                    children.iter().find_map(on_press_of)
+                }
+            }
+        }
+
+        fn count_text_of(node: &Node) -> Option<String> {
+            match node {
+                Node::Text(text) => text.starts_with("count:").then(|| text.to_string()),
+                Node::Element { children, .. } => children.iter().find_map(count_text_of),
+            }
+        }
+
+        let _ = env_logger::builder().is_test(true).try_init();
+
+        let script = format!("iced-js-svg-dispatch-{}.js", std::process::id());
+        let dir = std::env::temp_dir();
+        std::fs::write(dir.join(&script), COUNTER).unwrap();
+        std::fs::write(dir.join("iced-js-test-icon.svg"), ICON).unwrap();
+
+        let mut stream = Box::pin(js_worker(&FsAssets::new(dir.clone())));
+
+        let Ok(Some(Event::Ready(mut tx))) = timeout(Duration::from_secs(2), stream.next()).await
+        else {
+            panic!("worker never became ready");
+        };
+
+        tx.try_send(JsCmd::Mount {
+            root_id: "main".to_string(),
+            module: script.clone(),
+        })
+        .unwrap();
+
+        // Drive three rounds: each one dispatches the on_press id taken from
+        // the LATEST committed tree and expects the count to advance. Round
+        // n>1 uses ids minted by the previous round's re-render, which is
+        // exactly where a desync shows up.
+        let mut latest: Option<std::sync::Arc<Node>> = None;
+        for round in 1..=3u32 {
+            let want = format!("count:{}", round - 1);
+
+            // Wait until we hold a tree showing the previous count.
+            let tree = loop {
+                if let Some(tree) = latest.take() {
+                    if count_text_of(&tree).as_deref() == Some(want.as_str()) {
+                        break tree;
+                    }
+                }
+                match timeout(Duration::from_secs(2), stream.next()).await {
+                    Ok(Some(Event::Committed { tree, .. })) => latest = Some(tree),
+                    Ok(Some(Event::Error { reason, .. })) => {
+                        panic!("js reported an error in round {round}: {reason}")
+                    }
+                    Ok(Some(_)) => {}
+                    _ => panic!("round {round}: never saw a tree with {want:?}"),
+                }
+            };
+
+            let id = on_press_of(&tree).expect("committed tree lost its button");
+            tx.try_send(JsCmd::Dispatch(id, Payload::Click)).unwrap();
+
+            let next = format!("count:{round}");
+            loop {
+                match timeout(Duration::from_secs(2), stream.next()).await {
+                    Ok(Some(Event::Committed { tree, .. })) => {
+                        let count = count_text_of(&tree);
+                        latest = Some(tree);
+                        if count.as_deref() == Some(next.as_str()) {
+                            break;
+                        }
+                    }
+                    Ok(Some(Event::Error { reason, .. })) => {
+                        panic!("js reported an error in round {round}: {reason}")
+                    }
+                    Ok(Some(_)) => {}
+                    _ => panic!(
+                        "round {round}: dispatched id {id} but no commit showing {next:?} arrived — \
+                         the id missed the callback registry or the commit was rejected"
+                    ),
+                }
+            }
+        }
+
+        let _ = std::fs::remove_file(dir.join(&script));
+        let _ = std::fs::remove_file(dir.join("iced-js-test-icon.svg"));
     }
 }

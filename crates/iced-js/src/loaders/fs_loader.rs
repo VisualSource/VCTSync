@@ -28,8 +28,17 @@ impl Loader for FsAssets {
         &mut self,
         ctx: &rquickjs::prelude::Ctx<'js>,
         path: &str,
-        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+        attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
     ) -> rquickjs::Result<rquickjs::Module<'js, rquickjs::module::Declared>> {
+        #[cfg(feature = "svg-element")]
+        if crate::loaders::is_svg(path, &attributes) {
+            let handle = iced::widget::svg::Handle::from_path(path);
+
+            return super::svg::declare_svg_module(ctx, path, handle);
+        }
+        #[cfg(not(feature = "svg-element"))]
+        let _ = &attributes;
+
         let source: Vec<_> = std::fs::read(path)?;
         Module::declare(ctx.clone(), path, source)
     }

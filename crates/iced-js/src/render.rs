@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
-use iced::Element;
+use iced::{Element, widget::tooltip};
 use rquickjs::{Error, Object};
 
 use crate::{
     Event,
-    nodes::{ButtonProps, CommonProps, TextProps, ViewProps},
+    nodes::{self, ButtonProps, CommonProps, SpaceProps, TextProps, ViewProps},
     runtime::Payload,
 };
 
@@ -16,6 +16,14 @@ pub enum Tag {
     View(ViewProps),
     Button(ButtonProps),
     Text(TextProps),
+    Scroll,
+    Space(SpaceProps),
+    Hr,
+    Vr,
+    Tooltip,
+
+    #[cfg(feature = "svg-element")]
+    Svg(nodes::SvgProps),
 }
 
 impl Display for Tag {
@@ -26,6 +34,15 @@ impl Display for Tag {
             Tag::View(_) => write!(f, "view"),
             Tag::Button(_) => write!(f, "button"),
             Tag::Text(_) => write!(f, "text"),
+
+            Self::Scroll => write!(f, "scroll"),
+            Self::Space(_) => write!(f, "space"),
+            Self::Hr => write!(f, "hr"),
+            Self::Vr => write!(f, "vr"),
+            Self::Tooltip => write!(f, "tooltip"),
+
+            #[cfg(feature = "svg-element")]
+            Tag::Svg(_) => write!(f, "svg"),
         }
     }
 }
@@ -33,7 +50,9 @@ impl Display for Tag {
 impl Tag {
     fn valid_child_count(&self, len: usize) -> bool {
         match self {
-            Tag::View(_) | Tag::Button(_) | Tag::Text(_) => len == 1,
+            Tag::Space(_) | Tag::Hr | Tag::Vr => len == 0,
+            Tag::View(_) | Tag::Button(_) | Tag::Text(_) | Tag::Scroll => len == 1,
+            Tag::Tooltip => len == 2,
             _ => true,
         }
     }
@@ -62,25 +81,69 @@ pub fn to_node(node: Object<'_>, depth: u32) -> Result<Node, Error> {
 
     let tag = node.get::<_, String>("type")?;
     let el_tag = match tag.as_str() {
-        "col" => {
-            let props = node.get::<_, CommonProps>("props")?;
-            Tag::Col(props)
+        "col" => Tag::Col(node.get::<_, CommonProps>("props")?),
+        "row" => Tag::Row(node.get::<_, CommonProps>("props")?),
+        "view" => Tag::View(node.get::<_, ViewProps>("props")?),
+        "button" => Tag::Button(node.get::<_, ButtonProps>("props")?),
+        "text" => Tag::Text(node.get::<_, TextProps>("props")?),
+        #[cfg(feature = "svg-element")]
+        "svg" => {
+            use crate::nodes::SvgProps;
+            Tag::Svg(node.get::<_, SvgProps>("props")?)
         }
-        "row" => {
-            let props = node.get::<_, CommonProps>("props")?;
-            Tag::Row(props)
+        "scroll" => {
+            unimplemented!()
         }
-        "view" => {
-            let props = node.get::<_, ViewProps>("props")?;
-            Tag::View(props)
+        "input" => {
+            unimplemented!()
         }
-        "button" => {
-            let props = node.get::<_, ButtonProps>("props")?;
-            Tag::Button(props)
+        "textarea" => {
+            unimplemented!()
         }
-        "text" => {
-            let props = node.get::<_, TextProps>("props")?;
-            Tag::Text(props)
+        "canvas" => {
+            unimplemented!()
+        }
+        "float" => {
+            unimplemented!()
+        }
+        "grid" => {
+            unimplemented!()
+        }
+        "img" => {
+            unimplemented!()
+        }
+        "markdown" => {
+            unimplemented!()
+        }
+        "plane-grid" => {
+            unimplemented!()
+        }
+        "select" => {
+            unimplemented!()
+        }
+        "progress-bar" => {
+            unimplemented!()
+        }
+        "qr-code" => {
+            unimplemented!()
+        }
+        "theme" => {
+            unimplemented!()
+        }
+        "hr" => {
+            unimplemented!()
+        }
+        "vr" => {
+            unimplemented!()
+        }
+        "table" => {
+            unimplemented!()
+        }
+        "space" => {
+            unimplemented!()
+        }
+        "tooltip" => {
+            unimplemented!()
         }
         _ => {
             return Err(Error::FromJs {
@@ -217,6 +280,57 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 apply_prop!(node, props, height);
                 apply_prop!(node, props, color);
                 apply_prop!(node, props, line_height);
+
+                node.into()
+            }
+            Tag::Space(props) => {
+                debug_assert_eq!(children.len(), 0);
+                let mut node = iced::widget::space();
+
+                apply_prop!(node, props, width);
+                apply_prop!(node, props, height);
+
+                node.into()
+            }
+            Tag::Hr => {
+                debug_assert_eq!(children.len(), 0);
+
+                let hr = iced::widget::rule::horizontal(1);
+
+                hr.into()
+            }
+            Tag::Vr => {
+                debug_assert_eq!(children.len(), 0);
+                let mut vr = iced::widget::rule::vertical(1);
+
+                vr.into()
+            }
+            Tag::Scroll => {
+                debug_assert_eq!(children.len(), 1);
+
+                let content = render_tree(&children[0]);
+                let widget = iced::widget::scrollable(content);
+
+                widget.into()
+            }
+            Tag::Tooltip => {
+                let pos = tooltip::Position::default();
+
+                let content = render_tree(&children[0]);
+                let tooltip = render_tree(&children[1]);
+
+                let node = iced::widget::tooltip(content, tooltip, pos);
+
+                node.into()
+            }
+
+            #[cfg(feature = "svg-element")]
+            Tag::Svg(props) => {
+                debug_assert_eq!(children.len(), 0);
+
+                let mut node = iced::widget::svg(props.src.clone());
+                apply_prop!(node, props, width);
+                apply_prop!(node, props, height);
 
                 node.into()
             }

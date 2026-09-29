@@ -2,6 +2,8 @@ import { createRoot } from "iced-dom";
 import { useState } from "react";
 import { QueryClientProvider, QueryClient, useQuery } from "@tanstack/react-query";
 
+import Boxes from "./boxes.svg" with { type: "svg" };
+
 for (const item in globalThis) {
     console.log("global:", item);
 }
@@ -31,12 +33,15 @@ const View = () => {
     return (
         <view width="fill" height="fill" alignX="center" alignY="center">
             <col>
+                <svg src={Boxes} height={10} width={10} />
+
                 <text>Hello, From JS</text>
                 <row>
                     <button onPress={() => { setCount(prev => prev - 1) }}>Sub</button>
                     <text>{count.toString()}</text>
                     <button onPress={() => { setCount(prev => prev + 1) }}>Add</button>
                 </row>
+
                 {isLoading ? <col /> : data ? (
                     <col>
                         <text>{data?.title}</text>

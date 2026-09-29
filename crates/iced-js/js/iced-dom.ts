@@ -24,6 +24,10 @@ declare function setTimeout(fn: () => void, ms?: number): number;
 declare function clearTimeout(id: number): void;
 declare function queueMicrotask(cb: () => void): void;
 
+declare class SvgHandle {
+    private constructor();
+}
+
 
 declare global {
     /** The host object Rust installs. */
@@ -59,7 +63,7 @@ type IcedTag = string;
 type RawProps = Record<string, unknown>;
 /** Props after {@link sanitizeProps}: only what the Rust side can decode.
  *  Callbacks have already been swapped for their registry id. */
-type IcedProps = Record<string, string | number | boolean>;
+type IcedProps = Record<string, string | number | boolean | SvgHandle>;
 type IcedNode = { type: IcedTag, props: IcedProps, children: IcedChild[] };
 type IcedText = { text: string }
 type IcedChild = IcedNode | IcedText;
@@ -139,6 +143,11 @@ const sanitizeProps = (type: IcedTag, props: RawProps): IcedProps => {
         const value = props[key];
 
         if (value === undefined || value === null) continue;
+
+        if(value instanceof SvgHandle) {
+            out[key] = value;
+            continue
+        }
 
         switch (typeof value) {
             case "string":

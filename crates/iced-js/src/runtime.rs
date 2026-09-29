@@ -96,6 +96,9 @@ async fn new_context(
 
     let tx = output.clone();
     ctx.async_with(async |ctx| {
+        #[cfg(feature = "svg-element")]
+        crate::loaders::svg::init(&ctx).expect("failed to init svg api");
+
         js_host::init_browser_apis(&ctx).expect("failed to init apis");
 
         js_host::iced_host::init(&ctx, tx).expect("failed to init host object");
@@ -117,6 +120,30 @@ async fn new_context(
     .await?;
 
     Ok(ctx)
+}
+
+/// Run every pending QuickJS job to completion.
+///
+/// `rt.drive()` only wakes when a Rust future is spawned into the runtime; a
+/// job enqueued by a plain synchronous call into JS (a dispatched callback
+/// doing `setState`, which React flushes through `queueMicrotask`) never wakes
+/// it and would sit in the queue forever. So every command that calls into JS
+/// has to drain the queue itself afterwards.
+async fn drain_jobs(rt: &AsyncRuntime) {
+    loop {
+        match rt.execute_pending_job().await {
+            Ok(true) => continue,
+            Ok(false) => break,
+            // The job that threw is consumed, so this makes progress.
+            Err(err) => {
+                let reason = err
+                    .0
+                    .async_with(async |ctx| format!("{:?}", ctx.catch()))
+                    .await;
+                log::error!("uncaught error in js job: {reason}");
+            }
+        }
+    }
 }
 
 async fn mount_via_import(ctx: &AsyncContext, esm_import: &str) -> Result<(), String> {
@@ -270,7 +297,6 @@ where
                     }
                 }
                 JsCmd::Mount { root_id, module } => {
-                    log::debug!("Mount ({},{:#?})", root_id, module);
                     if let Err(err) = mount_via_import(&ctx, &module).await {
                         log::error!("{:#?}", err);
                         output
@@ -280,7 +306,7 @@ where
                             })
                             .await
                             .expect("failed to send event from js worker");
-                        return;
+                        continue;
                     }
 
                     mounted.insert(root_id, module);
@@ -327,6 +353,8 @@ where
                     }
                 }
             }
+
+            drain_jobs(&rt).await;
         }
     }))
 }

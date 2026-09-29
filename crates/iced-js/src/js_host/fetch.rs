@@ -1,4 +1,4 @@
-use rquickjs::{Class, Ctx, JsLifetime, Object, Result, Value, class::Trace, function::Opt, qjs};
+use rquickjs::{Class, Ctx, JsLifetime, Object, Result, Value, class::Trace, function::Opt};
 
 use std::{str::FromStr, sync::OnceLock, time::Duration};
 

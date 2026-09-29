@@ -1,3 +1,22 @@
+declare global {
+    var __ICED_INTERNALS__: {
+        commentTree(rootId: string, tree: IcedChild): void;
+        invoke(cmd: string, obj: object): void;
+        addEventListener(type: string, cb: (ev: unknown) => void, opts?: { once: boolean }): void;
+        removeEventListener(type: string, cb: (ev: unknown) => void): void;
+    }
+}
+
+declare class SvgHandle {
+    private constructor();
+}
+
+declare module "*.svg" {
+    declare const handle: SvgHandle;
+    export default handle;
+}
+
+
 declare module "iced-dom" {
     namespace IcedParams {
         export type Length = "fill" | "shrink" | number | `${number}%`;
@@ -19,14 +38,7 @@ declare module "iced-dom" {
     export function createRoot(id: string): { render: (el: React.ReactNode) => void, destroy(): void; }
 }
 
-declare global {
-    var __ICED_INTERNALS__: {
-        commentTree(rootId: string, tree: IcedChild): void;
-        invoke(cmd: string, obj: object): void;
-        addEventListener(type: string, cb: (ev: unknown) => void, opts?: { once: boolean }): void;
-        removeEventListener(type: string, cb: (ev: unknown) => void): void;
-    }
-}
+
 
 declare module "react/jsx-runtime" {
 
@@ -42,6 +54,13 @@ declare module "react/jsx-runtime" {
             alignY?: IcedParams.Vertical;
             clip?: boolean;
             warp?: boolean;
+        }
+
+        interface Svg extends RecordingState.Attributes {
+            width?: number;
+            height?: number;
+
+            src: SvgHandle
         }
 
 
@@ -100,7 +119,8 @@ declare module "react/jsx-runtime" {
             text: IcedElements.Text,
             button: IcedElements.Button,
             col: IcedElements.Col,
-            row: IcedElements.Row
+            row: IcedElements.Row,
+            svg: IcedElements.Svg
         }
     }
 }

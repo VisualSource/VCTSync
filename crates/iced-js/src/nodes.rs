@@ -3,9 +3,56 @@ use iced::{
     alignment::{Horizontal, Vertical},
     widget::text::{LineHeight, Shaping},
 };
-use rquickjs::{Error, FromJs, Value};
+use rquickjs::{Class, Error, FromJs, Value};
+
+#[derive(Debug)]
+pub struct SpaceProps {
+    pub width: Option<Length>,
+    pub height: Option<Length>,
+}
 
 type CallbackId = u64;
+
+#[cfg(feature = "svg-element")]
+#[derive(Debug)]
+pub struct SvgProps {
+    pub src: iced::widget::svg::Handle,
+    pub width: Option<Length>,
+    pub height: Option<Length>,
+}
+
+#[cfg(feature = "svg-element")]
+impl<'js> FromJs<'js> for SvgProps {
+    fn from_js(ctx: &rquickjs::prelude::Ctx<'js>, value: Value<'js>) -> rquickjs::Result<Self> {
+        if !value.is_object() {
+            return Err(Error::FromJs {
+                from: "",
+                to: "",
+                message: Some("was expecting an object".to_string()),
+            });
+        }
+        let obj = unsafe { value.ref_object() };
+
+        let src = obj.get::<_, Class<'js, crate::loaders::svg::SvgHandle>>("src")?;
+
+        let handle = src.borrow().handle.clone();
+
+        let mut props = SvgProps {
+            src: handle,
+            width: None,
+            height: None,
+        };
+
+        if let Ok(value) = obj.get::<_, Value<'_>>("width") {
+            props.width = as_length(value)?;
+        }
+
+        if let Ok(value) = obj.get::<_, Value<'_>>("height") {
+            props.height = as_length(value)?;
+        }
+        Ok(props)
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct CommonProps {

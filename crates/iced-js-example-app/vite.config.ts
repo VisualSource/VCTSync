@@ -16,7 +16,7 @@ export default defineConfig({
             output: {
                 // minify: true
             },
-            external: ["react", "react/jsx-runtime", "iced-dom"]
+            external: ["react", "react/jsx-runtime", "iced-dom",/\.svg$/]
         }
     }
 });

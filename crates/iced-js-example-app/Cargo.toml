@@ -8,5 +8,5 @@ log = { version = "0.4" }
 anyhow = { workspace = true }
 iced = { workspace = true, features = ["svg", "tokio", "sipper"] }
 tokio = { workspace = true, features = ["fs"] }
-iced-js = { path = "../iced-js" }
+iced-js = { path = "../iced-js", features = ["svg-element"] }
 env_logger = "0.11.11"
