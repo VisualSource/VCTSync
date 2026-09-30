@@ -2,6 +2,7 @@ use rquickjs::{Ctx, Result};
 
 mod abort_contoller;
 pub mod console;
+mod event_target;
 #[cfg(feature = "fetch")]
 mod fetch;
 mod formatter;

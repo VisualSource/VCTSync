@@ -1,6 +1,6 @@
-use rquickjs::{
-    Class, Ctx, Function, JsLifetime, Result, String, Value, class::Trace, function::Opt,
-};
+use rquickjs::{Class, Ctx, Function, JsLifetime, Result, Value, class::Trace, function::Opt};
+
+use crate::js_host::event_target::Listeners;
 
 #[rquickjs::class]
 #[derive(Trace, JsLifetime)]
@@ -14,7 +14,7 @@ struct AbortSignal<'js> {
     #[qjs(get)]
     reason: Option<Value<'js>>,
 
-    listeners: Vec<Function<'js>>,
+    listeners: Listeners<'js>,
 }
 
 #[rquickjs::methods(rename_all = "camelCase")]
@@ -24,11 +24,11 @@ impl<'js> AbortSignal<'js> {
         Self {
             aborted: false,
             reason: None,
-            listeners: Vec::new(),
+            listeners: Listeners::new(),
         }
     }
 
-    fn abort(reason: Opt<String<'js>>) -> Self {
+    fn abort(reason: Opt<String>) -> Self {
         unimplemented!()
     }
     fn any(iterator: rquickjs::JsIterator<'js, Class<'js, AbortSignal<'js>>>) -> Self {
@@ -47,15 +47,22 @@ impl<'js> AbortSignal<'js> {
         Ok(())
     }
 
-    fn add_event_listener(&mut self, func: Function<'js>) {
-        self.listeners.push(func);
-    }
-    fn remove_event_listener(&mut self, func: Function<'js>) {
-        let i = self.listeners.iter().position(|fun| fun.eq(&func));
+    fn add_event_listener(
+        &mut self,
+        target: String,
+        func: Function<'js>,
+        opts: Opt<rquickjs::Object<'js>>,
+    ) {
+        let once = opts
+            .0
+            .as_ref()
+            .map(|x| x.get::<_, bool>("once").unwrap_or(false))
+            .unwrap_or(false);
 
-        if let Some(idx) = i {
-            self.listeners.swap_remove(idx);
-        }
+        self.listeners.add(target, func, once);
+    }
+    fn remove_event_listener(&mut self, target: String, func: Function<'js>) {
+        self.listeners.remove(target, func);
     }
 }
 

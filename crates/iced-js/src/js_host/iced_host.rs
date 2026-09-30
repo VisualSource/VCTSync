@@ -1,27 +1,10 @@
+use super::event_target::Listeners;
+use crate::{Event, renderer::to_node};
 use iced::futures::channel::mpsc;
 use rquickjs::{
     CatchResultExt, Ctx, Function, JsLifetime, Object, Result, class::Trace, function::Opt,
 };
 use std::sync::Arc;
-
-use crate::{Event, renderer::to_node};
-
-#[derive(Clone, Trace, JsLifetime)]
-struct ListenerTarget<'js> {
-    callback: Function<'js>,
-    once: bool,
-    target: String,
-}
-
-impl<'js> ListenerTarget<'js> {
-    fn new(target: String, callback: Function<'js>, once: bool) -> Self {
-        Self {
-            target,
-            callback,
-            once,
-        }
-    }
-}
 
 #[derive(Clone, Trace, JsLifetime)]
 #[rquickjs::class]
@@ -29,14 +12,14 @@ pub struct IcedHost<'js> {
     #[qjs(skip_trace)]
     pipe: mpsc::Sender<Event>,
 
-    listeners: Vec<ListenerTarget<'js>>,
+    listeners: Listeners<'js>,
 }
 
 impl<'js> IcedHost<'js> {
     pub fn new(pipe: mpsc::Sender<Event>) -> Self {
         Self {
             pipe,
-            listeners: Vec::default(),
+            listeners: Listeners::new(),
         }
     }
 
@@ -56,8 +39,8 @@ impl<'js> IcedHost<'js> {
             }
         }
 
-        for idx in remove {
-            self.listeners.swap_remove(idx);
+        for idx in remove.into_iter().rev() {
+            self.listeners.remove_at(idx);
         }
     }
 }
@@ -110,20 +93,11 @@ impl<'js> IcedHost<'js> {
             .map(|x| x.get::<_, bool>("once").unwrap_or(false))
             .unwrap_or(false);
 
-        self.listeners
-            .push(ListenerTarget::new(l_type, callback, once));
+        self.listeners.add(l_type, callback, once);
     }
 
     fn remove_event_listener(&mut self, l_type: String, callback: Function<'js>) {
-        let Some(idx) = self
-            .listeners
-            .iter()
-            .position(|x| x.target == l_type && x.callback.eq(&callback))
-        else {
-            return;
-        };
-
-        self.listeners.swap_remove(idx);
+        self.listeners.remove(l_type, callback);
     }
 }
 
