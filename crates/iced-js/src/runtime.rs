@@ -1,9 +1,16 @@
-use crate::js_host::iced_host::IcedHost;
-use crate::{RootId, js_host, render::Node};
 use iced::futures::{SinkExt, StreamExt, channel::mpsc};
-use rquickjs::loader::{Loader, Resolver};
-use rquickjs::{AsyncContext, AsyncRuntime, CatchResultExt, IntoJs, Module, embed, loader::Bundle};
+use rquickjs::{
+    AsyncContext, AsyncRuntime, CatchResultExt, IntoJs, Module, embed,
+    loader::Bundle,
+    loader::{Loader, Resolver},
+};
 use std::collections::HashMap;
+
+use crate::{
+    RootId,
+    js_host::{self, iced_host::IcedHost},
+    renderer::Node,
+};
 
 pub(crate) static BUNDLED_LIBS: Bundle = embed! {
     "iced-dom": "js/dist/iced-dom.js",

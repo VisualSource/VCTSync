@@ -22,10 +22,8 @@
   "type": "module",
   "dependencies": {
     "esbuild": "^0.28.2",
+    "react": "^19.3.0",
     "react-reconciler": "^0.34.0"
-  },
-  "peerDependencies": {
-    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

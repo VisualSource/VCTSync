@@ -1,8 +1,9 @@
-use crate::RootId;
-use crate::render::Node;
-use crate::runtime::{Event, JsCmd};
-use iced::Task;
-use iced::futures::channel::mpsc::Sender;
+use crate::{
+    RootId,
+    renderer::Node,
+    runtime::{Event, JsCmd},
+};
+use iced::{Task, futures::channel::mpsc::Sender};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -109,4 +110,12 @@ impl Host {
         }
         Task::none()
     }
+}
+
+pub fn surface<'a>(rt: &'a Host, id: &str) -> iced::Element<'a, Event> {
+    let Some(tree) = rt.trees.get(id) else {
+        return iced::widget::space().into();
+    };
+
+    crate::renderer::render_tree(tree)
 }

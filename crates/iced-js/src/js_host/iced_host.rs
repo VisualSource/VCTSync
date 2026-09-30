@@ -4,7 +4,7 @@ use rquickjs::{
 };
 use std::sync::Arc;
 
-use crate::{Event, render::to_node};
+use crate::{Event, renderer::to_node};
 
 #[derive(Clone, Trace, JsLifetime)]
 struct ListenerTarget<'js> {

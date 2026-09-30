@@ -1,178 +1,13 @@
-use std::fmt::Display;
+mod node;
+mod props;
+mod tag;
+mod utils;
 
 use iced::{Element, widget::tooltip};
-use rquickjs::{Error, Object};
+pub(crate) use node::{Node, to_node};
+pub(crate) use tag::Tag;
 
-use crate::{
-    Event,
-    nodes::{self, ButtonProps, CommonProps, SpaceProps, TextProps, ViewProps},
-    runtime::Payload,
-};
-
-#[derive(Debug)]
-pub enum Tag {
-    Col(CommonProps),
-    Row(CommonProps),
-    View(ViewProps),
-    Button(ButtonProps),
-    Text(TextProps),
-    Scroll,
-    Space(SpaceProps),
-    Hr,
-    Vr,
-    Tooltip,
-
-    #[cfg(feature = "svg-element")]
-    Svg(nodes::SvgProps),
-}
-
-impl Display for Tag {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Tag::Col(_) => write!(f, "col"),
-            Tag::Row(_) => write!(f, "row"),
-            Tag::View(_) => write!(f, "view"),
-            Tag::Button(_) => write!(f, "button"),
-            Tag::Text(_) => write!(f, "text"),
-
-            Self::Scroll => write!(f, "scroll"),
-            Self::Space(_) => write!(f, "space"),
-            Self::Hr => write!(f, "hr"),
-            Self::Vr => write!(f, "vr"),
-            Self::Tooltip => write!(f, "tooltip"),
-
-            #[cfg(feature = "svg-element")]
-            Tag::Svg(_) => write!(f, "svg"),
-        }
-    }
-}
-
-impl Tag {
-    fn valid_child_count(&self, len: usize) -> bool {
-        match self {
-            Tag::Space(_) | Tag::Hr | Tag::Vr => len == 0,
-            Tag::View(_) | Tag::Button(_) | Tag::Text(_) | Tag::Scroll => len == 1,
-            Tag::Tooltip => len == 2,
-            _ => true,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Node {
-    Element { tag: Tag, children: Vec<Node> },
-    Text(Box<str>),
-}
-
-static MAX_DEPTH: u32 = 256;
-
-pub fn to_node(node: Object<'_>, depth: u32) -> Result<Node, Error> {
-    if depth >= MAX_DEPTH {
-        return Err(Error::FromJs {
-            from: "react object tree",
-            to: "Node",
-            message: Some("Max component depth".into()),
-        });
-    }
-    if node.contains_key("text")? {
-        let text = node.get::<_, String>("text")?.into_boxed_str();
-        return Ok(Node::Text(text));
-    }
-
-    let tag = node.get::<_, String>("type")?;
-    let el_tag = match tag.as_str() {
-        "col" => Tag::Col(node.get::<_, CommonProps>("props")?),
-        "row" => Tag::Row(node.get::<_, CommonProps>("props")?),
-        "view" => Tag::View(node.get::<_, ViewProps>("props")?),
-        "button" => Tag::Button(node.get::<_, ButtonProps>("props")?),
-        "text" => Tag::Text(node.get::<_, TextProps>("props")?),
-        #[cfg(feature = "svg-element")]
-        "svg" => {
-            use crate::nodes::SvgProps;
-            Tag::Svg(node.get::<_, SvgProps>("props")?)
-        }
-        "scroll" => {
-            unimplemented!()
-        }
-        "input" => {
-            unimplemented!()
-        }
-        "textarea" => {
-            unimplemented!()
-        }
-        "canvas" => {
-            unimplemented!()
-        }
-        "float" => {
-            unimplemented!()
-        }
-        "grid" => {
-            unimplemented!()
-        }
-        "img" => {
-            unimplemented!()
-        }
-        "markdown" => {
-            unimplemented!()
-        }
-        "plane-grid" => {
-            unimplemented!()
-        }
-        "select" => {
-            unimplemented!()
-        }
-        "progress-bar" => {
-            unimplemented!()
-        }
-        "qr-code" => {
-            unimplemented!()
-        }
-        "theme" => {
-            unimplemented!()
-        }
-        "hr" => {
-            unimplemented!()
-        }
-        "vr" => {
-            unimplemented!()
-        }
-        "table" => {
-            unimplemented!()
-        }
-        "space" => {
-            unimplemented!()
-        }
-        "tooltip" => {
-            unimplemented!()
-        }
-        _ => {
-            return Err(Error::FromJs {
-                from: "object",
-                to: "Tag",
-                message: Some("unknown tag name".to_string()),
-            });
-        }
-    };
-
-    let mut children = Vec::default();
-    let items = node.get::<_, Vec<Object<'_>>>("children")?;
-    if !el_tag.valid_child_count(items.len()) {
-        return Err(Error::FromJs {
-            from: "children",
-            to: "children",
-            message: Some(format!("invalid count tag '{}'", el_tag)),
-        });
-    }
-    for item in items {
-        let child = to_node(item, depth + 1)?;
-        children.push(child);
-    }
-
-    Ok(Node::Element {
-        tag: el_tag,
-        children,
-    })
-}
+use crate::{Event, runtime::Payload};
 
 macro_rules! apply_prop {
     ($node: ident, $props: ident, $name: ident) => {
@@ -301,7 +136,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
             }
             Tag::Vr => {
                 debug_assert_eq!(children.len(), 0);
-                let mut vr = iced::widget::rule::vertical(1);
+                let vr = iced::widget::rule::vertical(1);
 
                 vr.into()
             }

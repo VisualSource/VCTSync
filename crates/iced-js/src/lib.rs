@@ -1,21 +1,17 @@
 mod host;
 mod js_host;
 mod loaders;
-mod nodes;
-mod render;
+mod renderer;
 mod runtime;
-mod view;
 
+#[cfg(feature = "embed")]
+pub use loaders::SiloAssets;
 #[cfg(feature = "embed")]
 pub use rust_silos; // reexport
 
-pub use host::Host;
-pub use runtime::{Event, js_worker};
-pub use view::surface;
-
+pub use host::{Host, surface};
 pub use loaders::FsAssets;
-#[cfg(feature = "embed")]
-pub use loaders::SiloAssets;
+pub use runtime::{Event, js_worker};
 
 type RootId = String;
 
@@ -150,7 +146,7 @@ mod tests {
     /// announcing itself.
     #[tokio::test(flavor = "multi_thread")]
     async fn reload_swaps_the_context_and_stops_old_timers() {
-        use crate::{js_worker, render::Node, runtime::JsCmd};
+        use crate::{js_worker, renderer::Node, runtime::JsCmd};
         use std::time::Duration;
         use tokio::time::timeout;
 
@@ -238,7 +234,7 @@ mod tests {
     async fn dispatch_reaches_the_callback_with_its_payload() {
         use crate::{
             js_worker,
-            render::{Node, Tag},
+            renderer::{Node, Tag},
             runtime::{JsCmd, Payload},
         };
         use std::time::Duration;
@@ -341,7 +337,7 @@ mod tests {
     async fn svg_tree_keeps_dispatch_working_across_commits() {
         use crate::{
             js_worker,
-            render::{Node, Tag},
+            renderer::{Node, Tag},
             runtime::{JsCmd, Payload},
         };
         use std::time::Duration;
@@ -368,8 +364,7 @@ mod tests {
             createRoot("main").render(_jsx(View, {}));
         "#;
 
-        const ICON: &str =
-            r#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>"#;
+        const ICON: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>"#;
 
         fn on_press_of(node: &Node) -> Option<u64> {
             match node {
