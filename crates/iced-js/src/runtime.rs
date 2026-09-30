@@ -1,4 +1,8 @@
-use iced::futures::{SinkExt, StreamExt, channel::mpsc};
+use iced::futures::{
+    SinkExt, StreamExt,
+    channel::mpsc,
+    future::{self, Either},
+};
 use rquickjs::{
     AsyncContext, AsyncRuntime, CatchResultExt, IntoJs, Module, embed,
     loader::Bundle,
@@ -181,7 +185,14 @@ where
         let rt = AsyncRuntime::new().expect("js runtime failed to init");
         rt.set_loader((BUNDLED_LIBS, loader.clone()), (BUNDLED_LIBS, loader))
             .await;
-        let _handle = tokio::spawn(rt.drive()); // async loop
+
+        // Polled in the select below rather than spawned on its own task: the
+        // runtime's schedular holds a single waker — whichever task polled it
+        // last. Processing a command polls it from this task (async_with,
+        // drain_jobs), which would steal timer wakeups from a separate drive
+        // task and leave e.g. a setInterval stalled until the next command.
+        // Driving from the same task that waits for commands closes that hole.
+        let mut drive = std::pin::pin!(rt.drive());
 
         let mut ctx = new_context(&rt, &output, 0)
             .await
@@ -199,7 +210,12 @@ where
             .expect("failed to send event from js worker");
 
         loop {
-            let cmd = receiver.select_next_some().await;
+            let cmd = match future::select(receiver.select_next_some(), drive.as_mut()).await {
+                Either::Left((cmd, _)) => cmd,
+                // drive() resolves only when the runtime is dropped, and `rt`
+                // outlives this loop.
+                Either::Right(..) => unreachable!("runtime dropped while the worker is running"),
+            };
 
             match cmd {
                 JsCmd::IpcDispatch(cmd) => {

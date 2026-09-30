@@ -30,6 +30,20 @@ mod tests {
         createRoot("main").render(_jsx(View, {}));
     "#;
 
+    /// Await the next event while driving the runtime from this same task, the
+    /// way `js_worker` does. A drive() parked on its own task misses pending
+    /// jobs enqueued by plain sync JS calls, and the schedular only wakes the
+    /// last task that polled it — so the waiter has to be the driver.
+    async fn next_driven(rt: &AsyncRuntime, rx: &mut mpsc::Receiver<Event>) -> Option<Event> {
+        use iced::futures::future::{self, Either};
+
+        let mut drive = std::pin::pin!(rt.drive());
+        match future::select(rx.next(), drive.as_mut()).await {
+            Either::Left((event, _)) => event,
+            Either::Right(..) => unreachable!("runtime dropped while waiting"),
+        }
+    }
+
     /// Probe: does a `setImmediate` scheduled during module evaluation ever
     /// run when the only thing pumping the runtime afterwards is `drive()`?
     #[tokio::test(flavor = "multi_thread")]
@@ -38,7 +52,6 @@ mod tests {
 
         let rt = AsyncRuntime::new().unwrap();
         rt.set_loader(BUNDLED_LIBS, BUNDLED_LIBS).await;
-        let _drive = tokio::spawn(rt.drive());
 
         let ctx = AsyncContext::full(&rt).await.unwrap();
         ctx.async_with(async |ctx| {
@@ -58,7 +71,9 @@ mod tests {
         })
         .await;
 
-        let Ok(Some(_)) = tokio::time::timeout(std::time::Duration::from_secs(2), rx.next()).await
+        let Ok(Some(_)) =
+            tokio::time::timeout(std::time::Duration::from_secs(2), next_driven(&rt, &mut rx))
+                .await
         else {
             panic!("setImmediate callback never ran under drive()");
         };
@@ -72,7 +87,6 @@ mod tests {
 
         let rt = AsyncRuntime::new().unwrap();
         rt.set_loader(BUNDLED_LIBS, BUNDLED_LIBS).await;
-        let _drive = tokio::spawn(rt.drive());
 
         let ctx = AsyncContext::full(&rt).await.unwrap();
         ctx.async_with(async |ctx| {
@@ -92,7 +106,9 @@ mod tests {
         })
         .await;
 
-        let Ok(Some(_)) = tokio::time::timeout(std::time::Duration::from_secs(2), rx.next()).await
+        let Ok(Some(_)) =
+            tokio::time::timeout(std::time::Duration::from_secs(2), next_driven(&rt, &mut rx))
+                .await
         else {
             panic!("queueMicrotask callback never ran under drive()");
         };
@@ -108,7 +124,6 @@ mod tests {
 
         let rt = AsyncRuntime::new().unwrap();
         rt.set_loader(BUNDLED_LIBS, BUNDLED_LIBS).await;
-        let _drive = tokio::spawn(rt.drive());
 
         let ctx = AsyncContext::full(&rt).await.unwrap();
         ctx.async_with(async |ctx| {
@@ -128,7 +143,8 @@ mod tests {
         .await;
 
         let Ok(committed) =
-            tokio::time::timeout(std::time::Duration::from_secs(2), rx.next()).await
+            tokio::time::timeout(std::time::Duration::from_secs(2), next_driven(&rt, &mut rx))
+                .await
         else {
             panic!("timed out waiting for a commit — React scheduled work that never ran");
         };
