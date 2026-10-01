@@ -12,8 +12,28 @@ impl<'js> Listeners<'js> {
         }
     }
 
-    pub fn add(&mut self, target: String, callback: Function<'js>, once: bool) {
-        self.inner.push(ListenerTarget::new(target, callback, once));
+    pub fn take(&mut self, target: &str) -> Vec<Function<'js>> {
+        let mut callbacks = Vec::default();
+
+        self.inner.retain(|x| {
+            if x.target != target {
+                return true;
+            }
+
+            callbacks.push(x.callback.clone());
+
+            !x.once
+        });
+
+        callbacks
+    }
+
+    pub fn add<T>(&mut self, target: T, callback: Function<'js>, once: bool)
+    where
+        T: Into<String>,
+    {
+        self.inner
+            .push(ListenerTarget::new(target.into(), callback, once));
     }
     pub fn remove(&mut self, target: String, callback: Function<'js>) {
         let Some(idx) = self

@@ -42,7 +42,7 @@ impl App {
         match msg {
             Message::Reload => state.js.reload().map(Message::Js),
             Message::Js(ev) => {
-                if let Event::Ipc(_cmd) = ev {
+                if let Event::Ipc(_cmd, _payload) = ev {
                     Task::none()
                 } else {
                     state.js.update(ev).map(Message::Js)

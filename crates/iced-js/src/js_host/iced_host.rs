@@ -23,24 +23,21 @@ impl<'js> IcedHost<'js> {
         }
     }
 
-    pub fn dispatch(&mut self, ctx: &Ctx<'js>, cmd: std::string::String) {
-        let mut remove = Vec::default();
-        for (idx, listen) in self.listeners.iter().enumerate() {
-            if listen.target != cmd {
-                continue;
-            }
+    pub fn dispatch(&mut self, ctx: &Ctx<'js>, cmd: String, data: String) {
+        let callbacks = self.listeners.take(&cmd);
 
-            if listen.once {
-                remove.push(idx);
+        let obj = match ctx.json_parse(data).catch(ctx) {
+            Ok(v) => v,
+            Err(err) => {
+                log::error!("failed to dispatch ipc event: {}", err);
+                return;
             }
+        };
 
-            if let Err(err) = listen.callback.call::<(), ()>(()).catch(&ctx) {
+        for listener in callbacks {
+            if let Err(err) = listener.call::<_, ()>((obj.clone(),)).catch(&ctx) {
                 log::error!("{}", err);
             }
-        }
-
-        for idx in remove.into_iter().rev() {
-            self.listeners.remove_at(idx);
         }
     }
 }
@@ -73,8 +70,16 @@ impl<'js> IcedHost<'js> {
         Ok(())
     }
 
-    fn invoke(&mut self, cmd: String, _payload: Object<'_>) -> Result<()> {
-        if let Err(err) = self.pipe.try_send(Event::Ipc(cmd)) {
+    fn invoke(&mut self, ctx: Ctx<'js>, cmd: String, payload: Object<'js>) -> Result<()> {
+        let data = ctx.json_stringify(payload)?;
+
+        let payload = if let Some(s) = data {
+            s.to_string()?
+        } else {
+            String::default()
+        };
+
+        if let Err(err) = self.pipe.try_send(Event::Ipc(cmd, payload)) {
             log::error!("{}", err);
         }
 

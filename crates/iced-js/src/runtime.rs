@@ -46,8 +46,8 @@ impl<'js> IntoJs<'js> for Payload {
 
 #[derive(Clone)]
 pub enum Event {
-    IpcDispatch(String),
-    Ipc(String),
+    IpcDispatch(String, String),
+    Ipc(String, String),
     Ready(mpsc::Sender<JsCmd>),
     Error {
         root_id: Option<RootId>,
@@ -64,7 +64,7 @@ pub enum JsCmd {
     Mount { root_id: RootId, module: String },
     Unmount(RootId),
     Dispatch(u64, Payload),
-    IpcDispatch(String),
+    IpcDispatch(String, String),
     Reload,
 }
 
@@ -218,7 +218,7 @@ where
             };
 
             match cmd {
-                JsCmd::IpcDispatch(cmd) => {
+                JsCmd::IpcDispatch(cmd, data) => {
                     let result: Result<(), String> = ctx
                         .async_with(async |ctx| {
                             let globals = ctx.globals();
@@ -230,7 +230,7 @@ where
 
                             let mut host = host_obj.borrow_mut();
 
-                            host.dispatch(&ctx, cmd);
+                            host.dispatch(&ctx, cmd, data);
 
                             Ok(())
                         })

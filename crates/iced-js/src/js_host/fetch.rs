@@ -7,6 +7,8 @@ use reqwest::{
     header::{HeaderName, HeaderValue},
 };
 
+use crate::js_host::abort_contoller::AbortSignal;
+
 static CLIENT: OnceLock<Client> = OnceLock::new();
 
 pub fn get_client() -> &'static Client {
@@ -190,6 +192,8 @@ async fn fetch<'js>(ctx: Ctx<'js>, input: String, init: Opt<Object<'js>>) -> Res
         let raw = opt
             .get::<_, String>("method")
             .map_err(|err| rquickjs::Exception::throw_internal(&ctx, &err.to_string()))?;
+
+        let signal = opt.get::<_, Class<'js, AbortSignal>>("signal");
 
         Method::from_str(&raw)
             .map_err(|err| rquickjs::Exception::throw_internal(&ctx, &err.to_string()))?
