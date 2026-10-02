@@ -7,7 +7,7 @@ use request::Request;
 use reqwest::{Client, Method};
 use response::Response;
 use rquickjs::{Class, Ctx, Object, Result, Value, function::Opt};
-use std::{str::FromStr, sync::OnceLock, time::Duration};
+use std::{sync::OnceLock, time::Duration};
 
 static CLIENT: OnceLock<Client> = OnceLock::new();
 
@@ -30,72 +30,31 @@ async fn fetch<'js>(
     init: Opt<Object<'js>>,
 ) -> Result<Response> {
     let client = get_client();
+    let request = Request::constructor(ctx.clone(), resource, init)?;
 
-    /*TODO check for url class */
-    let (method, signal, url, headers) = if let Ok(url) = resource.get::<String>() {
-        let url = reqwest::Url::parse(&url)
-            .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
-
-        if let Some(request_init) = init.0 {
-            let request = Request::constructor(ctx.clone(), request_init)?;
-
-            let method = request
-                .method
-                .as_ref()
-                .map(|x| Method::from_str(x))
-                .unwrap_or_else(|| Ok(Method::GET))
-                .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
-
-            let headers = request.headers.map(|x| x.map.clone());
-
-            (method, request.signal.clone(), url, headers)
-        } else {
-            (Method::GET, None, url, None)
-        }
-    } else if let Ok(request) = resource.get::<Class<'js, Request<'js>>>() {
-        let state = request.borrow();
-
-        let method = state
-            .method
-            .as_ref()
-            .map(|x| Method::from_str(x))
-            .unwrap_or_else(|| Ok(Method::GET))
-            .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
-
-        let url = reqwest::Url::parse(&state.url)
-            .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
-
-        let headers = state.headers.as_ref().map(|x| x.map.clone());
-
-        (method, state.signal.clone(), url, headers)
-    } else {
-        return Err(rquickjs::Exception::throw_type(
-            &ctx,
-            "invalid resource type",
-        ));
-    };
-
-    if let Some(signal) = &signal
-        && signal.borrow().aborted
-    {
+    let signal = &request.signal;
+    if signal.borrow().aborted {
         return Err(abort_rejection(&ctx, signal));
     }
 
-    let mut req = client.request(method, url);
+    let url = reqwest::Url::parse(&request.url)
+        .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
 
-    if let Some(headers) = headers {
-        req = req.headers(headers);
+    let method = request
+        .method
+        .parse::<Method>()
+        .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
+
+    let req = client
+        .request(method, url)
+        .headers(request.headers.borrow().map.clone());
+
+    let notify = signal.borrow().notify.clone();
+    let response = tokio::select! {
+        r = req.send() => r,
+        _ = notify.notified()=> return Err(abort_rejection(&ctx, signal))
     }
-
-    let notify = signal.as_ref().map(|s| s.borrow().notify.clone());
-
-    let response = match notify {
-        Some(n) => tokio::select! {
-            r = req.send() => r,
-            _ = n.notified()=> return Err(abort_rejection(&ctx, &signal.expect("should have signal")))
-        },
-        None => req.send().await
-    }.map_err(|err| rquickjs::Exception::throw_internal(&ctx, &err.to_string()))?;
+    .map_err(|err| rquickjs::Exception::throw_internal(&ctx, &err.to_string()))?;
 
     let status = response.status();
 
