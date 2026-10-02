@@ -69,8 +69,8 @@ type IcedText = { text: string }
 type IcedChild = IcedNode | IcedText;
 type IcedContainer = { commit(children: readonly IcedChild[]): void }
 
-
-type IcedHostConfig = HostConfig<IcedTag, RawProps, IcedContainer, IcedNode, IcedText, never, never, never, IcedNode, null, IcedChild[], number, -1, null>;
+type IcedHostContext = Readonly<Record<string, never>>;
+type IcedHostConfig = HostConfig<IcedTag, RawProps, IcedContainer, IcedNode, IcedText, never, never, never, IcedNode, IcedHostContext, IcedChild[], number, -1, null>;
 
 /* -------------------------------------------------------------------------
  * Callback registry
@@ -144,7 +144,7 @@ const sanitizeProps = (type: IcedTag, props: RawProps): IcedProps => {
 
         if (value === undefined || value === null) continue;
 
-        if(value instanceof SvgHandle) {
+        if (value instanceof SvgHandle) {
             out[key] = value;
             continue
         }
@@ -171,6 +171,7 @@ const sanitizeProps = (type: IcedTag, props: RawProps): IcedProps => {
     return out;
 };
 
+const HOST_CONTENT: IcedHostContext = Object.freeze({});
 let currentPriority: EventPriority = NoEventPriority;
 const config: IcedHostConfig = {
     supportsMutation: false,
@@ -243,10 +244,10 @@ const config: IcedHostConfig = {
 
     /** Context/commit hooks  */
     getRootHostContext() {
-        return null;
+        return HOST_CONTENT;
     },
     getChildHostContext(parentHostContext, type, rootContainer) {
-        return null;
+        return parentHostContext;
     },
     finalizeInitialChildren(instance, type, props, rootContainer, hostContext) {
         return false;

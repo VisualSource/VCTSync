@@ -26,6 +26,7 @@ pub(crate) static BUNDLED_LIBS: Bundle = embed! {
 pub enum Payload {
     None,
     Click,
+    TextInputChange(String),
 }
 
 impl<'js> IntoJs<'js> for Payload {
@@ -34,10 +35,14 @@ impl<'js> IntoJs<'js> for Payload {
             Payload::None => rquickjs::Object::new(ctx.clone()).map(|e| e.into_value()),
             Payload::Click => {
                 let obj = rquickjs::Object::new(ctx.clone())?;
+                obj.set("type", "click")?;
 
-                let t = rquickjs::String::from_str(ctx.clone(), "click")?;
-                obj.set("type", t)?;
-
+                Ok(obj.into_value())
+            }
+            Payload::TextInputChange(value) => {
+                let obj = rquickjs::Object::new(ctx.clone())?;
+                obj.set("type", "change")?;
+                obj.set("value", value)?;
                 Ok(obj.into_value())
             }
         }

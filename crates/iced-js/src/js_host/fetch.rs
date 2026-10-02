@@ -7,8 +7,6 @@ use reqwest::{
     header::{HeaderName, HeaderValue},
 };
 
-use crate::js_host::abort_contoller::AbortSignal;
-
 static CLIENT: OnceLock<Client> = OnceLock::new();
 
 pub fn get_client() -> &'static Client {
@@ -156,7 +154,7 @@ impl Headers {
         Ok(())
     }
 
-    fn get<'js>(&self, key: String, ctx: Ctx<'js>) -> Value<'js> {
+    fn get<'js>(&self, _key: String, ctx: Ctx<'js>) -> Value<'js> {
         rquickjs::Null.into_value(ctx)
     }
     fn get_set_cookie(&mut self) {}
@@ -193,7 +191,7 @@ async fn fetch<'js>(ctx: Ctx<'js>, input: String, init: Opt<Object<'js>>) -> Res
             .get::<_, String>("method")
             .map_err(|err| rquickjs::Exception::throw_internal(&ctx, &err.to_string()))?;
 
-        let signal = opt.get::<_, Class<'js, AbortSignal>>("signal");
+        //let signal = opt.get::<_, Class<'js, AbortSignal>>("signal");
 
         Method::from_str(&raw)
             .map_err(|err| rquickjs::Exception::throw_internal(&ctx, &err.to_string()))?

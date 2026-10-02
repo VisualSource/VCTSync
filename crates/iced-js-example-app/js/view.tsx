@@ -4,6 +4,8 @@ import { QueryClientProvider, QueryClient, useQuery } from "@tanstack/react-quer
 
 import Boxes from "./boxes.svg" /* @vite-ignore */with { type: "svg" };
 
+console.log(typeof Boxes, Boxes instanceof SvgHandle);
+
 for (const item in globalThis) {
     console.log("global:", item);
 }

@@ -1,18 +1,17 @@
 mod node;
 mod props;
 mod tag;
-mod utils;
 
-use iced::{Element, widget::tooltip};
+use iced::Element;
 pub(crate) use node::{Node, to_node};
 pub(crate) use tag::Tag;
 
 use crate::{Event, runtime::Payload};
 
-macro_rules! apply_prop {
-    ($node: ident, $props: ident, $name: ident) => {
-        if let Some(prop) = $props.$name {
-            $node = $node.$name(prop);
+macro_rules! apply_opt {
+    ($node: ident, $prop: ident, $fn: ident) => {
+        if let Some(prop) = $prop {
+            $node = $node.$fn(*prop);
         }
     };
 }
@@ -20,24 +19,37 @@ macro_rules! apply_prop {
 pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
     match tree {
         Node::Element { tag, children } => match tag {
-            Tag::Row(props) => {
+            Tag::Row {
+                height,
+                width,
+                clip,
+                align_y,
+                padding,
+                ..
+            } => {
                 let mut node = if children.is_empty() {
                     iced::widget::Row::new()
                 } else {
                     let items = children.iter().map(render_tree);
-
                     iced::widget::Row::with_children(items)
                 };
 
-                apply_prop!(node, props, height);
-                apply_prop!(node, props, width);
-                apply_prop!(node, props, clip);
-                apply_prop!(node, props, align_y);
-                apply_prop!(node, props, padding);
+                apply_opt!(node, height, height);
+                apply_opt!(node, width, width);
+                apply_opt!(node, align_y, align_y);
+                apply_opt!(node, padding, padding);
+                apply_opt!(node, clip, clip);
 
                 node.into()
             }
-            Tag::Col(props) => {
+            Tag::Col {
+                padding,
+                height,
+                width,
+                align_x,
+                clip,
+                ..
+            } => {
                 let mut node = if children.is_empty() {
                     iced::widget::Column::new()
                 } else {
@@ -46,57 +58,89 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                     iced::widget::Column::with_children(items)
                 };
 
-                apply_prop!(node, props, height);
-                apply_prop!(node, props, width);
-                apply_prop!(node, props, clip);
-                apply_prop!(node, props, align_x);
-                apply_prop!(node, props, padding);
+                apply_opt!(node, height, height);
+                apply_opt!(node, width, width);
+                apply_opt!(node, align_x, align_x);
+                apply_opt!(node, padding, padding);
+                apply_opt!(node, clip, clip);
 
                 node.into()
             }
-            Tag::View(props) => {
+            Tag::View {
+                padding,
+                width,
+                height,
+                max_width,
+                max_height,
+                center_x,
+                center_y,
+                center,
+                align_left,
+                align_right,
+                align_top,
+                align_bottom,
+                align_x,
+                align_y,
+                clip,
+            } => {
                 debug_assert_eq!(children.len(), 1);
 
                 let content = render_tree(&children[0]);
-
                 let mut node = iced::widget::container(content);
 
-                apply_prop!(node, props, align_bottom);
-                apply_prop!(node, props, align_left);
-                apply_prop!(node, props, align_right);
-                apply_prop!(node, props, align_top);
-                apply_prop!(node, props, align_x);
-                apply_prop!(node, props, align_y);
-                apply_prop!(node, props, center);
-                apply_prop!(node, props, center_x);
-                apply_prop!(node, props, center_y);
-                apply_prop!(node, props, clip);
-                apply_prop!(node, props, height);
-                //apply_prop!(node, props, id);
-                apply_prop!(node, props, max_height);
-                apply_prop!(node, props, max_width);
-                apply_prop!(node, props, padding);
-                apply_prop!(node, props, width);
+                apply_opt!(node, align_bottom, align_bottom);
+                apply_opt!(node, align_left, align_left);
+                apply_opt!(node, align_right, align_right);
+                apply_opt!(node, align_top, align_top);
+                apply_opt!(node, align_x, align_x);
+                apply_opt!(node, align_y, align_y);
+                apply_opt!(node, center, center);
+                apply_opt!(node, center_x, center_x);
+                apply_opt!(node, center_y, center_y);
+                apply_opt!(node, clip, clip);
+                apply_opt!(node, height, height);
+                apply_opt!(node, width, width);
+                apply_opt!(node, max_height, max_height);
+                apply_opt!(node, max_width, max_width);
+                apply_opt!(node, padding, padding);
 
                 node.into()
             }
-            Tag::Button(props) => {
+            Tag::Button {
+                clip,
+                on_press,
+                padding,
+                width,
+                height,
+            } => {
                 debug_assert_eq!(children.len(), 1);
                 let content = render_tree(&children[0]);
 
                 let mut btn = iced::widget::button(content);
 
-                if let Some(on_press) = props.on_press {
-                    btn = btn.on_press(Event::Callback(on_press, Payload::Click))
+                if let Some(id) = on_press {
+                    btn = btn.on_press(Event::Callback(*id, Payload::Click))
                 }
 
-                if let Some(width) = props.width {
-                    btn = btn.width(width);
-                }
+                apply_opt!(btn, width, width);
+                apply_opt!(btn, height, height);
+                apply_opt!(btn, padding, padding);
+                apply_opt!(btn, clip, clip);
 
                 btn.into()
             }
-            Tag::Text(props) => {
+            Tag::Text {
+                size,
+                line_height,
+                width,
+                height,
+                align_x,
+                align_y,
+                color,
+                center,
+                shaping,
+                ..
+            } => {
                 debug_assert_eq!(children.len(), 1);
 
                 let text = match &children[0] {
@@ -108,64 +152,146 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
 
                 let mut node = iced::widget::text(&**text);
 
-                apply_prop!(node, props, align_x);
-                apply_prop!(node, props, align_y);
-                apply_prop!(node, props, size);
-                apply_prop!(node, props, width);
-                apply_prop!(node, props, height);
-                apply_prop!(node, props, color);
-                apply_prop!(node, props, line_height);
+                apply_opt!(node, size, size);
+                apply_opt!(node, width, width);
+                apply_opt!(node, height, height);
+                apply_opt!(node, align_x, align_x);
+                apply_opt!(node, align_y, align_y);
+                node = node.color_maybe(*color);
+
+                apply_opt!(node, line_height, line_height);
+
+                if center.is_some_and(|x| x) {
+                    node = node.center();
+                }
+
+                apply_opt!(node, shaping, shaping);
 
                 node.into()
             }
-            Tag::Space(props) => {
+            Tag::Space { height, width } => {
                 debug_assert_eq!(children.len(), 0);
                 let mut node = iced::widget::space();
 
-                apply_prop!(node, props, width);
-                apply_prop!(node, props, height);
+                apply_opt!(node, width, width);
+                apply_opt!(node, height, height);
 
                 node.into()
             }
-            Tag::Hr => {
+            Tag::Hr { height } => {
                 debug_assert_eq!(children.len(), 0);
 
-                let hr = iced::widget::rule::horizontal(1);
+                let hr = iced::widget::rule::horizontal(*height);
 
                 hr.into()
             }
-            Tag::Vr => {
+            Tag::Vr { width } => {
                 debug_assert_eq!(children.len(), 0);
-                let vr = iced::widget::rule::vertical(1);
+                let vr = iced::widget::rule::vertical(*width);
 
                 vr.into()
             }
-            Tag::Scroll => {
+            Tag::Scroll {
+                width,
+                height,
+                horizontal,
+                anchor_bottom,
+                anchor_left,
+                anchor_right,
+                anchor_top,
+                auto_scroll,
+                spacing,
+            } => {
                 debug_assert_eq!(children.len(), 1);
 
                 let content = render_tree(&children[0]);
-                let widget = iced::widget::scrollable(content);
+                let mut widget = iced::widget::scrollable(content);
+
+                apply_opt!(widget, width, width);
+                apply_opt!(widget, height, height);
+                apply_opt!(widget, spacing, spacing);
+                apply_opt!(widget, auto_scroll, auto_scroll);
+
+                if horizontal.is_some_and(|x| x) {
+                    widget = widget.horizontal();
+                }
+
+                if anchor_bottom.is_some_and(|x| x) {
+                    widget = widget.anchor_bottom();
+                }
+
+                if anchor_left.is_some_and(|x| x) {
+                    widget = widget.anchor_left();
+                }
+                if anchor_right.is_some_and(|x| x) {
+                    widget = widget.anchor_right();
+                }
+                if anchor_top.is_some_and(|x| x) {
+                    widget = widget.anchor_top();
+                }
 
                 widget.into()
             }
-            Tag::Tooltip => {
-                let pos = tooltip::Position::default();
-
+            Tag::Tooltip {
+                padding,
+                gap,
+                snap_within_viewport,
+                position,
+            } => {
                 let content = render_tree(&children[0]);
                 let tooltip = render_tree(&children[1]);
 
-                let node = iced::widget::tooltip(content, tooltip, pos);
+                let mut node = iced::widget::tooltip(content, tooltip, *position);
+
+                apply_opt!(node, gap, gap);
+                apply_opt!(node, padding, padding);
+                apply_opt!(node, snap_within_viewport, snap_within_viewport);
+                node.into()
+            }
+
+            Tag::Float { scale } => {
+                assert_eq!(children.len(), 1);
+                let content = render_tree(&children[0]);
+
+                let mut node = iced::widget::float(content);
+
+                apply_opt!(node, scale, scale);
+
+                node.into()
+            }
+
+            Tag::Textarea { id } => {
+                unimplemented!()
+            }
+
+            Tag::Switch { id, value } => {
+                let node = iced::widget::toggler(*value);
+
+                node.into()
+            }
+            Tag::Checkbox { id, value } => {
+                let node = iced::widget::checkbox(*value);
+
+                node.into()
+            }
+
+            Tag::TextInput {
+                id,
+                value,
+                placeholder,
+            } => {
+                let node = iced::widget::text_input(placeholder, value);
 
                 node.into()
             }
 
             #[cfg(feature = "svg-element")]
-            Tag::Svg(props) => {
+            Tag::Svg { src, width, height } => {
                 debug_assert_eq!(children.len(), 0);
 
-                let mut node = iced::widget::svg(props.src.clone());
-                apply_prop!(node, props, width);
-                apply_prop!(node, props, height);
+                let mut node = iced::widget::svg(src.clone());
+                apply_opt!(node, width, width);
+                apply_opt!(node, height, height);
 
                 node.into()
             }

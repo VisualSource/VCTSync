@@ -272,9 +272,9 @@ mod tests {
             match node {
                 Node::Text(_) => None,
                 Node::Element { tag, children } => {
-                    if let Tag::Button(props) = tag {
-                        if let Some(id) = props.on_press {
-                            return Some(id);
+                    if let Tag::Button { on_press, .. } = tag {
+                        if let Some(id) = on_press {
+                            return Some(*id);
                         }
                     }
                     children.iter().find_map(on_press_of)
@@ -386,9 +386,9 @@ mod tests {
             match node {
                 Node::Text(_) => None,
                 Node::Element { tag, children } => {
-                    if let Tag::Button(props) = tag {
-                        if let Some(id) = props.on_press {
-                            return Some(id);
+                    if let Tag::Button { on_press, .. } = tag {
+                        if let Some(id) = on_press {
+                            return Some(*id);
                         }
                     }
                     children.iter().find_map(on_press_of)

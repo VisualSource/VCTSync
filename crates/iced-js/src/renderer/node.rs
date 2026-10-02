@@ -1,7 +1,4 @@
-use super::{
-    props::{ButtonProps, CommonProps, SpaceProps, TextProps, ViewProps},
-    tag::Tag,
-};
+use super::tag::Tag;
 
 #[derive(Debug)]
 pub enum Node {
@@ -24,83 +21,15 @@ pub(crate) fn to_node(node: rquickjs::Object<'_>, depth: u32) -> rquickjs::Resul
         return Ok(Node::Text(text));
     }
 
-    let tag = node.get::<_, String>("type")?;
-    let el_tag = match tag.as_str() {
-        "col" => Tag::Col(node.get::<_, CommonProps>("props")?),
-        "row" => Tag::Row(node.get::<_, CommonProps>("props")?),
-        "view" => Tag::View(node.get::<_, ViewProps>("props")?),
-        "button" => Tag::Button(node.get::<_, ButtonProps>("props")?),
-        "text" => Tag::Text(node.get::<_, TextProps>("props")?),
-        "scroll" => Tag::Scroll,
-        "input" => {
-            unimplemented!()
-        }
-        "textarea" => {
-            unimplemented!()
-        }
-        "float" => {
-            unimplemented!()
-        }
-        "grid" => {
-            unimplemented!()
-        }
-        "plane-grid" => {
-            unimplemented!()
-        }
-        "select" => {
-            unimplemented!()
-        }
-        "progress-bar" => {
-            unimplemented!()
-        }
-
-        "theme" => {
-            unimplemented!()
-        }
-        "hr" => Tag::Hr,
-        "vr" => Tag::Vr,
-        "table" => {
-            unimplemented!()
-        }
-        "space" => Tag::Space(node.get::<_, SpaceProps>("props")?),
-        "tooltip" => {
-            unimplemented!()
-        }
-
-        /* feature only  elements */
-        "img" => {
-            unimplemented!()
-        }
-        "canvas" => {
-            unimplemented!()
-        }
-        "markdown" => {
-            unimplemented!()
-        }
-        "qr-code" => {
-            unimplemented!()
-        }
-        #[cfg(feature = "svg-element")]
-        "svg" => {
-            use super::props::SvgProps;
-            Tag::Svg(node.get::<_, SvgProps>("props")?)
-        }
-        _ => {
-            return Err(rquickjs::Error::FromJs {
-                from: "object",
-                to: "Tag",
-                message: Some("unknown tag name".to_string()),
-            });
-        }
-    };
+    let tag = node.as_value().get::<Tag>()?;
 
     let mut children = Vec::default();
     let items = node.get::<_, Vec<rquickjs::Object<'_>>>("children")?;
-    if !el_tag.valid_child_count(items.len()) {
+    if !tag.valid_child_count(items.len()) {
         return Err(rquickjs::Error::FromJs {
             from: "Value<'js>",
             to: "Vec<Object<'js>>",
-            message: Some(format!("invalid count tag '{}'", el_tag)),
+            message: Some(format!("invalid count tag '{}'", tag)),
         });
     }
     for item in items {
@@ -108,8 +37,5 @@ pub(crate) fn to_node(node: rquickjs::Object<'_>, depth: u32) -> rquickjs::Resul
         children.push(child);
     }
 
-    Ok(Node::Element {
-        tag: el_tag,
-        children,
-    })
+    Ok(Node::Element { tag, children })
 }

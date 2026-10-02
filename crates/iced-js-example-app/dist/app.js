@@ -1584,6 +1584,7 @@ function De(e, t) {
 }
 //#endregion
 //#region js/view.tsx
+console.log(typeof a, a instanceof SvgHandle);
 for (let e in globalThis) console.log("global:", e);
 var Oe = new ge(), ke = () => /* @__PURE__ */ r(c, {
 	client: Oe,

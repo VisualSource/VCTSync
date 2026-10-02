@@ -1,252 +1,218 @@
-use super::utils::{IcedHorizontal, IcedLength, IcedVertical};
 use iced::{
-    Color, Length, Padding, Pixels,
-    alignment::Horizontal,
-    alignment::Vertical,
-    widget::text::{LineHeight, Shaping},
+    Length, Padding,
+    alignment::{Horizontal, Vertical},
 };
 use rquickjs::FromJs;
 
-type CallbackId = u64;
+/// wrapper type for iced length so we can have a simple api for converting js value to length
+pub struct IcedLength(Length);
 
-macro_rules! as_object {
-    ($value: ident, $target: ident) => {{
-        if !$value.is_object() {
-            return Err(rquickjs::Error::FromJs {
-                from: "object",
-                to: "props",
-                message: Some("was expecting an object".to_string()),
-            });
-        }
-
-        let obj = unsafe { $value.ref_object() };
-
-        if obj.len() == 0 {
-            return Ok(Default::default());
-        }
-
-        obj
-    }};
-}
-
-macro_rules! set_prop_opt {
-    ($object: ident, $props: ident, $prop: ident, $to: path, $name: literal) => {
-        if let Ok(value) = $object.get::<_, $to>($name) {
-            $props.$prop = Some(value.into());
-        }
-    };
-}
-
-macro_rules! set_prop {
-    ($object: ident, $props: ident, $prop: ident, $to: path, $name: literal) => {
-        if let Ok(value) = $object.get::<_, $to>($name) {
-            $props.$prop = value.into();
-        }
-    };
-}
-
-#[derive(Debug, Default)]
-pub struct SpaceProps {
-    pub width: Option<Length>,
-    pub height: Option<Length>,
-}
-
-impl<'js> FromJs<'js> for SpaceProps {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let obj = as_object!(value, Self);
-
-        let mut props = SpaceProps::default();
-
-        set_prop_opt!(obj, props, width, IcedLength, "width");
-        set_prop_opt!(obj, props, height, IcedLength, "height");
-
-        Ok(props)
+impl Into<Length> for IcedLength {
+    fn into(self) -> Length {
+        self.0
     }
 }
 
-#[derive(Debug, Default)]
-pub struct CommonProps {
-    pub padding: Option<Padding>,
-    pub height: Option<Length>,
-    pub width: Option<Length>,
-    pub align_x: Option<Horizontal>,
-    pub align_y: Option<Vertical>,
-    pub clip: Option<bool>,
-    pub warp: Option<bool>,
-}
-
-impl<'js> FromJs<'js> for CommonProps {
+impl<'js> FromJs<'js> for IcedLength {
     fn from_js(
         _ctx: &rquickjs::prelude::Ctx<'js>,
         value: rquickjs::Value<'js>,
     ) -> rquickjs::Result<Self> {
-        let obj = as_object!(value, Self);
+        match value.type_of() {
+            rquickjs::Type::Int | rquickjs::Type::Float => {
+                let data = value.get::<f32>()?;
 
-        let mut props = Self::default();
+                Ok(IcedLength(Length::Fixed(data)))
+            }
+            rquickjs::Type::String => {
+                let data = value.get::<String>()?;
 
-        set_prop_opt!(obj, props, width, IcedLength, "width");
-        set_prop_opt!(obj, props, height, IcedLength, "height");
+                if data.ends_with('%') {
+                    let present = data[0..data.len() - 1].parse::<u16>().map_err(|err| {
+                        rquickjs::Error::new_from_js_message("string", "u16", err.to_string())
+                    })?;
+                    return Ok(IcedLength(Length::FillPortion(present)));
+                }
 
-        Ok(props)
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct ViewProps {
-    pub id: Option<iced::widget::Id>,
-    pub padding: Option<Padding>,
-    pub width: Option<Length>,
-    pub height: Option<Length>,
-    pub max_width: Option<Pixels>,
-    pub max_height: Option<Pixels>,
-    pub center_x: Option<Length>,
-    pub center_y: Option<Length>,
-    pub center: Option<Length>,
-    pub align_left: Option<Length>,
-    pub align_right: Option<Length>,
-    pub align_top: Option<Length>,
-    pub align_bottom: Option<Length>,
-    pub align_x: Option<Horizontal>,
-    pub align_y: Option<Vertical>,
-    pub clip: Option<bool>,
-}
-
-impl<'js> FromJs<'js> for ViewProps {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let obj = as_object!(value, Self);
-
-        let mut props = Self::default();
-
-        set_prop_opt!(obj, props, width, IcedLength, "width");
-        set_prop_opt!(obj, props, height, IcedLength, "height");
-
-        set_prop_opt!(obj, props, align_x, IcedHorizontal, "alignX");
-        set_prop_opt!(obj, props, align_y, IcedVertical, "alignY");
-
-        Ok(props)
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct ButtonProps {
-    // class
-    pub clip: Option<bool>,
-    pub on_press: Option<CallbackId>,
-    //on_press_maybe
-    //on_press_with
-    pub padding: Option<Padding>,
-    //style
-    pub width: Option<Length>,
-    pub height: Option<Length>,
-}
-
-impl<'js> FromJs<'js> for ButtonProps {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let obj = as_object!(value, Self);
-
-        let mut props = Self::default();
-
-        set_prop_opt!(obj, props, width, IcedLength, "width");
-        set_prop_opt!(obj, props, height, IcedLength, "height");
-        set_prop_opt!(obj, props, on_press, CallbackId, "onPress");
-        set_prop_opt!(obj, props, clip, bool, "clip");
-
-        Ok(props)
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct TextProps {
-    pub size: Option<Pixels>,
-    pub line_height: Option<LineHeight>,
-    // font object,
-    pub width: Option<Length>,
-    pub height: Option<Length>,
-    pub align_x: Option<Horizontal>,
-    pub align_y: Option<Vertical>,
-    pub wrapping: Option<bool>,
-    pub on_link_click: Option<CallbackId>,
-    // style callback
-    pub color: Option<Color>,
-    // colorMaybe
-    // font
-    // fontMaybe
-    pub center: bool,
-    pub shaping: Option<Shaping>,
-}
-
-impl<'js> FromJs<'js> for TextProps {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let obj = as_object!(value, Self);
-
-        let mut props = Self::default();
-
-        set_prop_opt!(obj, props, align_x, IcedHorizontal, "alignX");
-        set_prop_opt!(obj, props, align_y, IcedVertical, "alignY");
-        set_prop_opt!(obj, props, width, IcedLength, "width");
-        set_prop_opt!(obj, props, height, IcedLength, "height");
-        set_prop!(obj, props, center, bool, "center");
-
-        Ok(props)
-    }
-}
-
-#[cfg(feature = "svg-element")]
-#[derive(Debug)]
-pub struct SvgProps {
-    pub src: iced::widget::svg::Handle,
-    pub width: Option<Length>,
-    pub height: Option<Length>,
-}
-
-#[cfg(feature = "svg-element")]
-impl<'js> FromJs<'js> for SvgProps {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        if !value.is_object() {
-            return Err(rquickjs::Error::FromJs {
-                from: "object",
-                to: "props",
-                message: Some("was expecting an object".to_string()),
-            });
+                match data.as_str() {
+                    "shrink" => Ok(IcedLength(Length::Shrink)),
+                    "fill" => Ok(IcedLength(Length::Shrink)),
+                    _ => Err(rquickjs::Error::new_from_js_message(
+                        "string",
+                        "Length",
+                        "unknown length key word",
+                    )),
+                }
+            }
+            _ => Err(rquickjs::Error::new_from_js_message(
+                value.type_name(),
+                "Length",
+                "unsupported type conversion",
+            )),
         }
+    }
+}
 
-        let obj = unsafe { value.ref_object() };
+pub struct IcedPadding(Padding);
 
-        if obj.len() == 0 {
+impl Into<Padding> for IcedPadding {
+    fn into(self) -> Padding {
+        self.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedPadding {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        match value.type_of() {
+            rquickjs::Type::Float | rquickjs::Type::Int => {
+                let data = value.get::<f32>()?;
+                Ok(IcedPadding(Padding::from(data)))
+            }
+            rquickjs::Type::Array => {
+                // we just check that this was an array;
+                let list = unsafe { value.ref_array() };
+
+                match list.len() {
+                    2 => {
+                        let y = list.get::<f32>(0)?;
+                        let x = list.get::<f32>(1)?;
+
+                        Ok(IcedPadding(Padding::from([y, x])))
+                    }
+                    3 => {
+                        let top = list.get::<f32>(0)?;
+                        let hor = list.get::<f32>(1)?;
+                        let bottom = list.get::<f32>(2)?;
+
+                        Ok(IcedPadding(
+                            Padding::ZERO.horizontal(hor).top(top).bottom(bottom),
+                        ))
+                    }
+                    4 => {
+                        let top = list.get::<f32>(0)?;
+                        let right = list.get::<f32>(1)?;
+                        let left = list.get::<f32>(12)?;
+                        let bottom = list.get::<f32>(3)?;
+
+                        Ok(IcedPadding(
+                            Padding::ZERO
+                                .left(left)
+                                .right(right)
+                                .top(top)
+                                .bottom(bottom),
+                        ))
+                    }
+                    _ => Err(rquickjs::Error::new_from_js_message(
+                        "Array",
+                        "Padding",
+                        "invalid array count",
+                    )),
+                }
+            }
+            _ => Err(rquickjs::Error::new_from_js_message(
+                value.type_name(),
+                "Padding",
+                "unsupported type",
+            )),
+        }
+    }
+}
+
+pub struct IcedHorizontal(Horizontal);
+
+impl Into<Horizontal> for IcedHorizontal {
+    fn into(self) -> Horizontal {
+        self.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedHorizontal {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        let data = value.get::<String>()?;
+
+        match data.as_str() {
+            "center" => Ok(IcedHorizontal(Horizontal::Center)),
+            "left" => Ok(IcedHorizontal(Horizontal::Left)),
+            "right" => Ok(IcedHorizontal(Horizontal::Right)),
+            _ => Err(rquickjs::Error::new_from_js_message(
+                "string",
+                "Horizontal",
+                "unknown horizontal const name",
+            )),
+        }
+    }
+}
+
+pub struct IcedVertical(Vertical);
+
+impl Into<Vertical> for IcedVertical {
+    fn into(self) -> Vertical {
+        self.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedVertical {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        let data = value.get::<String>()?;
+
+        match data.as_str() {
+            "center" => Ok(IcedVertical(Vertical::Center)),
+            "bottom" => Ok(IcedVertical(Vertical::Bottom)),
+            "top" => Ok(IcedVertical(Vertical::Top)),
+            _ => Err(rquickjs::Error::new_from_js_message(
+                "string",
+                "Horizontal",
+                "unknown horizontal const name",
+            )),
+        }
+    }
+}
+
+pub struct IcedTooltipPosition(iced::widget::tooltip::Position);
+
+impl Into<iced::widget::tooltip::Position> for IcedTooltipPosition {
+    fn into(self) -> iced::widget::tooltip::Position {
+        self.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedTooltipPosition {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        use iced::widget::tooltip::Position;
+        if !value.is_string() {
             return Err(rquickjs::Error::new_from_js_message(
-                "props",
-                "SvgProps",
-                "missing props",
+                value.type_name(),
+                "Position",
+                "was expecting a string",
             ));
         }
-        let src = obj.get::<_, rquickjs::Class<'js, crate::loaders::svg::SvgHandle>>("src")?;
 
-        let handle = src.borrow().handle.clone();
+        let data = value.get::<String>()?;
 
-        let mut props = SvgProps {
-            src: handle,
-            width: None,
-            height: None,
-        };
+        match data.as_str() {
+            "bottom" => Ok(IcedTooltipPosition(Position::Bottom)),
+            "followCursor" => Ok(IcedTooltipPosition(Position::FollowCursor)),
+            "left" => Ok(IcedTooltipPosition(Position::Left)),
+            "right" => Ok(IcedTooltipPosition(Position::Right)),
+            "top" => Ok(IcedTooltipPosition(Position::Top)),
 
-        set_prop_opt!(obj, props, width, IcedLength, "width");
-        set_prop_opt!(obj, props, height, IcedLength, "height");
-
-        Ok(props)
+            _ => Err(rquickjs::Error::new_from_js_message(
+                "string",
+                "Position",
+                "invalid unknown position",
+            )),
+        }
     }
 }
