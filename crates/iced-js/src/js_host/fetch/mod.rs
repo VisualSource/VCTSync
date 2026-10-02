@@ -1,7 +1,7 @@
 mod headers;
 mod request;
 mod response;
-use crate::js_host::abort_contoller::AbortSignal;
+use crate::js_host::abort_controller::AbortSignal;
 use headers::Headers;
 use request::Request;
 use reqwest::{Client, Method};
@@ -42,23 +42,15 @@ async fn fetch<'js>(
             let method = request
                 .method
                 .as_ref()
-                .map(|x| Method::from_str(&x))
+                .map(|x| Method::from_str(x))
                 .unwrap_or_else(|| Ok(Method::GET))
                 .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
 
-            (
-                method,
-                request.signal.clone(),
-                url,
-                request.headers.map.clone(),
-            )
+            let headers = request.headers.map(|x| x.map.clone());
+
+            (method, request.signal.clone(), url, headers)
         } else {
-            (
-                Method::GET,
-                None,
-                url,
-                reqwest::header::HeaderMap::default(),
-            )
+            (Method::GET, None, url, None)
         }
     } else if let Ok(request) = resource.get::<Class<'js, Request<'js>>>() {
         let state = request.borrow();
@@ -66,19 +58,16 @@ async fn fetch<'js>(
         let method = state
             .method
             .as_ref()
-            .map(|x| Method::from_str(&x))
+            .map(|x| Method::from_str(x))
             .unwrap_or_else(|| Ok(Method::GET))
             .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
 
         let url = reqwest::Url::parse(&state.url)
             .map_err(|err| rquickjs::Exception::throw_type(&ctx, &err.to_string()))?;
 
-        (
-            method,
-            state.signal.clone(),
-            url,
-            reqwest::header::HeaderMap::new(),
-        )
+        let headers = state.headers.as_ref().map(|x| x.map.clone());
+
+        (method, state.signal.clone(), url, headers)
     } else {
         return Err(rquickjs::Exception::throw_type(
             &ctx,
@@ -92,7 +81,11 @@ async fn fetch<'js>(
         return Err(abort_rejection(&ctx, signal));
     }
 
-    let req = client.request(method, url).headers(headers);
+    let mut req = client.request(method, url);
+
+    if let Some(headers) = headers {
+        req = req.headers(headers);
+    }
 
     let notify = signal.as_ref().map(|s| s.borrow().notify.clone());
 

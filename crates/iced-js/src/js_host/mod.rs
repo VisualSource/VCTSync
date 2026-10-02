@@ -1,6 +1,6 @@
 use rquickjs::{Ctx, Result};
 
-mod abort_contoller;
+mod abort_controller;
 pub mod console;
 mod event_target;
 #[cfg(feature = "fetch")]
@@ -10,7 +10,7 @@ pub mod iced_host;
 pub mod timers;
 
 pub fn init_browser_apis(ctx: &Ctx<'_>) -> Result<()> {
-    abort_contoller::init(ctx)?;
+    abort_controller::init(ctx)?;
     console::init(ctx)?;
 
     #[cfg(feature = "fetch")]

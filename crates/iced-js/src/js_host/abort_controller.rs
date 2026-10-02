@@ -69,10 +69,10 @@ impl<'js> AbortSignal<'js> {
         event.set("type", "abort")?;
         event.set("target", this.clone())?;
 
-        if let Some(callback) = abort_fn {
-            if let Err(err) = callback.call::<_, ()>((event.clone(),)).catch(ctx) {
-                log::error!(target: TARGET, "uncaught exception: {err}");
-            }
+        if let Some(callback) = abort_fn
+            && let Err(err) = callback.call::<_, ()>((event.clone(),)).catch(ctx)
+        {
+            log::error!(target: TARGET, "uncaught exception: {err}");
         }
 
         for callback in callbacks {
