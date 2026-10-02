@@ -35,7 +35,7 @@ impl<'js> IcedHost<'js> {
         };
 
         for listener in callbacks {
-            if let Err(err) = listener.call::<_, ()>((obj.clone(),)).catch(&ctx) {
+            if let Err(err) = listener.call::<_, ()>((obj.clone(),)).catch(ctx) {
                 log::error!("{}", err);
             }
         }

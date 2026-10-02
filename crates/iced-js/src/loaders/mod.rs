@@ -13,10 +13,10 @@ use rquickjs::loader::ImportAttributes;
 pub use slio_loader::SiloAssets;
 
 pub fn is_svg(path: &str, attrs: &Option<ImportAttributes>) -> bool {
-    if let Some(attrs) = attrs {
-        if let Ok(Some(t)) = attrs.get_type() {
-            return t == "svg";
-        }
+    if let Some(attrs) = attrs
+        && let Ok(Some(t)) = attrs.get_type()
+    {
+        return t == "svg";
     }
 
     path.ends_with(".svg")

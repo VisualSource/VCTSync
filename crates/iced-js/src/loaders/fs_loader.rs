@@ -4,7 +4,7 @@ use rquickjs::{
 };
 use std::{path::PathBuf, str::FromStr};
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, Hash, Default)]
 pub struct FsAssets {
     root: PathBuf,
 }
@@ -12,14 +12,6 @@ pub struct FsAssets {
 impl FsAssets {
     pub fn new(root: PathBuf) -> Self {
         Self { root }
-    }
-}
-
-impl Default for FsAssets {
-    fn default() -> Self {
-        Self {
-            root: Default::default(),
-        }
     }
 }
 

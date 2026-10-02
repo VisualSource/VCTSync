@@ -52,7 +52,7 @@ pub struct Timers {
 }
 
 impl Timers {
-    fn register(&self) -> (u32, Cancelled) {
+    pub fn register(&self) -> (u32, Cancelled) {
         // Ids start at 1 so a falsy `0` is never handed back to JS.
         let id = self.next_id.get().wrapping_add(1).max(1);
         self.next_id.set(id);
@@ -62,7 +62,7 @@ impl Timers {
         (id, cancelled)
     }
 
-    fn unregister(&self, id: u32) {
+    pub fn unregister(&self, id: u32) {
         self.live.borrow_mut().remove(&id);
     }
 
@@ -81,7 +81,7 @@ impl Timers {
 
 /// Look up the registry for this context. Missing userdata means [`init`] was
 /// never called, which is a host bug rather than something JS can trigger.
-fn with_timers<'js, R>(ctx: &Ctx<'js>, f: impl FnOnce(&Timers) -> R) -> R {
+pub fn with_timers<'js, R>(ctx: &Ctx<'js>, f: impl FnOnce(&Timers) -> R) -> R {
     let timers = ctx
         .userdata::<Timers>()
         .expect("timers::init was not called for this context");

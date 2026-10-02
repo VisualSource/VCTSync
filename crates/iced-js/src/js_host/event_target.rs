@@ -46,14 +46,6 @@ impl<'js> Listeners<'js> {
 
         self.inner.swap_remove(idx);
     }
-
-    pub fn remove_at(&mut self, idx: usize) {
-        self.inner.swap_remove(idx);
-    }
-
-    pub fn iter(&self) -> std::slice::Iter<'_, ListenerTarget<'js>> {
-        self.inner.iter()
-    }
 }
 
 #[derive(Clone, Trace, JsLifetime)]

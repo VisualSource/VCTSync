@@ -7,9 +7,9 @@ use rquickjs::FromJs;
 /// wrapper type for iced length so we can have a simple api for converting js value to length
 pub struct IcedLength(Length);
 
-impl Into<Length> for IcedLength {
-    fn into(self) -> Length {
-        self.0
+impl From<IcedLength> for Length {
+    fn from(value: IcedLength) -> Self {
+        value.0
     }
 }
 
@@ -55,9 +55,9 @@ impl<'js> FromJs<'js> for IcedLength {
 
 pub struct IcedPadding(Padding);
 
-impl Into<Padding> for IcedPadding {
-    fn into(self) -> Padding {
-        self.0
+impl From<IcedPadding> for Padding {
+    fn from(value: IcedPadding) -> Self {
+        value.0
     }
 }
 
@@ -123,9 +123,9 @@ impl<'js> FromJs<'js> for IcedPadding {
 
 pub struct IcedHorizontal(Horizontal);
 
-impl Into<Horizontal> for IcedHorizontal {
-    fn into(self) -> Horizontal {
-        self.0
+impl From<IcedHorizontal> for Horizontal {
+    fn from(value: IcedHorizontal) -> Horizontal {
+        value.0
     }
 }
 
@@ -151,9 +151,9 @@ impl<'js> FromJs<'js> for IcedHorizontal {
 
 pub struct IcedVertical(Vertical);
 
-impl Into<Vertical> for IcedVertical {
-    fn into(self) -> Vertical {
-        self.0
+impl From<IcedVertical> for Vertical {
+    fn from(value: IcedVertical) -> Vertical {
+        value.0
     }
 }
 
@@ -179,9 +179,9 @@ impl<'js> FromJs<'js> for IcedVertical {
 
 pub struct IcedTooltipPosition(iced::widget::tooltip::Position);
 
-impl Into<iced::widget::tooltip::Position> for IcedTooltipPosition {
-    fn into(self) -> iced::widget::tooltip::Position {
-        self.0
+impl From<IcedTooltipPosition> for iced::widget::tooltip::Position {
+    fn from(value: IcedTooltipPosition) -> iced::widget::tooltip::Position {
+        value.0
     }
 }
 

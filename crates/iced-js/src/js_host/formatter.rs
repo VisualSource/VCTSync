@@ -164,13 +164,8 @@ impl Formatter {
                     .ok_or(Error::new_from_js("value", "function"))?
                     .as_object()
                     .ok_or(Error::new_from_js("function", "object"))?;
-                let name: Option<String> = function.get("name").ok().and_then(|n| {
-                    if n == "[object Object]" {
-                        None
-                    } else {
-                        Some(n)
-                    }
-                });
+                let name: Option<String> =
+                    function.get("name").ok().filter(|n| n != "[object Object]");
                 match name {
                     Some(name) => write!(out, "[Function: {name}]").map_err(|_| Error::Unknown)?,
                     None => write!(out, "[Function (anonymous)]").map_err(|_| Error::Unknown)?,

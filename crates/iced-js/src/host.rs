@@ -57,10 +57,10 @@ impl Host {
     }
 
     pub fn reload(&mut self) -> Task<Event> {
-        if let Some(tx) = &mut self.tx {
-            if let Err(err) = tx.try_send(JsCmd::Reload) {
-                log::error!("{}", err);
-            }
+        if let Some(tx) = &mut self.tx
+            && let Err(err) = tx.try_send(JsCmd::Reload)
+        {
+            log::error!("{}", err);
         }
 
         Task::none()
@@ -69,10 +69,10 @@ impl Host {
     pub fn update(&mut self, ev: Event) -> Task<Event> {
         match ev {
             Event::IpcDispatch(cmd, payload) => {
-                if let Some(tx) = &mut self.tx {
-                    if let Err(err) = tx.try_send(JsCmd::IpcDispatch(cmd, payload)) {
-                        log::error!("{}", err);
-                    }
+                if let Some(tx) = &mut self.tx
+                    && let Err(err) = tx.try_send(JsCmd::IpcDispatch(cmd, payload))
+                {
+                    log::error!("{}", err);
                 }
             }
             Event::Ready(mut sender) => {
@@ -100,10 +100,10 @@ impl Host {
                 self.trees.insert(root_id, tree);
             }
             Event::Callback(id, payload) => {
-                if let Some(tx) = &mut self.tx {
-                    if let Err(err) = tx.try_send(JsCmd::Dispatch(id, payload)) {
-                        log::error!("{}", err);
-                    }
+                if let Some(tx) = &mut self.tx
+                    && let Err(err) = tx.try_send(JsCmd::Dispatch(id, payload))
+                {
+                    log::error!("{}", err);
                 }
             }
             _ => {}

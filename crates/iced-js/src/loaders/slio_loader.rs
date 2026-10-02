@@ -35,9 +35,7 @@ fn normalize_path(base: &str, name: &str) -> Option<String> {
         match comp {
             "" | "." => {}
             ".." => {
-                if parts.pop().is_none() {
-                    return None;
-                }
+                parts.pop()?;
             }
             c => parts.push(c),
         }

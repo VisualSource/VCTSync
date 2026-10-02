@@ -1,10 +1,12 @@
-use std::time::Duration;
-
 use rquickjs::{
     CatchResultExt, Class, Ctx, Function, JsLifetime, Result, Value, class::Trace, function::Opt,
 };
+use std::rc::Rc;
+use std::time::Duration;
+use tokio::time::{Instant, sleep_until};
 
 use crate::js_host::event_target::Listeners;
+use crate::js_host::timers::with_timers;
 
 const TARGET: &str = "iced_js::abort";
 /// The AbortSignal interface represents a signal object that allows you to communicate with an
@@ -14,13 +16,16 @@ const TARGET: &str = "iced_js::abort";
 #[derive(Trace, JsLifetime)]
 pub struct AbortSignal<'js> {
     #[qjs(get)]
-    aborted: bool,
+    pub aborted: bool,
+
+    #[qjs(get, set)]
+    onabort: Option<Function<'js>>,
 
     /// default is undefined
     /// MDN does not give it a type
     /// but is most likly just a string
     #[qjs(get)]
-    reason: Option<Value<'js>>,
+    pub reason: Option<Value<'js>>,
 
     listeners: Listeners<'js>,
 
@@ -28,11 +33,16 @@ pub struct AbortSignal<'js> {
     /// Held as a traced field rather than captured in a callback, so the GC can
     /// still collect the group once JS drops it.
     dependents: Vec<Class<'js, Self>>,
+
+    #[qjs(skip_trace)]
+    pub notify: Rc<tokio::sync::Notify>,
 }
 
 impl<'js> AbortSignal<'js> {
     pub fn new() -> Self {
         Self {
+            onabort: None,
+            notify: Rc::new(tokio::sync::Notify::new()),
             aborted: false,
             reason: None,
             listeners: Listeners::new(),
@@ -41,7 +51,7 @@ impl<'js> AbortSignal<'js> {
     }
 
     fn fire(this: &Class<'js, Self>, ctx: &Ctx<'js>, reason: Value<'js>) -> Result<()> {
-        let (callbacks, dependents) = {
+        let (callbacks, dependents, abort_fn) = {
             let mut inner = this.borrow_mut(); // prevent holding ref when dispatching handlers
             if inner.aborted {
                 return Ok(());
@@ -51,12 +61,19 @@ impl<'js> AbortSignal<'js> {
             (
                 inner.listeners.take("abort"),
                 std::mem::take(&mut inner.dependents),
+                inner.onabort.clone(),
             )
         };
 
         let event = rquickjs::Object::new(ctx.clone())?;
         event.set("type", "abort")?;
         event.set("target", this.clone())?;
+
+        if let Some(callback) = abort_fn {
+            if let Err(err) = callback.call::<_, ()>((event.clone(),)).catch(ctx) {
+                log::error!(target: TARGET, "uncaught exception: {err}");
+            }
+        }
 
         for callback in callbacks {
             if let Err(err) = callback.call::<_, ()>((event.clone(),)).catch(ctx) {
@@ -67,6 +84,8 @@ impl<'js> AbortSignal<'js> {
         for dependent in dependents {
             Self::fire(&dependent, ctx, reason.clone())?;
         }
+
+        this.borrow().notify.notify_waiters();
 
         Ok(())
     }
@@ -137,9 +156,15 @@ impl<'js> AbortSignal<'js> {
     fn timeout(ctx: Ctx<'js>, time: u64) -> Result<Class<'js, AbortSignal<'js>>> {
         let signal = Class::instance(ctx.clone(), AbortSignal::new())?;
 
+        let (id, cancelled) = with_timers(&ctx, |timers| timers.register());
         let inner_signal = signal.clone();
         ctx.clone().spawn(async move {
-            tokio::time::sleep(Duration::from_millis(time)).await;
+            sleep_until(Instant::now() + Duration::from_millis(time)).await;
+            if cancelled.get() {
+                return;
+            }
+
+            with_timers(&ctx, |timers| timers.unregister(id));
 
             if let Err(err) = Self::fire(
                 &inner_signal,
@@ -192,7 +217,6 @@ impl<'js> AbortSignal<'js> {
     }
 }
 
-///
 #[rquickjs::class]
 #[derive(Trace, JsLifetime)]
 pub struct AbortController<'js> {
