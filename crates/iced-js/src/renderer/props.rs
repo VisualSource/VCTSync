@@ -216,3 +216,21 @@ impl<'js> FromJs<'js> for IcedTooltipPosition {
         }
     }
 }
+
+pub struct IcedId(iced::widget::Id);
+
+impl From<IcedId> for iced::widget::Id {
+    fn from(value: IcedId) -> Self {
+        value.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedId {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        let data = value.get::<String>()?;
+        Ok(IcedId(data.into()))
+    }
+}

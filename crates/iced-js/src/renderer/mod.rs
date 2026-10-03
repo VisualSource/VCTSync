@@ -82,6 +82,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 align_x,
                 align_y,
                 clip,
+                id,
             } => {
                 debug_assert_eq!(children.len(), 1);
 
@@ -103,6 +104,10 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 apply_opt!(node, max_height, max_height);
                 apply_opt!(node, max_width, max_width);
                 apply_opt!(node, padding, padding);
+
+                if let Some(id) = id {
+                    node = node.id(id.clone())
+                }
 
                 node.into()
             }
@@ -260,27 +265,67 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 node.into()
             }
 
-            Tag::Textarea { id } => {
+            Tag::Textarea { id, on_change } => {
                 unimplemented!()
             }
 
-            Tag::Switch { id, value } => {
-                let node = iced::widget::toggler(*value);
+            Tag::Switch { value, on_change } => {
+                debug_assert_eq!(children.len(), 0);
+                let mut node = iced::widget::toggler(*value);
+
+                if let Some(id) = on_change {
+                    node = node
+                        .on_toggle(|value| Event::Callback(*id, Payload::BoolInputChange(value)))
+                }
 
                 node.into()
             }
-            Tag::Checkbox { id, value } => {
-                let node = iced::widget::checkbox(*value);
+            Tag::Checkbox {
+                value,
+                disabled,
+                on_change,
+            } => {
+                debug_assert_eq!(children.len(), 0);
+                let mut node = iced::widget::checkbox(*value);
+
+                if let Some(id) = on_change {
+                    let callback = if *disabled {
+                        None
+                    } else {
+                        Some(|value: bool| Event::Callback(*id, Payload::BoolInputChange(value)))
+                    };
+
+                    node = node.on_toggle_maybe(callback);
+                } else if *disabled {
+                    node = node.on_toggle_maybe(Option::<fn(bool) -> Event>::None);
+                }
 
                 node.into()
             }
 
             Tag::TextInput {
-                id,
                 value,
                 placeholder,
+                on_change,
+                on_submit,
+                disabled,
             } => {
-                let node = iced::widget::text_input(placeholder, value);
+                debug_assert_eq!(children.len(), 0);
+                let mut node = iced::widget::text_input(placeholder, value);
+
+                if let Some(id) = on_change {
+                    let callback = if *disabled {
+                        None
+                    } else {
+                        Some(|value: String| Event::Callback(*id, Payload::TextInputChange(value)))
+                    };
+
+                    node = node.on_input_maybe(callback);
+                }
+
+                if let Some(id) = on_submit {
+                    node = node.on_submit(Event::Callback(*id, Payload::Submit));
+                }
 
                 node.into()
             }

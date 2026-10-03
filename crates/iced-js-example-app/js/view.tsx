@@ -31,10 +31,13 @@ const View = () => {
         }
     })
     const [count, setCount] = useState(0);
+    const [text, setText] = useState("");
     return (
         <view width="fill" height="fill" alignX="center" alignY="center">
             <col>
                 <svg src={Boxes} height={10} width={10} />
+
+                <hr />
 
                 <text>Hello, From JS</text>
                 <row>
@@ -42,6 +45,14 @@ const View = () => {
                     <text>{count.toString()}</text>
                     <button onPress={() => { setCount(prev => prev + 1) }}>Add</button>
                 </row>
+
+                <input type="text" value={text} onChange={(ev) => setText(ev.value)} placeholder="Enter text" />
+
+                <tooltip>
+                    <button>Hello</button>
+                    <text>I'm a tool tip here</text>
+                </tooltip>
+
 
                 {isLoading ? <col /> : data ? (
                     <col>

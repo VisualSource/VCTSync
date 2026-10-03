@@ -1,8 +1,13 @@
+use crate::renderer::props::IcedId;
+
 use super::props::{IcedHorizontal, IcedLength, IcedPadding, IcedTooltipPosition, IcedVertical};
 use iced::{
     Color, Length, Padding, Pixels,
     alignment::{Horizontal, Vertical},
-    widget::text::{LineHeight, Shaping},
+    widget::{
+        self,
+        text::{LineHeight, Shaping},
+    },
 };
 use rquickjs::FromJs;
 use std::fmt::Display;
@@ -30,6 +35,7 @@ pub enum Tag {
         warp: Option<bool>,
     },
     View {
+        id: Option<widget::Id>,
         padding: Option<Padding>,
         width: Option<Length>,
         height: Option<Length>,
@@ -126,20 +132,24 @@ pub enum Tag {
     },
 
     TextInput {
-        id: u64,
         placeholder: String,
         value: String,
+        on_change: Option<CallbackId>,
+        on_submit: Option<CallbackId>,
+        disabled: bool,
     },
     Checkbox {
-        id: u64,
         value: bool,
+        on_change: Option<CallbackId>,
+        disabled: bool,
     },
     Switch {
-        id: u64,
         value: bool,
+        on_change: Option<CallbackId>,
     },
     Textarea {
         id: u64,
+        on_change: Option<CallbackId>,
     },
 }
 
@@ -216,6 +226,8 @@ impl<'js> FromJs<'js> for Tag {
                 })
             }
             "view" => {
+                use iced::widget::Id;
+
                 map_props!(
                     props,
                     (padding, "padding", Padding, IcedPadding),
@@ -232,10 +244,12 @@ impl<'js> FromJs<'js> for Tag {
                     (align_bottom, "alignBottom", Length, IcedLength),
                     (align_x, "alignX", Horizontal, IcedHorizontal),
                     (align_y, "alignY", Vertical, IcedVertical),
-                    (clip, "clip", bool, bool)
+                    (clip, "clip", bool, bool),
+                    (id, "id", Id, IcedId)
                 );
 
                 Ok(Tag::View {
+                    id,
                     padding,
                     width,
                     height,
@@ -377,6 +391,7 @@ impl<'js> FromJs<'js> for Tag {
             }
 
             "textarea" => {
+                /*TODO: need to generate ids for inputs */
                 unimplemented!()
             }
 
@@ -388,22 +403,35 @@ impl<'js> FromJs<'js> for Tag {
                         let value = props.get::<_, String>("value")?;
                         let placeholder = props.get::<_, String>("placeholder")?;
 
+                        let on_change = props.get::<_, CallbackId>("onChange").ok();
+                        let on_submit = props.get::<_, CallbackId>("onSubmit").ok();
+
+                        let disabled = props.get::<_, bool>("disabled").ok().unwrap_or_default();
+
                         Ok(Tag::TextInput {
-                            /*TODO: need to generate ids for inputs */
-                            id: 0,
                             value,
                             placeholder,
+                            on_change,
+                            on_submit,
+                            disabled,
                         })
                     }
                     "switch" => {
                         let value = props.get::<_, bool>("checked")?;
 
-                        Ok(Tag::Switch { id: 0, value })
+                        Ok(Tag::Switch {
+                            value,
+                            on_change: None,
+                        })
                     }
                     "checkbox" => {
                         let value = props.get::<_, bool>("checked")?;
 
-                        Ok(Tag::Checkbox { id: 0, value })
+                        Ok(Tag::Checkbox {
+                            value,
+                            disabled: false,
+                            on_change: None,
+                        })
                     }
 
                     _ => Err(rquickjs::Error::new_from_js_message(

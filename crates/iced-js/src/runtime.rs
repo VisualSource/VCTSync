@@ -28,6 +28,8 @@ pub enum Payload {
     None,
     Click,
 
+    Submit,
+
     TextInputChange(String),
     BoolInputChange(bool),
 }
@@ -40,6 +42,11 @@ impl<'js> IntoJs<'js> for Payload {
                 let obj = rquickjs::Object::new(ctx.clone())?;
                 obj.set("type", "click")?;
 
+                Ok(obj.into_value())
+            }
+            Payload::Submit => {
+                let obj = rquickjs::Object::new(ctx.clone())?;
+                obj.set("type", "submit")?;
                 Ok(obj.into_value())
             }
             Payload::BoolInputChange(value) => {

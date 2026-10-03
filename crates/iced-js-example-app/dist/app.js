@@ -1592,7 +1592,7 @@ var Oe = new ge(), ke = () => /* @__PURE__ */ r(c, {
 	let { data: e, isLoading: t } = De({
 		queryKey: ["hello"],
 		queryFn: async () => await (await fetch("https://jsonplaceholder.typicode.com/todos/1")).json()
-	}), [o, s] = n(0);
+	}), [o, s] = n(0), [c, l] = n("");
 	return /* @__PURE__ */ r("view", {
 		width: "fill",
 		height: "fill",
@@ -1604,6 +1604,7 @@ var Oe = new ge(), ke = () => /* @__PURE__ */ r(c, {
 				height: 10,
 				width: 10
 			}),
+			/* @__PURE__ */ r("hr", {}),
 			/* @__PURE__ */ r("text", { children: "Hello, From JS" }),
 			/* @__PURE__ */ i("row", { children: [
 				/* @__PURE__ */ r("button", {
@@ -1620,6 +1621,13 @@ var Oe = new ge(), ke = () => /* @__PURE__ */ r(c, {
 					children: "Add"
 				})
 			] }),
+			/* @__PURE__ */ r("input", {
+				type: "text",
+				value: c,
+				onChange: (e) => l(e.value),
+				placeholder: "Enter text"
+			}),
+			/* @__PURE__ */ i("tooltip", { children: [/* @__PURE__ */ r("button", { children: "Hello" }), /* @__PURE__ */ r("text", { children: "I'm a tool tip here" })] }),
 			t ? /* @__PURE__ */ r("col", {}) : e ? /* @__PURE__ */ i("col", { children: [/* @__PURE__ */ r("text", { children: e?.title }), /* @__PURE__ */ r("text", { children: e?.completed ? "uncompleted" : "Completed" })] }) : /* @__PURE__ */ r("col", {})
 		] })
 	});
