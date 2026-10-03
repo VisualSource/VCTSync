@@ -8,7 +8,7 @@
 ## Goal
 
 An iced app points at a script path. The script renders through a custom React reconciler
-(`js/iced-dom.ts`) whose host instances are plain data. Rust receives the committed tree and
+(`js/react-iced-native.ts`) whose host instances are plain data. Rust receives the committed tree and
 turns it into iced widgets, which the app returns from `surface()`.
 
 A JS-rendered region is a *surface*, not the whole window: it composes inside an ordinary iced
@@ -53,7 +53,7 @@ gets this for free: DOM nodes carry `__reactFiber$…` back-pointers and the DOM
 
 There is no DOM here. Host instances are plain objects that Rust converts to `tree::Node` and
 discards. The **only** thing keeping the fiber tree alive is the root handle from
-`createContainer`. So `iced-dom.ts` must retain it in module scope:
+`createContainer`. So `react-iced-native.ts` must retain it in module scope:
 
 ```ts
 const roots = new Map<number, OpaqueRoot>();   // module scope = rooted by the module registry
@@ -186,7 +186,7 @@ Subscription task (owns ONE AsyncRuntime, drives it; N roots inside it)
      dispatch cb_id → JS-side callback registry
 ```
 
-Callbacks stay **inside JS**. `iced-dom.ts` keeps a `Map<number, Function>`; props crossing to
+Callbacks stay **inside JS**. `react-iced-native.ts` keeps a `Map<number, Function>`; props crossing to
 Rust carry only a `u64` id. This sidesteps constraint 2 entirely and keeps `JsEvent` trivially
 `Send + Clone`.
 
@@ -271,7 +271,7 @@ Subscription identity is a hash, so if the hashed data were the script set, addi
 surface would tear down and restart the whole runtime — losing the first surface's state. Keep
 the identity stable (the generation counter below) and mount over the `JsCommand` channel.
 
-A useful consequence: the callback registry in `iced-dom.ts` is module-global, so **callback ids
+A useful consequence: the callback registry in `react-iced-native.ts` is module-global, so **callback ids
 are unique across all roots**. `dispatch(cb_id, payload)` needs no root id, and
 `JsEvent::Callback(u64, Payload)` stays flat.
 
@@ -317,7 +317,7 @@ moves it to build time.
 
 ```rust
 static BUNDLE: Bundle = embed! {
-    "iced-dom": "js/dist/iced-dom.js",
+    "react-iced-native": "js/dist/react-iced-native.js",
 };
 rt.set_loader(BUNDLE, BUNDLE).await;   // before any module load
 ```
@@ -332,7 +332,7 @@ Caveats:
 
 **The user script cannot use `embed!`** — its path is a runtime value, which is the point of the
 crate. Read it with `tokio::fs` and `Module::declare` it directly; its
-`import { createRoot } from "iced-dom"` still resolves through the runtime resolver, so `BUNDLE`
+`import { createRoot } from "react-iced-native"` still resolves through the runtime resolver, so `BUNDLE`
 covers it.
 
 Avoid `ScriptLoader`/`FileResolver` here. `Loader::load` is a sync trait method, so
@@ -480,7 +480,7 @@ Load-bearing details:
 - All module work must be inside `async_with` — `Module::declare` needs `Ctx<'js>`.
 - `set_loader` before the first import; globals before the first module body executes.
 
-`iced-dom` is never declared explicitly. The first mounted script's `import` pulls it from
+`react-iced-native` is never declared explicitly. The first mounted script's `import` pulls it from
 `BUNDLE`, and QuickJS caches it for every later mount in the same context.
 
 Module names are keyed by `root_id` so two surfaces can load the *same* file as independent
@@ -518,7 +518,7 @@ tag names (`row`, `col`, `text`, `button`, `svg`, `scroll`) and their attribute 
 `spacing`, `width`, `height`, `clip`, `style`). Keeping both front-ends on one vocabulary means
 the XML macro and JSX agree. It is a proc-macro, so none of it runs at runtime.
 
-### 6. Finish the reconciler — `js/iced-dom.ts`
+### 6. Finish the reconciler — `js/react-iced-native.ts`
 
 `supportsPersistence: true` / `supportsMutation: false` is the right choice for an immutable
 retained tree — keep it.

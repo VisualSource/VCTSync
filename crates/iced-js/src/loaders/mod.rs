@@ -1,4 +1,5 @@
 mod fs_loader;
+mod system_modules;
 
 #[cfg(feature = "svg-element")]
 pub(crate) mod svg;
@@ -7,6 +8,7 @@ pub(crate) mod svg;
 mod slio_loader;
 
 pub use fs_loader::FsAssets;
+pub(crate) use system_modules::SystemModule;
 
 use rquickjs::loader::ImportAttributes;
 #[cfg(feature = "embed")]

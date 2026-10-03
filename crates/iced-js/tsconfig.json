@@ -1,7 +1,6 @@
 {
   "include": [
     "js/**/*",
-    "example/**/*"
   ],
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
@@ -14,12 +13,12 @@
     // See also https://aka.ms/tsconfig/module
     "module": "esnext",
     "target": "es2020",
-    // `js/vendor/*` import "iced-dom" so the built façades keep that bare
+    // `js/vendor/*` import "react-iced-native" so the built façades keep that bare
     // specifier for the QuickJS loader to resolve. TS needs to be told where
     // it lives; esbuild is told to leave it external.
     "paths": {
-      "iced-dom": [
-        "./js/iced-dom.ts"
+      "react-iced-native": [
+        "./js/react-iced-native.ts"
       ]
     },
     "types": [

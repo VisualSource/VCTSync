@@ -6,6 +6,7 @@ mod event_target;
 #[cfg(feature = "fetch")]
 mod fetch;
 mod formatter;
+pub mod iced;
 pub mod iced_host;
 pub mod timers;
 

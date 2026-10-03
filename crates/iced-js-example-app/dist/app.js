@@ -1,9 +1,9 @@
-import { createRoot as e } from "iced-dom";
+import { createRoot as e } from "react-iced-native";
 import * as t from "react";
 import { useState as n } from "react";
 import { jsx as r, jsxs as i } from "react/jsx-runtime";
 import a from "./boxes.svg";
-//#region node_modules/.pnpm/@tanstack+react-query@5.103.2_react@19.3.0/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js
+//#region node_modules/.pnpm/@tanstack+react-query@5.104.1_react@19.3.0/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js
 var o = t.createContext(void 0), s = (e) => {
 	let n = t.useContext(o);
 	if (e) return e;
@@ -41,7 +41,7 @@ function d(e) {
 	setTimeout(e, 0);
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/utils.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/utils.js
 var f = typeof window > "u" || "Deno" in globalThis;
 function p() {}
 function m(e, t) {
@@ -172,7 +172,7 @@ function ie(e, t, n) {
 	}), e;
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/environmentManager.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/environmentManager.js
 var ae = () => f, M = () => ae(), N = class {
 	constructor() {
 		this.listeners = /* @__PURE__ */ new Set(), this.subscribe = this.subscribe.bind(this);
@@ -305,7 +305,7 @@ var I = oe(), L = new class extends N {
 	}
 }();
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/retryer.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/retryer.js
 function se(e) {
 	return Math.min(1e3 * 2 ** e, 3e4);
 }
@@ -373,7 +373,7 @@ function B(e) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/removable.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/removable.js
 var V = class {
 	#e;
 	destroy() {
@@ -392,7 +392,7 @@ var V = class {
 	}
 };
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
 function ce(e) {
 	return { onFetch: (t, n) => {
 		let r = t.options, i = t.fetchOptions?.meta?.fetchMore?.direction, a = t.state.data?.pages || [], o = t.state.data?.pageParams || [], s = {
@@ -451,7 +451,7 @@ function le(e, { pages: t, pageParams: n }) {
 	return t.length > 0 ? e.getPreviousPageParam?.(t[0], t, n[0], n) : void 0;
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/query.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/query.js
 var U = class extends V {
 	#e;
 	#t;
@@ -749,7 +749,7 @@ function K(e) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/queryObserver.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/queryObserver.js
 var ue = class extends N {
 	#e;
 	#t = void 0;
@@ -978,7 +978,7 @@ function X(e, t) {
 	return _(t.enabled, e) !== !1 && e.isStaleByTime(_(t.staleTime, e));
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/mutation.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/mutation.js
 var fe = class extends V {
 	#e;
 	#t;
@@ -1161,7 +1161,7 @@ function pe() {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/mutationCache.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/mutationCache.js
 var me = class extends N {
 	#e;
 	#t;
@@ -1260,7 +1260,7 @@ function Z(e) {
 	return e.options.scope?.id;
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+query-core@5.103.2/node_modules/@tanstack/query-core/build/modern/queryCache.js
+//#region node_modules/.pnpm/@tanstack+query-core@5.104.1/node_modules/@tanstack/query-core/build/modern/queryCache.js
 var he = class extends N {
 	#e;
 	constructor(e = {}) {
@@ -1528,7 +1528,7 @@ var he = class extends N {
 }, Q = t.createContext(!1), _e = () => t.useContext(Q);
 Q.Provider;
 //#endregion
-//#region node_modules/.pnpm/@tanstack+react-query@5.103.2_react@19.3.0/node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js
+//#region node_modules/.pnpm/@tanstack+react-query@5.104.1_react@19.3.0/node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js
 function ve() {
 	let e = !1;
 	return {
@@ -1557,7 +1557,7 @@ var ye = t.createContext(ve()), be = () => t.useContext(ye), xe = (e, t, n) => {
 	n.clearReset();
 });
 //#endregion
-//#region node_modules/.pnpm/@tanstack+react-query@5.103.2_react@19.3.0/node_modules/@tanstack/react-query/build/modern/useBaseQuery.js
+//#region node_modules/.pnpm/@tanstack+react-query@5.104.1_react@19.3.0/node_modules/@tanstack/react-query/build/modern/useBaseQuery.js
 function Ee(e, n, r) {
 	let i = _e(), a = be(), o = s(r), c = o.defaultQueryOptions(e), l = o.getQueryCache().get(c.queryHash), u = e.subscribed !== !1;
 	c._optimisticResults = i ? "isRestoring" : u ? "optimistic" : void 0, we(c), xe(c, a, l), Se(a);
@@ -1578,13 +1578,12 @@ function Ee(e, n, r) {
 	return c.notifyOnChangeProps ? f : d.trackResult(f);
 }
 //#endregion
-//#region node_modules/.pnpm/@tanstack+react-query@5.103.2_react@19.3.0/node_modules/@tanstack/react-query/build/modern/useQuery.js
+//#region node_modules/.pnpm/@tanstack+react-query@5.104.1_react@19.3.0/node_modules/@tanstack/react-query/build/modern/useQuery.js
 function De(e, t) {
 	return Ee(e, ue, t);
 }
 //#endregion
 //#region js/view.tsx
-console.log(typeof a, a instanceof SvgHandle);
 for (let e in globalThis) console.log("global:", e);
 var Oe = new ge(), ke = () => /* @__PURE__ */ r(c, {
 	client: Oe,

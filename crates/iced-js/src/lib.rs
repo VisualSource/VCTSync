@@ -17,12 +17,12 @@ type RootId = String;
 
 #[cfg(test)]
 mod tests {
-    use crate::{Event, FsAssets, js_host, runtime::BUNDLED_LIBS};
+    use crate::{Event, FsAssets, js_host, runtime::BUNDLED_RUNTIME_LIBS};
     use iced::futures::{StreamExt, channel::mpsc};
     use rquickjs::{AsyncContext, AsyncRuntime, CatchResultExt, Module};
 
     const SCRIPT: &str = r#"
-        import { createRoot } from "iced-dom";
+        import { createRoot } from "react-iced-native";
         import { jsx as _jsx } from "react/jsx-runtime";
 
         const View = () => _jsx("view", { children: _jsx("text", { children: "Hello, From JS" }) });
@@ -51,7 +51,8 @@ mod tests {
         let (tx, mut rx) = mpsc::channel::<Event>(100);
 
         let rt = AsyncRuntime::new().unwrap();
-        rt.set_loader(BUNDLED_LIBS, BUNDLED_LIBS).await;
+        rt.set_loader(BUNDLED_RUNTIME_LIBS, BUNDLED_RUNTIME_LIBS)
+            .await;
 
         let ctx = AsyncContext::full(&rt).await.unwrap();
         ctx.async_with(async |ctx| {
@@ -86,7 +87,8 @@ mod tests {
         let (tx, mut rx) = mpsc::channel::<Event>(100);
 
         let rt = AsyncRuntime::new().unwrap();
-        rt.set_loader(BUNDLED_LIBS, BUNDLED_LIBS).await;
+        rt.set_loader(BUNDLED_RUNTIME_LIBS, BUNDLED_RUNTIME_LIBS)
+            .await;
 
         let ctx = AsyncContext::full(&rt).await.unwrap();
         ctx.async_with(async |ctx| {
@@ -123,7 +125,8 @@ mod tests {
         let (tx, mut rx) = mpsc::channel::<Event>(100);
 
         let rt = AsyncRuntime::new().unwrap();
-        rt.set_loader(BUNDLED_LIBS, BUNDLED_LIBS).await;
+        rt.set_loader(BUNDLED_RUNTIME_LIBS, BUNDLED_RUNTIME_LIBS)
+            .await;
 
         let ctx = AsyncContext::full(&rt).await.unwrap();
         ctx.async_with(async |ctx| {
@@ -257,7 +260,7 @@ mod tests {
         use tokio::time::timeout;
 
         const CLICKABLE: &str = r#"
-            import { createRoot } from "iced-dom";
+            import { createRoot } from "react-iced-native";
             import { jsx as _jsx } from "react/jsx-runtime";
 
             const View = () => _jsx("button", {
@@ -360,7 +363,7 @@ mod tests {
         use tokio::time::timeout;
 
         const COUNTER: &str = r#"
-            import { createRoot } from "iced-dom";
+            import { createRoot } from "react-iced-native";
             import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
             import { useState } from "react";
             import icon from "./iced-js-test-icon.svg" with { type: "svg" };

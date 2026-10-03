@@ -30,12 +30,12 @@ fn main() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let manifest_dir = Path::new(&manifest_dir);
 
-    println!("cargo:rerun-if-changed=js/iced-dom.ts");
+    println!("cargo:rerun-if-changed=js/react-iced-native.ts");
     println!("cargo:rerun-if-changed=js/vendor");
     println!("cargo:rerun-if-changed=package.json");
     println!("cargo:rerun-if-changed=pnpm-lock.yaml");
 
-    let dist_ready = ["iced-dom.js", "react.js", "jsx-runtime.js"]
+    let dist_ready = ["react-iced-native.js", "react.js", "jsx-runtime.js"]
         .iter()
         .all(|f| manifest_dir.join("js/dist").join(f).exists());
 

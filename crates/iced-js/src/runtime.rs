@@ -13,11 +13,12 @@ use std::collections::HashMap;
 use crate::{
     RootId,
     js_host::{self, iced_host::IcedHost},
+    loaders::SystemModule,
     renderer::Node,
 };
 
-pub(crate) static BUNDLED_LIBS: Bundle = embed! {
-    "iced-dom": "js/dist/iced-dom.js",
+pub(crate) static BUNDLED_RUNTIME_LIBS: Bundle = embed! {
+    "react-iced-native": "js/dist/react-iced-native.js",
     "react": "js/dist/react.js",
     "react/jsx-runtime": "js/dist/jsx-runtime.js"
 };
@@ -26,7 +27,9 @@ pub(crate) static BUNDLED_LIBS: Bundle = embed! {
 pub enum Payload {
     None,
     Click,
+
     TextInputChange(String),
+    BoolInputChange(bool),
 }
 
 impl<'js> IntoJs<'js> for Payload {
@@ -37,6 +40,12 @@ impl<'js> IntoJs<'js> for Payload {
                 let obj = rquickjs::Object::new(ctx.clone())?;
                 obj.set("type", "click")?;
 
+                Ok(obj.into_value())
+            }
+            Payload::BoolInputChange(value) => {
+                let obj = rquickjs::Object::new(ctx.clone())?;
+                obj.set("type", "change")?;
+                obj.set("value", value)?;
                 Ok(obj.into_value())
             }
             Payload::TextInputChange(value) => {
@@ -126,7 +135,7 @@ async fn new_context(
         "host::seed".to_string(),
         format!(
             r#"
-                import {{ setCallbackBase }} from "iced-dom";
+                import {{ setCallbackBase }} from "react-iced-native";
                 setCallbackBase({});
             "#,
             callback_base
@@ -188,8 +197,15 @@ where
         let (sender, mut receiver) = mpsc::channel(100);
 
         let rt = AsyncRuntime::new().expect("js runtime failed to init");
-        rt.set_loader((BUNDLED_LIBS, loader.clone()), (BUNDLED_LIBS, loader))
-            .await;
+        rt.set_loader(
+            (
+                BUNDLED_RUNTIME_LIBS,
+                SystemModule::default(),
+                loader.clone(),
+            ),
+            (BUNDLED_RUNTIME_LIBS, SystemModule::default(), loader),
+        )
+        .await;
 
         // Polled in the select below rather than spawned on its own task: the
         // runtime's schedular holds a single waker — whichever task polled it

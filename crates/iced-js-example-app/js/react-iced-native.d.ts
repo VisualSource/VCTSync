@@ -17,7 +17,7 @@ declare module "*.svg" {
 }
 
 
-declare module "iced-dom" {
+declare module "react-iced-native" {
     namespace IcedParams {
         export type Length = "fill" | "shrink" | number | `${number}%`;
         export type Horizontal = "center" | "left" | "right";

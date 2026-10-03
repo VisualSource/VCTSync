@@ -20,15 +20,6 @@ import { ConcurrentRoot, DefaultEventPriority, NoEventPriority } from "react-rec
 export const React = ReactNamespace;
 export const jsxRuntime = JsxRuntimeNamespace;
 
-declare function setTimeout(fn: () => void, ms?: number): number;
-declare function clearTimeout(id: number): void;
-declare function queueMicrotask(cb: () => void): void;
-
-declare class SvgHandle {
-    private constructor();
-}
-
-
 declare global {
     /** The host object Rust installs. */
     var __ICED_INTERNALS__: {
@@ -47,15 +38,6 @@ declare global {
         dispatch(id: number, payload?: unknown): void;
     }
 }
-
-/** Installed by `js_host::console`, not the DOM — `lib` is ES2020 only. */
-declare const console: {
-    debug(...values: unknown[]): void;
-    log(...values: unknown[]): void;
-    warn(...values: unknown[]): void;
-    error(...values: unknown[]): void;
-};
-
 
 type IcedTag = string;
 /** Props as React hands them to us: anything at all, including functions,

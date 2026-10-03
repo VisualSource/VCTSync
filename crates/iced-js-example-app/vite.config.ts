@@ -12,14 +12,14 @@ export default defineConfig({
             formats: ["es"],
         },
         emptyOutDir: false,
-        
+
         minify: true,
         rolldownOptions: {
-            
+
             output: {
                 // minify: true
             },
-            external: ["react", "react/jsx-runtime", "iced-dom",/\.svg$/]
+            external: ["react", "react/jsx-runtime", "react-iced-native", /\.svg$/]
         }
     }
 });
