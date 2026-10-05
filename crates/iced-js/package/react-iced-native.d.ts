@@ -123,7 +123,15 @@ declare module "react/jsx-runtime" {
             button: IcedElements.Button,
             col: IcedElements.Col,
             row: IcedElements.Row,
-            svg: IcedElements.Svg
+            svg: IcedElements.Svg,
+
+            scroll: React.Attributes & { children: React.ReactNode },
+            hr: React.Attributes,
+            vr: React.Attributes,
+            space: React.Attributes
+            tooltip: React.Attributes & { children: [React.ReactNode,React.ReactNode] }
+
+            input: React.Attributes
         }
     }
 }

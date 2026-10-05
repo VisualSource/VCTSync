@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRoot } from "react-iced-native";
 import { useState } from "react";
 
 import { Tooltip } from "./utils.js";
@@ -8,14 +9,12 @@ import { Logs } from "./pages/logs.js";
 import { Profiles } from "./pages/profiles.js";
 import { Settings } from "./pages/settings.js";
 
-import Library from "./assets/icons/library.svg";
-import Boxes from "./assets/icons/boxes.svg";
-import ScrollText from "./assets/icons/scroll-text.svg";
-import SettingsSvg from "./assets/icons/settings.svg";
+import Library from "./assets/icons/library.svg" with {type: "svg" };
+import Boxes from "./assets/icons/boxes.svg"with {type: "svg" };
+import ScrollText from "./assets/icons/scroll-text.svg"with {type: "svg" };
+import SettingsSvg from "./assets/icons/settings.svg"with {type: "svg" };
 
 const client = new QueryClient();
-
-
 
 const App = () => {
     const [tab, setTab] = useState<string>("logs");
@@ -74,3 +73,6 @@ const View = ({ tab }: { tab: string }) => {
     }
 }
 
+
+
+createRoot("main").render(<App />);
