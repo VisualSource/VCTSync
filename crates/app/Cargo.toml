@@ -8,6 +8,7 @@ name = "vcs"
 path = "src/main.rs"
 
 [dependencies]
+iced-js = { path = "../iced-js" }
 anyhow = { workspace = true }
 iced-xml = { path = "../iced-xml" }
 iced-query = { path = "../iced-query" }

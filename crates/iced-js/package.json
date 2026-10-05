@@ -1,8 +1,12 @@
 {
-  "name": "iced-js",
+  "name": "react-iced-native",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "types": "./package/react-iced-native.d.ts",
+  "files": [
+    "./package/*"
+  ],
   "scripts": {
     "build:dev": "pnpm esbuild ./js/iced-dom.ts --bundle --outfile=./js/dist/iced-dom.js --format=esm --target=es2020 --define:process.env.NODE_ENV=\\\"development\\\" && pnpm run bundle:facades",
     "build:prod": "pnpm esbuild ./js/iced-dom.ts --bundle --outfile=./js/dist/iced-dom.js --format=esm --target=es2020 --define:process.env.NODE_ENV=\\\"production\\\" --minify --sourcemap && pnpm run bundle:facades",
@@ -10,7 +14,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
