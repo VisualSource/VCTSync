@@ -177,6 +177,7 @@ dependencies = [
  "chrono",
  "chrono-humanize",
  "iced",
+ "iced-js",
  "iced-query",
  "iced-xml",
  "iced_aw",
