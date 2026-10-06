@@ -53,9 +53,11 @@ const Log = ({ isLoading, isError, error, data }: { isLoading: boolean, isError:
 
     return (
         <scroll height="fill" anchorBottom>
-            {data.map((item, i) =>
-                (<text key={i}>{item}</text>)
-            )}
+            <col>
+                {data.map((item, i) =>
+                    (<text key={i}>{item}</text>)
+                )}
+            </col>
         </scroll>
     );
 }

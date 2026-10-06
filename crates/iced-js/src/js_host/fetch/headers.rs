@@ -3,7 +3,7 @@ use rquickjs::{Ctx, JsLifetime, Result, Value, class::Trace, function::Opt};
 use std::str::FromStr;
 
 #[derive(Trace, JsLifetime)]
-#[rquickjs::class(frozen)]
+#[rquickjs::class]
 pub struct Headers {
     #[qjs(skip_trace)]
     pub map: reqwest::header::HeaderMap,

@@ -68,9 +68,9 @@ impl Host {
 
     pub fn update(&mut self, ev: Event) -> Task<Event> {
         match ev {
-            Event::IpcDispatch(cmd, payload) => {
+            Event::IpcDispatch(cmd, id, payload) => {
                 if let Some(tx) = &mut self.tx
-                    && let Err(err) = tx.try_send(JsCmd::IpcDispatch(cmd, payload))
+                    && let Err(err) = tx.try_send(JsCmd::IpcDispatch(cmd, id, payload))
                 {
                     log::error!("{}", err);
                 }

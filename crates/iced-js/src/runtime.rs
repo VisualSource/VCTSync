@@ -20,7 +20,8 @@ use crate::{
 pub(crate) static BUNDLED_RUNTIME_LIBS: Bundle = embed! {
     "react-iced-native": "js/dist/react-iced-native.js",
     "react": "js/dist/react.js",
-    "react/jsx-runtime": "js/dist/jsx-runtime.js"
+    "react/jsx-runtime": "js/dist/jsx-runtime.js",
+    "react/compiler-runtime": "js/dist/compiler-runtime.js"
 };
 
 #[derive(Debug, Clone)]
@@ -67,8 +68,8 @@ impl<'js> IntoJs<'js> for Payload {
 
 #[derive(Clone)]
 pub enum Event {
-    IpcDispatch(String, String),
-    Ipc(String, String),
+    IpcDispatch(String, String, String),
+    Ipc(String, String, String),
     Ready(mpsc::Sender<JsCmd>),
     Error {
         root_id: Option<RootId>,
@@ -85,7 +86,7 @@ pub enum JsCmd {
     Mount { root_id: RootId, module: String },
     Unmount(RootId),
     Dispatch(u64, Payload),
-    IpcDispatch(String, String),
+    IpcDispatch(String, String, String),
     Reload,
 }
 
@@ -246,7 +247,7 @@ where
             };
 
             match cmd {
-                JsCmd::IpcDispatch(cmd, data) => {
+                JsCmd::IpcDispatch(cmd, id, data) => {
                     let result: Result<(), String> = ctx
                         .async_with(async |ctx| {
                             let globals = ctx.globals();
@@ -258,7 +259,9 @@ where
 
                             let mut host = host_obj.borrow_mut();
 
-                            host.dispatch(&ctx, cmd, data);
+                            if let Err(err) = host.dispatch(&ctx, cmd, id, data) {
+                                log::error!("{}", err);
+                            }
 
                             Ok(())
                         })

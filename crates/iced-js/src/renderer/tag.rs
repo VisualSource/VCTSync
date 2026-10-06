@@ -524,7 +524,6 @@ impl Tag {
             | Tag::View { .. }
             | Tag::Button { .. }
             | Tag::Text { .. }
-            | Tag::Scroll { .. }
             | Tag::Textarea { .. } => len == 1,
             Tag::Tooltip { .. } => len == 2,
             _ => true,

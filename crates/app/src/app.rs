@@ -47,8 +47,13 @@ impl Application {
         match msg {
             Message::Reload => state.host.reload().map(Message::Js),
             Message::Js(event) => {
-                if let iced_js::Event::Ipc(_cmd, _payload) = event {
-                    Task::none()
+                if let iced_js::Event::Ipc(cmd, id, payload) = event {
+                    match cmd.as_str() {
+                        "fetch::install_build" => Task::done(Message::Js(
+                            iced_js::Event::IpcDispatch(cmd, id, format!("null")),
+                        )),
+                        _ => Task::none(),
+                    }
                 } else {
                     state.host.update(event).map(Message::Js)
                 }

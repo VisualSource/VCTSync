@@ -4,6 +4,8 @@ import * as JsxRuntimeNamespace from "react/jsx-runtime";
 import Reconciler, { type HostConfig, type ReactContext, type EventPriority, type OpaqueRoot } from "react-reconciler";
 import { ConcurrentRoot, DefaultEventPriority, NoEventPriority } from "react-reconciler/constants";
 import { nanoid } from "nanoid";
+import * as CompilerRuntimeNamespace from "react/compiler-runtime";
+
 
 /**
  * React and its JSX runtime, re-exported so that `vendor/react.ts` and
@@ -20,14 +22,15 @@ import { nanoid } from "nanoid";
  */
 export const React = ReactNamespace;
 export const jsxRuntime = JsxRuntimeNamespace;
+export const compilerRuntime = CompilerRuntimeNamespace;
 
 declare global {
     /** The host object Rust installs. */
     var __ICED_INTERNALS__: {
         commentTree(rootId: string, tree: IcedChild): void;
-        invoke(cmd: string, obj: object): void;
-        addEventListener(type: string, cb: (ev: unknown) => void, opts?: { once: boolean }): void;
-        removeEventListener(type: string, cb: (ev: unknown) => void): void;
+        invoke(cmd: string, obj: { payload: unknown, id: string; }): void;
+        addEventListener(type: string, cb: (ev: { id: string, payload: unknown }) => void, opts?: { once: boolean }): void;
+        removeEventListener(type: string, cb: (ev: { id: string, payload: unknown }) => void): void;
     }
 
     /** This module's entry points, published as a global for Rust to call
@@ -56,7 +59,7 @@ type IcedHostContext = Readonly<Record<string, never>>;
 type IcedHostConfig = HostConfig<IcedTag, RawProps, IcedContainer, IcedNode, IcedText, never, never, never, IcedNode, IcedHostContext, IcedChild[], number, -1, null>;
 
 
-export const invoke = async <T>(cmd: string, obj: object) => {
+export const invoke = async <T>(cmd: string, payload?: unknown) => {
     const id = nanoid();
 
     let resolve: (value: T | PromiseLike<T>) => void;
@@ -69,12 +72,12 @@ export const invoke = async <T>(cmd: string, obj: object) => {
         resolve(ev.payload);
     }
 
-    __ICED_INTERNALS__.addEventListener("ipc", callback as never);
+    __ICED_INTERNALS__.addEventListener(cmd, callback as never);
 
-    __ICED_INTERNALS__.invoke(cmd, { payload: obj, id: "" });
+    __ICED_INTERNALS__.invoke(cmd, { payload: payload ?? null, id });
 
     return promise.finally(() => {
-        __ICED_INTERNALS__.removeEventListener("ipc", callback as never);
+        __ICED_INTERNALS__.removeEventListener(cmd, callback as never);
     });
 }
 

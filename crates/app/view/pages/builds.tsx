@@ -136,7 +136,7 @@ const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle
     }
 
     return (
-        <>
+        <col>
             {data.map(e => {
                 return (
                     <row key={e.id} padding={[4, 8]} alignY="center">
@@ -168,7 +168,7 @@ const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle
                     </row>
                 );
             })}
-        </>
+        </col>
     );
 }
 

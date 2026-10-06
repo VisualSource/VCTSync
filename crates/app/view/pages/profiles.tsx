@@ -76,15 +76,17 @@ const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError
 
     return (
         <scroll>
-            {data.map(profile => (
-                <view key={profile.id}>
-                    <row>
-                        <text>{profile.name}</text>
-                        <space />
+            <col>
+                {data.map(profile => (
+                    <view key={profile.id}>
+                        <row>
+                            <text>{profile.name}</text>
+                            <space />
 
-                    </row>
-                </view>
-            ))}
+                        </row>
+                    </view>
+                ))}
+            </col>
         </scroll>
     );
 }

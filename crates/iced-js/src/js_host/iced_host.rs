@@ -23,22 +23,35 @@ impl<'js> IcedHost<'js> {
         }
     }
 
-    pub fn dispatch(&mut self, ctx: &Ctx<'js>, cmd: String, data: String) {
-        let callbacks = self.listeners.take(&cmd);
-
+    pub fn dispatch(
+        &mut self,
+        ctx: &Ctx<'js>,
+        cmd: String,
+        id: String,
+        data: String,
+    ) -> Result<()> {
         let obj = match ctx.json_parse(data).catch(ctx) {
             Ok(v) => v,
             Err(err) => {
-                log::error!("failed to dispatch ipc event: {}", err);
-                return;
+                return Err(rquickjs::Error::new_from_js_message(
+                    "string",
+                    "object",
+                    format!("failed to convert json to object: {}", err.to_string()),
+                ));
             }
         };
+        let event = rquickjs::Object::new_proto(ctx.clone(), None)?;
+        event.set("id", id)?;
+        event.set("payload", obj)?;
 
+        let callbacks = self.listeners.take(&cmd);
         for listener in callbacks {
-            if let Err(err) = listener.call::<_, ()>((obj.clone(),)).catch(ctx) {
+            if let Err(err) = listener.call::<_, ()>((event.clone(),)).catch(ctx) {
                 log::error!("{}", err);
             }
         }
+
+        Ok(())
     }
 }
 
@@ -71,15 +84,16 @@ impl<'js> IcedHost<'js> {
     }
 
     fn invoke(&mut self, ctx: Ctx<'js>, cmd: String, payload: Object<'js>) -> Result<()> {
-        let data = ctx.json_stringify(payload)?;
+        let id = payload.get::<_, String>("id")?;
+        let payload = payload.get::<_, rquickjs::Value<'js>>("payload")?;
 
-        let payload = if let Some(s) = data {
+        let data = if let Some(s) = ctx.json_stringify(payload)? {
             s.to_string()?
         } else {
             String::default()
         };
 
-        if let Err(err) = self.pipe.try_send(Event::Ipc(cmd, payload)) {
+        if let Err(err) = self.pipe.try_send(Event::Ipc(cmd, id, data)) {
             log::error!("{}", err);
         }
 

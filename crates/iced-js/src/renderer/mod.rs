@@ -207,9 +207,15 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 auto_scroll,
                 spacing,
             } => {
-                debug_assert_eq!(children.len(), 1);
+                let content: iced::Element<'a, Event> = if children.is_empty() {
+                    iced::widget::Column::new().into()
+                } else if children.len() == 1 {
+                    render_tree(&children[0])
+                } else {
+                    let items = children.iter().map(render_tree);
+                    iced::widget::Column::with_children(items).into()
+                };
 
-                let content = render_tree(&children[0]);
                 let mut widget = iced::widget::scrollable(content);
 
                 apply_opt!(widget, width, width);

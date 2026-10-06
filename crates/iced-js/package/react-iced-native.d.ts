@@ -21,7 +21,7 @@ declare module "react-iced-native" {
      * @param {object} obj should be json stringifyable
      * @return {*}  {Promise<T>}
      */
-    export function invoke<T>(cmd: string, obj: object): Promise<T>;
+    export function invoke<T>(cmd: string, obj: unknown): Promise<T>;
 
 
     export function createRoot(id: string): { render: (el: React.ReactNode) => void, destroy(): void; }

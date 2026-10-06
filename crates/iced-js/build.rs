@@ -35,9 +35,14 @@ fn main() {
     println!("cargo:rerun-if-changed=package.json");
     println!("cargo:rerun-if-changed=pnpm-lock.yaml");
 
-    let dist_ready = ["react-iced-native.js", "react.js", "jsx-runtime.js"]
-        .iter()
-        .all(|f| manifest_dir.join("js/dist").join(f).exists());
+    let dist_ready = [
+        "react-iced-native.js",
+        "react.js",
+        "jsx-runtime.js",
+        "compiler-runtime.js",
+    ]
+    .iter()
+    .all(|f| manifest_dir.join("js/dist").join(f).exists());
 
     // `embed!` in src/runtime.rs reads js/dist at macro expansion, so the
     // bundles must exist before rustc runs.

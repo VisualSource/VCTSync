@@ -10,7 +10,7 @@
   "scripts": {
     "build:dev": "pnpm esbuild ./js/react-iced-native.ts --bundle --outfile=./js/dist/react-iced-native.js --format=esm --target=es2020 --define:process.env.NODE_ENV=\\\"development\\\" && pnpm run bundle:facades",
     "build:prod": "pnpm esbuild ./js/react-iced-native.ts --bundle --outfile=./js/dist/react-iced-native.js --format=esm --target=es2020 --define:process.env.NODE_ENV=\\\"production\\\" --minify --sourcemap && pnpm run bundle:facades",
-    "bundle:facades": "pnpm esbuild ./js/vendor/react.ts ./js/vendor/jsx-runtime.ts --bundle --external:react-iced-native --outdir=./js/dist --format=esm --target=es2020 --minify"
+    "bundle:facades": "pnpm esbuild ./js/vendor/compiler-runtime.ts ./js/vendor/react.ts ./js/vendor/jsx-runtime.ts --bundle --external:react-iced-native --outdir=./js/dist --format=esm --target=es2020 --minify"
   },
   "keywords": [],
   "author": "",

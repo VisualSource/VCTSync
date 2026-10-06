@@ -13,7 +13,7 @@ impl Crypto {
 #[rquickjs::methods(rename_all = "camelCase")]
 impl Crypto {
     fn get_random_values<'js>(
-        &mut self,
+        &self,
         ctx: Ctx<'js>,
         typed_array: rquickjs::Value<'js>,
     ) -> rquickjs::Result<rquickjs::Value<'js>> {
