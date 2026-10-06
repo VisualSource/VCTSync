@@ -6,7 +6,7 @@ use iced::Element;
 pub(crate) use node::{Node, to_node};
 pub(crate) use tag::Tag;
 
-use crate::{Event, runtime::Payload};
+use crate::{Event, renderer::tag::ViewStyle, runtime::Payload};
 
 macro_rules! apply_opt {
     ($node: ident, $prop: ident, $fn: ident) => {
@@ -25,6 +25,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 clip,
                 align_y,
                 padding,
+                spacing,
                 ..
             } => {
                 let mut node = if children.is_empty() {
@@ -39,6 +40,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 apply_opt!(node, align_y, align_y);
                 apply_opt!(node, padding, padding);
                 apply_opt!(node, clip, clip);
+                apply_opt!(node, spacing, spacing);
 
                 node.into()
             }
@@ -48,6 +50,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 width,
                 align_x,
                 clip,
+                spacing,
                 ..
             } => {
                 let mut node = if children.is_empty() {
@@ -63,6 +66,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 apply_opt!(node, align_x, align_x);
                 apply_opt!(node, padding, padding);
                 apply_opt!(node, clip, clip);
+                apply_opt!(node, spacing, spacing);
 
                 node.into()
             }
@@ -83,11 +87,21 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 align_y,
                 clip,
                 id,
+                style,
             } => {
                 debug_assert_eq!(children.len(), 1);
 
                 let content = render_tree(&children[0]);
                 let mut node = iced::widget::container(content);
+
+                if let Some(style) = style {
+                    match style {
+                        ViewStyle::RoundedBox => {
+                            node = node.style(iced::widget::container::rounded_box)
+                        }
+                        ViewStyle::Custom {} => {}
+                    }
+                }
 
                 apply_opt!(node, align_bottom, align_bottom);
                 apply_opt!(node, align_left, align_left);
@@ -117,6 +131,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 padding,
                 width,
                 height,
+                disabled,
             } => {
                 debug_assert_eq!(children.len(), 1);
                 let content = render_tree(&children[0]);
@@ -124,7 +139,12 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 let mut btn = iced::widget::button(content);
 
                 if let Some(id) = on_press {
-                    btn = btn.on_press(Event::Callback(*id, Payload::Click))
+                    let callback = if *disabled {
+                        None
+                    } else {
+                        Some(Event::Callback(*id, Payload::Click))
+                    };
+                    btn = btn.on_press_maybe(callback);
                 }
 
                 apply_opt!(btn, width, width);
@@ -271,7 +291,10 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 node.into()
             }
 
-            Tag::Textarea { id, on_change } => {
+            Tag::Textarea {
+                id: _id,
+                on_change: _on_change,
+            } => {
                 unimplemented!()
             }
 

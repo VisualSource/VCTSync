@@ -15,6 +15,12 @@ use std::fmt::Display;
 type CallbackId = u64;
 
 #[derive(Debug)]
+pub enum ViewStyle {
+    RoundedBox,
+    Custom {},
+}
+
+#[derive(Debug)]
 pub enum Tag {
     Col {
         padding: Option<Padding>,
@@ -24,6 +30,7 @@ pub enum Tag {
         align_y: Option<Vertical>,
         clip: Option<bool>,
         warp: Option<bool>,
+        spacing: Option<Pixels>,
     },
     Row {
         padding: Option<Padding>,
@@ -32,6 +39,7 @@ pub enum Tag {
         align_x: Option<Horizontal>,
         align_y: Option<Vertical>,
         clip: Option<bool>,
+        spacing: Option<Pixels>,
         warp: Option<bool>,
     },
     View {
@@ -51,6 +59,7 @@ pub enum Tag {
         align_x: Option<Horizontal>,
         align_y: Option<Vertical>,
         clip: Option<bool>,
+        style: Option<ViewStyle>,
     },
     Button {
         // class
@@ -62,6 +71,8 @@ pub enum Tag {
         //style
         width: Option<Length>,
         height: Option<Length>,
+
+        disabled: bool,
     },
     Text {
         size: Option<Pixels>,
@@ -165,7 +176,9 @@ macro_rules! map_props {
                 $(
                     $propKey => $name = Some(value.get::<$to>()?.into()),
                 )*
-                _ => {}
+                _ => {
+                    log::warn!("skipping unknown prop: '{key}'");
+                }
             }
         }
 
@@ -201,7 +214,8 @@ impl<'js> FromJs<'js> for Tag {
                     (align_x, "alignX", Horizontal, IcedHorizontal),
                     (align_y, "alignY", Vertical, IcedVertical),
                     (clip, "clip", bool, bool),
-                    (warp, "warp", bool, bool)
+                    (warp, "warp", bool, bool),
+                    (spacing, "spacing", Pixels, f32)
                 );
                 Ok(if tag_type == "row" {
                     Tag::Row {
@@ -212,6 +226,7 @@ impl<'js> FromJs<'js> for Tag {
                         align_y,
                         clip,
                         warp,
+                        spacing,
                     }
                 } else {
                     Tag::Col {
@@ -222,6 +237,7 @@ impl<'js> FromJs<'js> for Tag {
                         align_y,
                         clip,
                         warp,
+                        spacing,
                     }
                 })
             }
@@ -248,7 +264,16 @@ impl<'js> FromJs<'js> for Tag {
                     (id, "id", Id, IcedId)
                 );
 
+                let style = props.get::<_, String>("style").ok().and_then(|v| {
+                    if v == "roundedBox" {
+                        return Some(ViewStyle::RoundedBox);
+                    }
+
+                    None
+                });
+
                 Ok(Tag::View {
+                    style,
                     id,
                     padding,
                     width,
@@ -274,7 +299,8 @@ impl<'js> FromJs<'js> for Tag {
                     (on_press, "onPress", CallbackId, CallbackId),
                     (padding, "padding", Padding, IcedPadding),
                     (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength)
+                    (height, "height", Length, IcedLength),
+                    (disabled, "disabled", bool, bool)
                 );
 
                 Ok(Tag::Button {
@@ -283,6 +309,7 @@ impl<'js> FromJs<'js> for Tag {
                     padding,
                     width,
                     height,
+                    disabled: disabled.unwrap_or_default(),
                 })
             }
             "text" => {

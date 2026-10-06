@@ -69,7 +69,7 @@ export const Builds = () => {
     return (
         <col>
             <view>
-                <text size={24} >Versions</text>
+                <text size={24} font={{ weight: "bold" }}>Versions</text>
             </view>
             <InstalledVersion />
 
@@ -85,21 +85,22 @@ export const Builds = () => {
                 </row>
                 <hr />
 
-                <scroll spacing={4}>
-                    <BuildsList
-                        isError={remote.isError}
-                        error={remote.error}
-                        isLoading={remote.isLoading}
-                        data={remote.data}
-                        icon={Network} />
-                </scroll>
-
+                <row height={256}>
+                    <scroll spacing={4}>
+                        <BuildsList
+                            isError={remote.isError}
+                            error={remote.error}
+                            isLoading={remote.isLoading}
+                            data={remote.data}
+                            icon={Network} />
+                    </scroll>
+                </row>
             </col>
 
             <space height={15} />
 
-            <col>
-                <row>
+            <col spacing={4}>
+                <row spacing={2} alignY="center">
                     <text>Local</text>
                     <space width="fill" />
                     <button disabled={local.isLoading} onPress={() => void local.refetch().catch(e => console.error(e))}>
@@ -107,11 +108,11 @@ export const Builds = () => {
                     </button>
                 </row>
                 <hr />
-
-                <scroll>
-                    <BuildsList isError={local.isError} error={local.error} isLoading={local.isLoading} data={local.data} icon={FlaskConical} />
-                </scroll>
-
+                <row height={256}>
+                    <scroll spacing={4}>
+                        <BuildsList isError={local.isError} error={local.error} isLoading={local.isLoading} data={local.data} icon={FlaskConical} />
+                    </scroll>
+                </row>
             </col>
         </col>
     );
@@ -145,17 +146,17 @@ const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle
                         </view>
                         <space width={10} />
                         <view style="roundedBox" padding={[4, 8]}>
-                            <text>
+                            <text center>
                                 {e.version}
                             </text>
                         </view>
                         <space width="fill" />
                         <row spacing={4} alignY="center">
                             <view>
-                                <text>{e.branch}</text>
+                                <text center>{e.branch}</text>
                             </view>
                             <view>
-                                <text>{e.timestamp}</text>
+                                <text center>{e.timestamp}</text>
                             </view>
                             <Tooltip tip="Install" position="left">
                                 <button onPress={() => {

@@ -172,6 +172,12 @@ const sanitizeProps = (type: IcedTag, props: RawProps): IcedProps => {
                 }
                 out[key] = registerCallback(value as Function);
                 break;
+            case "object": {
+                if (Array.isArray(value)) {
+                    out[key] = value;
+                    break;
+                }
+            }
             default:
                 console.warn(`<${type}> prop "${key}" has unsupported type ${typeof value}; ignoring it`);
                 break;

@@ -90,7 +90,7 @@ declare namespace Iced {
             width?: Length,
             height?: Length,
 
-            style?: unknown
+            style?: "roundedBox" | { background?: string; color?: string; border?: string; }
 
             center?: Length
 
@@ -105,6 +105,7 @@ declare namespace Iced {
             alignX?: Horizontal;
             alignY?: Vertical;
             clip?: boolean;
+
             children: React.ReactNode;
         }
 
