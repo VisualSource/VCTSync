@@ -14,3 +14,8 @@ declare const console: {
     warn(...values: unknown[]): void;
     error(...values: unknown[]): void;
 };
+
+type BufferSource = ArrayBufferView<ArrayBuffer> | ArrayBuffer;
+declare const crypto: {
+    getRandomValues<T extends Exclude<BufferSource, ArrayBuffer>>(array: T): T;
+}

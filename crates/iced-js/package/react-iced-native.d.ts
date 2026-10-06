@@ -1,137 +1,218 @@
-declare global {
-    var __ICED_INTERNALS__: {
-        commentTree(rootId: string, tree: IcedChild): void;
-        invoke(cmd: string, obj: object): void;
-        addEventListener(type: string, cb: (ev: unknown) => void, opts?: { once: boolean }): void;
-        removeEventListener(type: string, cb: (ev: unknown) => void): void;
-    }
-}
+/// <reference types="react"/>
+
 
 declare class SvgHandle {
     private constructor();
 }
 
 declare module "*.svg" {
-    declare const handle: SvgHandle;
+    const handle: SvgHandle;
     export default handle;
 }
 
-declare module "iced" {
-    export function invoke<T>(cmd: string, payload: object): Promise<T>;
-}
-
 declare module "react-iced-native" {
-    namespace IcedParams {
-        export type Length = "fill" | "shrink" | number | `${number}%`;
-        export type Horizontal = "center" | "left" | "right";
-        export type Vertical = "center" | "bottom" | "top";
-        export type Padding = [number, number] | number;
-        export type Pixels = number;
-    }
 
-    export class LineHeight {
-        constructor(type: "relative", value: number);
-        constructor(type: "absolute", value: IcedParams.Pixels);
-    }
+    /**
+     * 
+     *
+     * @export
+     * @template T
+     * @param {string} cmd
+     * @param {object} obj should be json stringifyable
+     * @return {*}  {Promise<T>}
+     */
+    export function invoke<T>(cmd: string, obj: object): Promise<T>;
 
-    export class Color {
-        constructor(value: string);
-    }
 
     export function createRoot(id: string): { render: (el: React.ReactNode) => void, destroy(): void; }
 }
 
+declare namespace Iced {
+    type Length = "fill" | "shrink" | number | `${number}%`;
+    type Horizontal = "center" | "left" | "right";
+    type Vertical = "center" | "bottom" | "top";
+    type Padding = [number, number] | number;
+    type Pixels = number;
 
-
-declare module "react/jsx-runtime" {
-
-    namespace IcedElements {
-
-
+    namespace Elements {
         interface Common extends React.Attributes {
             children?: React.ReactNode[];
-            padding?: IcedParams.Padding;
-            height?: IcedParams.Length;
-            width?: IcedParams.Length;
-            alignX?: IcedParams.Horizontal;
-            alignY?: IcedParams.Vertical;
+            padding?: Padding;
+            height?: Length;
+            width?: Length;
+            alignX?: Horizontal;
+            alignY?: Vertical;
             clip?: boolean;
             warp?: boolean;
+
+            spacing?: Pixels;
         }
 
-        interface Svg extends RecordingState.Attributes {
-            width?: number;
-            height?: number;
+        interface Svg extends React.Attributes {
+            width?: Pixels;
+            height?: Pixels;
 
             src: SvgHandle
         }
 
-
-        interface Col extends Common { }
+        interface Column extends Common { }
         interface Row extends Common { }
         interface Text extends React.Attributes {
 
             center?: boolean;
 
             onLinkClick?: () => void;
-            width?: IcedParams.Length;
-            height?: IcedParams.Length;
-            alignX?: IcedParams.Horizontal;
-            alignY?: IcedParams.Vertical;
+            width?: Length;
+            height?: Length;
+            alignX?: Horizontal;
+            alignY?: Vertical;
 
             wrapping?: boolean;
 
             shaping?: "auto" | "basic" | "advanced"
-            children: string
+            children: string;
+            size?: Pixels
         }
         interface Button extends React.Attributes {
             onPress?: () => void;
             clip?: boolean;
-            padding?: IcedParams.Padding;
-            width?: IcedParams.Length,
-            height?: IcedParams.Length,
+            padding?: Padding;
+            width?: Length,
+            height?: Length,
+
+            disabled?: boolean;
 
             children: React.ReactNode;
         }
         interface View extends React.Attributes {
             id?: string;
-            padding?: IcedParams.Padding;
+            padding?: Padding;
             width?: Length,
             height?: Length,
 
-            maxWidth?: IcedParams.Pixels;
-            maxHeight?: IcedParams.Pixels;
-            centerX?: IcedParams.Length;
-            centerY?: IcedParams.Length;
-            alignLeft?: IcedParams.Length;
-            alignRight?: IcedParams.Length;
-            alignTop?: IcedParams.Length;
-            alignBottom?: IcedParams.Length;
-            alignX?: IcedParams.Horizontal;
-            alignY?: IcedParams.Vertical;
+            style?: unknown
+
+            center?: Length
+
+            maxWidth?: Pixels;
+            maxHeight?: Pixels;
+            centerX?: Length;
+            centerY?: Length;
+            alignLeft?: Length;
+            alignRight?: Length;
+            alignTop?: Length;
+            alignBottom?: Length;
+            alignX?: Horizontal;
+            alignY?: Vertical;
             clip?: boolean;
             children: React.ReactNode;
         }
+
+        type ScrollAnchorNames = `anchor${"Bottom" | "Left" | "Top" | "Right"}`;
+
+        type ScrollAnchors = {
+            [Prop in ScrollAnchorNames]?: boolean;
+        }
+
+        interface Scroll extends React.Attributes, ScrollAnchors {
+            width?: Length;
+            height?: Length;
+            horizontal?: boolean;
+            autoScroll?: boolean;
+            spacing?: Pixels;
+            direction?: unknown;
+            onScroll?: (viewport: unknown) => void
+            id?: string;
+
+            anchorX?: unknown;
+            anchorY?: unknown;
+            style?: unknown;
+
+            children: React.ReactNode;
+        }
+        interface Space extends React.Attributes {
+            width?: Length;
+            height?: Length;
+        }
+        interface Tooltip extends React.Attributes {
+            padding?: Pixels;
+            gap?: Pixels;
+            snapWithinViewport?: boolean;
+            /** @default "top" */
+            position?: TooltipPosition;
+
+
+            children: [React.ReactNode, React.ReactNode]
+        }
+        interface Float extends React.Attributes {
+            scale?: number;
+        }
+
+        interface Textarea extends React.Attributes {
+            children?: string
+        }
+
+        interface Hr extends React.Attributes {
+            /** @default 1*/
+            height?: Pixels;
+        }
+        interface Vr extends React.Attributes {
+            /** @default 1*/
+            width?: Pixels
+        }
+
+
+        namespace Inputs {
+            interface Range {
+                type: "range"
+            }
+            interface Text {
+                type: "text",
+                value: string;
+                placeholder: string;
+                onChange?: (ev: { type: "change", value: string }) => void
+            }
+            interface Switch {
+                type: "switch",
+                checked: boolean;
+            }
+            interface Radio {
+                type: "radio"
+            }
+            interface Checkbox {
+                type: "checkbox"
+                checked: boolean;
+                label?: string;
+                onChange: (ev: { type: "change", value: boolean }) => void
+            }
+        }
+
+        type Input = (Inputs.Radio | Inputs.Checkbox | Inputs.Text | Inputs.Switch | Inputs.Range) & React.Attributes;
     }
 
+}
 
-
+declare module "react/jsx-runtime" {
     namespace JSX {
         interface IntrinsicElements {
-            view: IcedElements.View,
-            text: IcedElements.Text,
-            button: IcedElements.Button,
-            col: IcedElements.Col,
-            row: IcedElements.Row,
-            svg: IcedElements.Svg,
+            col: Iced.Elements.Column,
+            row: Iced.Elements.Row,
+            view: Iced.Elements.View,
+            button: Iced.Elements.Button,
+            text: Iced.Elements.Text,
+            scroll: Iced.Elements.Scroll,
+            space: Iced.Elements.Space,
+            hr: Iced.Elements.Hr,
+            vr: Iced.Elements.Vr,
+            tooltip: Iced.Elements.Tooltip,
+            float: Iced.Elements.Float,
 
-            scroll: React.Attributes & { children: React.ReactNode },
-            hr: React.Attributes,
-            vr: React.Attributes,
-            space: React.Attributes
-            tooltip: React.Attributes & { children: [React.ReactNode,React.ReactNode] }
+            input: Iced.Elements.Input,
 
-            input: React.Attributes
+            // only when svg-element is enabled
+            svg: Iced.Elements.Svg,
+
+            textarea: Iced.Elements.Textarea
         }
     }
 }

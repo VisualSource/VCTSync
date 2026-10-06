@@ -37,7 +37,7 @@ const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError
     if (isLoading) {
         return (
             <view height="fill" center="fill" width="fill">
-                <col center alignX="center" spacing={6}>
+                <col alignX="center" spacing={6}>
                     <text>Loading</text>
                 </col>
             </view>
@@ -47,7 +47,7 @@ const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError
     if (isError) {
         return (
             <view height="fill" center="fill" width="fill">
-                <col center alignX="center" spacing={6}>
+                <col alignX="center" spacing={6}>
                     <text>{error?.message ?? String(error)}</text>
                 </col>
             </view>
@@ -57,7 +57,7 @@ const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError
     if (!data) {
         return (
             <view height="fill" center="fill" width="fill">
-                <col center alignX="center" spacing={6}>
+                <col alignX="center" spacing={6}>
                     <text>There was an issue loading profiles try again</text>
                 </col>
             </view>
@@ -67,10 +67,10 @@ const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError
     if (data.length === 0) {
         return (
             <view height="fill" center="fill" width="fill">
-                <col center alignX="center" spacing={6}>
+                <col alignX="center" spacing={6}>
                     <text center>No profiles</text>
                     <button onPress={() => { }}>
-                        <row center width="shrink" spacing={6}>
+                        <row width="shrink" spacing={6}>
                             <text>Create</text>
                             <svg src={LayersPlus} />
                         </row>

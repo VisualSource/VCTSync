@@ -1,5 +1,5 @@
 import { queryOptions, useQueries, useQuery } from "@tanstack/react-query";
-import { invoke } from "iced";
+import { invoke } from "react-iced-native";
 
 import Network from "../assets/icons/network.svg" with { type: "svg" };
 import HardDriveDownload from "../assets/icons/hard-drive-download.svg" with { type: "svg" };
@@ -114,7 +114,7 @@ export const Builds = () => {
     );
 }
 
-const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle, isLoading: boolean; isError: boolean; error: Error | null, data?: Version[] }) => {
+const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle, isLoading: boolean; isError: boolean; error: Error | null, data?: Version[] | undefined }) => {
     if (isLoading) return <col><text>Loading</text></col>
 
     if (isError) {

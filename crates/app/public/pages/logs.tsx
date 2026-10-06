@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { invoke } from "iced";
+import { invoke } from "react-iced-native";
 import { useState } from "react";
-
 
 export const Logs = () => {
     const [modLogLines, setModLogLines] = useState(false);
@@ -15,7 +14,7 @@ export const Logs = () => {
     return (
         <col>
             <row>
-                <input label="Mod lines only" type="checkbox" checked={modLogLines} onChange={(e) => setModLogLines(e.checked)} />
+                <input label="Mod lines only" type="checkbox" checked={modLogLines} onChange={(e) => setModLogLines(e.value)} />
                 <space width="fill" />
 
             </row>
@@ -56,11 +55,13 @@ const Log = ({ isLoading, isError, error, data }: { isLoading: boolean, isError:
         );
     };
 
+
+
     return (
         <scroll height="fill" anchorBottom>
-            {data.map((item, i) => {
-                <text key={i}>{item}</text>
-            })}
+            {data.map((item, i) =>
+                (<text key={i}>{item}</text>)
+            )}
         </scroll>
     );
 }

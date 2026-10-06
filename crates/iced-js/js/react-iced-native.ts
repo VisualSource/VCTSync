@@ -3,6 +3,7 @@ import * as ReactNamespace from "react";
 import * as JsxRuntimeNamespace from "react/jsx-runtime";
 import Reconciler, { type HostConfig, type ReactContext, type EventPriority, type OpaqueRoot } from "react-reconciler";
 import { ConcurrentRoot, DefaultEventPriority, NoEventPriority } from "react-reconciler/constants";
+import { nanoid } from "nanoid";
 
 /**
  * React and its JSX runtime, re-exported so that `vendor/react.ts` and
@@ -46,13 +47,37 @@ type RawProps = Record<string, unknown>;
 /** Props after {@link sanitizeProps}: only what the Rust side can decode.
  *  Callbacks have already been swapped for their registry id. */
 type IcedProps = Record<string, string | number | boolean | SvgHandle>;
-type IcedNode = { type: IcedTag, props: IcedProps, children: IcedChild[] };
+type IcedNode = { type: IcedTag, props: IcedProps, children: IcedChild[], _stateId?: string | undefined; };
 type IcedText = { text: string }
 type IcedChild = IcedNode | IcedText;
 type IcedContainer = { commit(children: readonly IcedChild[]): void }
 
 type IcedHostContext = Readonly<Record<string, never>>;
 type IcedHostConfig = HostConfig<IcedTag, RawProps, IcedContainer, IcedNode, IcedText, never, never, never, IcedNode, IcedHostContext, IcedChild[], number, -1, null>;
+
+
+export const invoke = async <T>(cmd: string, obj: object) => {
+    const id = nanoid();
+
+    let resolve: (value: T | PromiseLike<T>) => void;
+    const promise = new Promise<T>((res) => {
+        resolve = res;
+    });
+
+    const callback = (ev: { id: string; payload: T }) => {
+        if (ev.id !== id) return;
+        resolve(ev.payload);
+    }
+
+    __ICED_INTERNALS__.addEventListener("ipc", callback as never);
+
+    __ICED_INTERNALS__.invoke(cmd, { payload: obj, id: "" });
+
+    return promise.finally(() => {
+        __ICED_INTERNALS__.removeEventListener("ipc", callback as never);
+    });
+}
+
 
 /* -------------------------------------------------------------------------
  * Callback registry
@@ -153,6 +178,8 @@ const sanitizeProps = (type: IcedTag, props: RawProps): IcedProps => {
     return out;
 };
 
+const needsUniqueId = (type: IcedTag) => type === "textarea" || type === "grid";
+
 const HOST_CONTENT: IcedHostContext = Object.freeze({});
 let currentPriority: EventPriority = NoEventPriority;
 const config: IcedHostConfig = {
@@ -165,6 +192,7 @@ const config: IcedHostConfig = {
     /** Persistent Mode: main hooks  */
     createInstance(type, props, rootContainer, hostContext, internalHandle) {
         return {
+            _stateId: needsUniqueId(type) ? nanoid() : undefined,
             type,
             props: sanitizeProps(type, props),
             children: []
@@ -182,6 +210,7 @@ const config: IcedHostConfig = {
         // `newProps`, not `instance.props` — this is the only path by which a
         // prop change reaches the committed tree.
         return {
+            _stateId: needsUniqueId(type) ? nanoid() : undefined,
             type,
             props: sanitizeProps(type, newProps),
             children: keepChildren ? instance.children : []
@@ -204,8 +233,8 @@ const config: IcedHostConfig = {
         container.commit([]);
     },
     cloneHiddenInstance(instance, type, props, internalInstanceHandle) {
-
         return {
+            _stateId: needsUniqueId(type) ? nanoid() : undefined,
             type,
             props: sanitizeProps(type, props),
             children: instance.children
@@ -334,8 +363,8 @@ const roots = new Map<string, { root: OpaqueRoot, tree?: IcedChild }>();
 const reconciler = Reconciler(config);
 const onError = (err: Error) => { console.error(err); }
 
-/** An empty root. `col` with no children renders as an empty `Column`. */
-const emptyNode = (): IcedNode => ({ type: "col", props: {}, children: [] });
+/** An empty root. `space` with no children renders as an empty `Column`. */
+const emptyNode = (): IcedNode => ({ type: "space", props: {}, children: [] });
 
 export const createRoot = (id: string) => {
     const container: IcedContainer = {
