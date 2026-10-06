@@ -9,7 +9,7 @@ export const Logs = () => {
         queryFn: () => {
             return invoke<string[]>("fetch_log_lines", {});
         }
-    })
+    });
 
     return (
         <col>
@@ -21,41 +21,35 @@ export const Logs = () => {
             <hr />
             <Log isError={isError} isLoading={isLoading} error={error} data={data} />
         </col>
-    )
+    );
 }
 
 const Log = ({ isLoading, isError, error, data }: { isLoading: boolean, isError: boolean, error: Error | null, data: string[] | undefined }) => {
-    if (isLoading) {
-        return (
-            <view height="fill" width="fill">
-                <col alignX="center" alignY="center">
-                    <text>Loading</text>
-                </col>
-            </view>
-        )
-    }
-
-    if (isError) {
-        return (
-            <view height="fill" width="fill">
-                <col alignX="center" alignY="center">
-                    <text>{error?.message ?? String(error)}</text>
-                </col>
-            </view>
-        );
-    }
-
-    if (!data) {
-        return (
-            <view height="fill" width="fill">
-                <col alignX="center" alignY="center">
-                    <text>No log file content</text>
-                </col>
-            </view>
-        );
-    };
+    if (isLoading) return (
+        <view height="fill" width="fill">
+            <col alignX="center" alignY="center">
+                <text>Loading</text>
+            </col>
+        </view>
+    );
 
 
+    if (isError) return (
+        <view height="fill" width="fill">
+            <col alignX="center" alignY="center">
+                <text>{error?.message ?? String(error)}</text>
+            </col>
+        </view>
+    );
+
+
+    if (!data) return (
+        <view height="fill" width="fill">
+            <col alignX="center" alignY="center">
+                <text>No log file content</text>
+            </col>
+        </view>
+    );
 
     return (
         <scroll height="fill" anchorBottom>

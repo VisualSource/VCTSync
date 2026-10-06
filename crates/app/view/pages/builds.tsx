@@ -11,17 +11,19 @@ type GithubVersion = {
     name?: string;
     prerelease: boolean;
     draft: boolean;
+    target_commitish: string;
     published_at: string;
-    assets: { name: string; browser_download_url: string; size: number }[];
+    assets: { node_id: string; name: string; browser_download_url: string; size: number; digest: string, content_type: string; }[];
 }
 
 type Version = {
+    id: string;
     version: string;
     source_url: string;
     content_type: "local" | "remote",
-    git_hash: string;
     timestamp: string;
     branch: "master",
+    digest: string;
 }
 
 export const Builds = () => {
@@ -41,12 +43,14 @@ export const Builds = () => {
                     const request = await response.json() as GithubVersion[];
 
                     return request.map(e => ({
+                        id: e.assets[0]?.node_id,
                         version: e.tag_name,
-                        git_hash: "",
                         timestamp: e.published_at,
                         content_type: "remote",
-                        source_url: "",
-                        branch: "master"
+                        source_url: e.assets[0]?.browser_download_url,
+                        digest: e.assets[0]?.digest,
+                        size: e.assets[0]?.size,
+                        branch: e.target_commitish
                     } as Version));
                 }
             }),
@@ -59,8 +63,7 @@ export const Builds = () => {
                 }
             })
         ],
-
-    })
+    });
 
 
     return (
@@ -117,13 +120,12 @@ export const Builds = () => {
 const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle, isLoading: boolean; isError: boolean; error: Error | null, data?: Version[] | undefined }) => {
     if (isLoading) return <col><text>Loading</text></col>
 
-    if (isError) {
-        return (
-            <col>
-                <text>{error?.message ?? String(error)}</text>
-            </col>
-        );
-    }
+    if (isError) return (
+        <col>
+            <text>{error?.message ?? String(error)}</text>
+        </col>
+    );
+
 
     if (!data || Array.isArray(data) && data.length === 0) {
         return (
@@ -137,7 +139,7 @@ const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle
         <>
             {data.map(e => {
                 return (
-                    <row key={e.git_hash} padding={[4, 8]} alignY="center">
+                    <row key={e.id} padding={[4, 8]} alignY="center">
                         <view width="shrink">
                             <svg src={icon} width={24} height={24} />
                         </view>
@@ -150,7 +152,7 @@ const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle
                         <space width="fill" />
                         <row spacing={4} alignY="center">
                             <view>
-                                <text>{e.git_hash}</text>
+                                <text>{e.branch}</text>
                             </view>
                             <view>
                                 <text>{e.timestamp}</text>
@@ -180,32 +182,27 @@ const InstalledVersion = () => {
         }
     }),);
 
-    if (isLoading) {
-        return (
-            <col>
-                <text>Loading</text>
-            </col>
-        );
-    }
+    if (isLoading) return (
+        <col>
+            <text>Loading</text>
+        </col>
+    );
 
-    if (isError) {
-        return (
-            <col>
-                <text>{error.message}</text>
-            </col>
-        );
-    }
 
-    if (!data) {
-        return (
-            <row>
-                <text>Installed:</text>
-                <space width={6} />
-                <text>No Installed Version</text>
-            </row>
-        );
-    }
+    if (isError) return (
+        <col>
+            <text>{error.message}</text>
+        </col>
+    );
 
+
+    if (!data) return (
+        <row>
+            <text>Installed:</text>
+            <space width={6} />
+            <text>No Installed Version</text>
+        </row>
+    );
 
     return (
         <row>

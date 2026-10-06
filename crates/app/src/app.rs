@@ -1,14 +1,15 @@
-use crate::asset;
-use crate::traits::IcedScreen;
-use crate::utils::{style_svg, tooltip_label};
+//use crate::asset;
+//use crate::traits::IcedScreen;
+//use crate::utils::{style_svg, tooltip_label};
 use crate::{
-    screens,
-    state::{Message, Screen, Tab},
+    // screens,
+    state::{Message /*Screen, Tab*/},
 };
 use iced::{Element, Task, Theme};
-use iced_query::QueryClient;
+use iced_js::Host;
+//use iced_query::QueryClient;
 
-macro_rules! mount_page {
+/*macro_rules! mount_page {
     ($state:ident, $enum:path, $screen: expr) => {{
         let screen = $screen;
         let tasks = screen.mount(&$state.query_client);
@@ -25,12 +26,10 @@ macro_rules! page_update {
             Task::none()
         }
     };
-}
+}*/
 
-#[derive(Debug)]
 pub struct Application {
-    pub screen: Screen,
-    pub query_client: QueryClient,
+    host: iced_js::Host,
 }
 
 impl Application {
@@ -38,22 +37,25 @@ impl Application {
         Theme::Dark
     }
     pub fn new() -> (Self, Task<Message>) {
-        let query_client = QueryClient::new();
-
-        let screen = screens::builds::Screen::new(&query_client);
-        let fetch = screen.mount(&query_client);
-
         let state = Self {
-            screen: Screen::Builds(screen),
-            query_client: query_client,
+            host: Host::new([("main", "app.js")]),
         };
 
-        let tasks = Task::batch([fetch]);
-
-        (state, tasks)
+        (state, Task::none())
     }
     pub fn update(state: &mut Application, msg: Message) -> Task<Message> {
         match msg {
+            Message::Reload => state.host.reload().map(Message::Js),
+            Message::Js(event) => {
+                if let iced_js::Event::Ipc(_cmd, _payload) = event {
+                    Task::none()
+                } else {
+                    state.host.update(event).map(Message::Js)
+                }
+            }
+        }
+
+        /*match msg {
             Message::QueryUpdate(data) => {
                 state.query_client.receive(data);
 
@@ -96,10 +98,12 @@ impl Application {
                 page_update!(state, Screen::Settings, event)
             }
             Message::LogMessage(ev) => page_update!(state, Screen::Logs, ev),
-        }
+        }*/
     }
     pub fn view(state: &Application) -> Element<'_, Message> {
-        iced_xml::ui! {
+        iced_js::surface(&state.host, "main").map(Message::Js)
+
+        /*  iced_xml::ui! {
             <row>
                 <view>
                     <col spacing={4}>
@@ -143,6 +147,6 @@ impl Application {
                     }}
                 </view>
             </row>
-        }
+        }*/
     }
 }

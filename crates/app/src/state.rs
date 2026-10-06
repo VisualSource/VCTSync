@@ -1,32 +1,5 @@
-use crate::screens::{self};
-use iced_query::QueryEvent;
-
-#[derive(Debug)]
-pub enum Screen {
-    Builds(screens::builds::Screen),
-    Profiles(screens::profiles::Screen),
-    Settings(screens::settings::Screen),
-
-    Logs(screens::logs::Screen),
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum Tab {
-    Logs,
-    #[default]
-    Builds,
-    Settings,
-    Profiles,
-}
-
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Message {
-    SetTab(Tab),
-
-    QueryUpdate(QueryEvent),
-
-    BuildsMessage(screens::builds::Action),
-    ProfilesMessage(screens::profiles::state::Action),
-    SettingsMessage(screens::settings::state::Action),
-    LogMessage(screens::logs::state::Action),
+    Js(iced_js::Event),
+    Reload,
 }

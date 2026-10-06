@@ -10,16 +10,15 @@ path = "src/main.rs"
 [dependencies]
 iced-js = { path = "../iced-js" }
 anyhow = { workspace = true }
-iced-xml = { path = "../iced-xml" }
-iced-query = { path = "../iced-query" }
 launcher-lib = { path = "../launcher-lib" }
 iced = { workspace = true, features = ["svg", "tokio", "sipper"] }
 iced_aw = { version = "0.14.0", features = ["drop_down", "menu"] }
-reqwest = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
 chrono = "0.4"
 chrono-humanize = "0.2"
 tokio = { workspace = true, features = ["fs"] }
+log = { version = "0.4" }
+env_logger = "0.11.11"
 
 [features]
 default = ["dev-agent"]
