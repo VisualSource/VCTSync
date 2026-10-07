@@ -65,7 +65,6 @@ export const Builds = () => {
         ],
     });
 
-
     return (
         <col>
             <view>
@@ -140,7 +139,7 @@ const BuildsList = ({ isLoading, isError, error, data, icon }: { icon: SvgHandle
         <col>
             {data.map(e => {
                 return (
-                    <row key={e.id} padding={[4, 8]} alignY="center">
+                    <row key={e.id} padding={[4, 8]} alignY="center" width="fill">
                         <view width="shrink">
                             <svg src={icon} width={24} height={24} />
                         </view>

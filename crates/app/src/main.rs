@@ -4,17 +4,11 @@
 )]
 
 mod app;
-//mod http;
-//mod screens;
 mod state;
-//mod traits;
-//mod utils;
-//mod widgets;
 use crate::{app::Application, state::Message};
 use env_logger::{Builder, Target};
 use iced::{Font, Size, Subscription};
 use iced_js::{SiloAssets, js_worker};
-use std::env;
 
 static ASSETS: iced_js::rust_silos::Silo =
     iced_js::rust_silos::embed_silo!("dist", crate = iced_js::rust_silos);
@@ -45,6 +39,7 @@ fn keyboard_listener(_state: &Application) -> Subscription<Message> {
 fn main() -> iced::Result {
     #[cfg(target_os = "windows")]
     unsafe {
+        use std::env;
         if env::var_os("WGPU_BACKEND").is_none() {
             env::set_var("WGPU_BACKEND", "dx12");
         }

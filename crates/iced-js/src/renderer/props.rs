@@ -36,7 +36,7 @@ impl<'js> FromJs<'js> for IcedLength {
 
                 match data.as_str() {
                     "shrink" => Ok(IcedLength(Length::Shrink)),
-                    "fill" => Ok(IcedLength(Length::Shrink)),
+                    "fill" => Ok(IcedLength(Length::Fill)),
                     _ => Err(rquickjs::Error::new_from_js_message(
                         "string",
                         "Length",

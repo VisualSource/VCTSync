@@ -159,13 +159,13 @@ pub enum Tag {
         on_change: Option<CallbackId>,
     },
     Textarea {
-        id: u64,
+        state_id: String,
         on_change: Option<CallbackId>,
     },
 }
 
 macro_rules! map_props {
-    ($props: ident, $( ($name: ident, $propKey: literal, $type: ident ,$to: ident) ), *) => {
+    ($el: literal, $props: ident, ignore [$($ignored: literal),* $(,)?], $( ($name: ident, $propKey: literal, $type: ident ,$to: ident) ), *) => {
         $(
             let mut $name: Option<$type> = None;
         )*
@@ -176,12 +176,19 @@ macro_rules! map_props {
                 $(
                     $propKey => $name = Some(value.get::<$to>()?.into()),
                 )*
+                // props with special handling outside of the macro
+                $(
+                    $ignored => {}
+                )*
                 _ => {
-                    log::warn!("skipping unknown prop: '{key}'");
+                    log::warn!("skipping unknown prop: '{key}' on '{}'",$el);
                 }
             }
         }
 
+    };
+    ($el: literal, $props: ident, $( ($name: ident, $propKey: literal, $type: ident ,$to: ident) ), *) => {
+        map_props!($el, $props, ignore [], $( ($name, $propKey, $type, $to) ),*)
     };
 }
 
@@ -201,12 +208,12 @@ impl<'js> FromJs<'js> for Tag {
         let obj = unsafe { value.ref_object() };
 
         let tag_type = obj.get::<_, String>("type")?;
-
         let props = obj.get::<_, rquickjs::Object<'js>>("props")?;
 
         match tag_type.as_str() {
             "col" | "row" => {
                 map_props!(
+                    "row",
                     props,
                     (padding, "padding", Padding, IcedPadding),
                     (width, "width", Length, IcedLength),
@@ -245,7 +252,9 @@ impl<'js> FromJs<'js> for Tag {
                 use iced::widget::Id;
 
                 map_props!(
+                    "view",
                     props,
+                    ignore["style"],
                     (padding, "padding", Padding, IcedPadding),
                     (width, "width", Length, IcedLength),
                     (height, "height", Length, IcedLength),
@@ -294,6 +303,7 @@ impl<'js> FromJs<'js> for Tag {
             }
             "button" => {
                 map_props!(
+                    "button",
                     props,
                     (clip, "clip", bool, bool),
                     (on_press, "onPress", CallbackId, CallbackId),
@@ -314,6 +324,7 @@ impl<'js> FromJs<'js> for Tag {
             }
             "text" => {
                 map_props!(
+                    "text",
                     props,
                     (size, "size", Pixels, f32),
                     (width, "width", Length, IcedLength),
@@ -343,6 +354,7 @@ impl<'js> FromJs<'js> for Tag {
             }
             "space" => {
                 map_props!(
+                    "space",
                     props,
                     (width, "width", Length, IcedLength),
                     (height, "height", Length, IcedLength)
@@ -351,20 +363,21 @@ impl<'js> FromJs<'js> for Tag {
                 Ok(Tag::Space { width, height })
             }
             "hr" => {
-                map_props!(props, (height, "height", Pixels, f32));
+                map_props!("hr", props, (height, "height", Pixels, f32));
 
                 Ok(Tag::Hr {
                     height: height.unwrap_or_else(|| Pixels::from(1)),
                 })
             }
             "vr" => {
-                map_props!(props, (width, "width", Pixels, f32));
+                map_props!("vr", props, (width, "width", Pixels, f32));
                 Ok(Tag::Vr {
                     width: width.unwrap_or_else(|| Pixels::from(1)),
                 })
             }
             "scroll" => {
                 map_props!(
+                    "scroll",
                     props,
                     (height, "height", Length, IcedLength),
                     (width, "width", Length, IcedLength),
@@ -392,6 +405,7 @@ impl<'js> FromJs<'js> for Tag {
             "tooltip" => {
                 use iced::widget::tooltip::Position;
                 map_props!(
+                    "tooltip",
                     props,
                     (gap, "gap", Pixels, f32),
                     (padding, "padding", Pixels, f32),
@@ -408,7 +422,7 @@ impl<'js> FromJs<'js> for Tag {
             }
 
             "float" => {
-                map_props!(props, (scale, "scale", f32, f32));
+                map_props!("float", props, (scale, "scale", f32, f32));
 
                 Ok(Tag::Float { scale })
             }
@@ -418,8 +432,12 @@ impl<'js> FromJs<'js> for Tag {
             }
 
             "textarea" => {
-                /*TODO: need to generate ids for inputs */
-                unimplemented!()
+                let state_id = obj.get::<_, String>("_stateId")?;
+
+                Ok(Tag::Textarea {
+                    state_id,
+                    on_change: None,
+                })
             }
 
             "input" => {
@@ -494,7 +512,9 @@ impl<'js> FromJs<'js> for Tag {
                 let src = handle.borrow().handle.clone();
 
                 map_props!(
+                    "svg",
                     props,
+                    ignore["src"],
                     (width, "width", Length, IcedLength),
                     (height, "height", Length, IcedLength)
                 );

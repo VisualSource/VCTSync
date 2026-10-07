@@ -33,6 +33,7 @@ declare namespace Iced {
     type Vertical = "center" | "bottom" | "top";
     type Padding = [number, number] | number;
     type Pixels = number;
+    type TooltipPosition = "top" | "bottom" | "left" | "right" | "followCursor";
 
     namespace Elements {
         interface Common extends React.Attributes {
@@ -71,7 +72,14 @@ declare namespace Iced {
 
             shaping?: "auto" | "basic" | "advanced"
             children: string;
-            size?: Pixels
+            size?: Pixels;
+
+            font?: {
+                style?: unknown
+                weight?: "bold" | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
+                family?: string;
+                stretch?: "UltraCondensed" | "ExtraCondensed" | "Condensed" | "SemiCondensed" | "Normal" | "SemiExpanded" | "Expanded" | "ExtraExpanded" | "UltraExpanded"
+            } | "default" | "monospace";
         }
         interface Button extends React.Attributes {
             onPress?: () => void;

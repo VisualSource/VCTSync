@@ -2,7 +2,7 @@ mod node;
 mod props;
 mod tag;
 
-use iced::Element;
+use iced::{Element, Font};
 pub(crate) use node::{Node, to_node};
 pub(crate) use tag::Tag;
 
@@ -292,7 +292,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
             }
 
             Tag::Textarea {
-                id: _id,
+                state_id: _,
                 on_change: _on_change,
             } => {
                 unimplemented!()

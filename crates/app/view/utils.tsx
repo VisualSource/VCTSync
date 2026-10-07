@@ -1,4 +1,4 @@
-export const Tooltip = ({ children, tip, position = "right" }: React.PropsWithChildren<{ position?: string; tip: string }>) => {
+export const Tooltip = ({ children, tip, position = "right" }: React.PropsWithChildren<{ position?: Iced.TooltipPosition; tip: string }>) => {
     return (
         <tooltip position={position}>
             {children}

@@ -142,7 +142,7 @@ pub fn install_build(build: Version) -> impl Straw<Progress, Progress, Arc<anyho
 
         let out_dir = PathBuf::from("");
 
-        launcher_lib::install_build(
+        bepinex_lib::install_build(
             client,
             &build.source_url,
             &out_dir,

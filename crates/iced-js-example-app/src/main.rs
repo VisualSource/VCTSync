@@ -13,7 +13,6 @@ use iced::{
     widget::{column, row},
 };
 use iced_js::{Event, Host, SiloAssets, js_worker, surface};
-use std::env;
 
 static ASSETS: iced_js::rust_silos::Silo =
     iced_js::rust_silos::embed_silo!("dist", crate = iced_js::rust_silos);
@@ -42,7 +41,7 @@ impl App {
         match msg {
             Message::Reload => state.js.reload().map(Message::Js),
             Message::Js(ev) => {
-                if let Event::Ipc(_cmd, _payload) = ev {
+                if let Event::Ipc(_cmd, _id, _payload) = ev {
                     Task::none()
                 } else {
                     state.js.update(ev).map(Message::Js)
@@ -82,6 +81,7 @@ fn keyboard_listener(_state: &App) -> Subscription<Message> {
 fn main() -> iced::Result {
     #[cfg(target_os = "windows")]
     unsafe {
+        use std::env;
         if env::var_os("WGPU_BACKEND").is_none() {
             env::set_var("WGPU_BACKEND", "dx12");
         }

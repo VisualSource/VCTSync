@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 iced-js = { path = "../iced-js" }
 anyhow = { workspace = true }
-launcher-lib = { path = "../launcher-lib" }
+bepinex-lib = { path = "../bepinex-lib" }
 iced = { workspace = true, features = ["svg", "tokio", "sipper"] }
 iced_aw = { version = "0.14.0", features = ["drop_down", "menu"] }
 serde = { version = "1.0", features = ["derive"] }
