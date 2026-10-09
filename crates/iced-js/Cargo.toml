@@ -18,6 +18,8 @@ iced = { workspace = true, features = ["tokio"] }
 reqwest = { workspace = true, optional = true }
 rust-silos = { version = "0.3.2", optional = true }
 rand = "0.10.3"
+jiff = { version = "0.2", optional = true }
+
 
 [dev-dependencies]
 futures = { version = "0.3" }
@@ -25,7 +27,7 @@ env_logger = "0.11"
 tokio = { workspace = true, features = ["full"] }
 
 [features]
-default = ["fetch", "embed", "svg-element"]
+default = ["fetch", "embed", "svg-element", "js-temporal", "intl"]
 fetch = ["dep:reqwest"]
 embed = ["dep:rust-silos"]
 svg-element = ["iced/svg"]
@@ -33,3 +35,7 @@ img-element = ["iced/image"]
 markdown-element = ["iced/markdown"]
 qr-element = ["iced/qr_code"]
 code-element = ["iced/highlighter"]
+
+js-temporal = ["dep:jiff"]
+intl-time = ["dep:jiff"]
+intl = ["intl-time"]

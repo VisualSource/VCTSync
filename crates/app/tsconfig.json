@@ -16,6 +16,7 @@
     "module": "nodenext",
     "target": "es2020",
     "types": ["react-iced-native"],
+    "lib": ["ESNext.Temporal","ES2020","DOM"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

@@ -6,9 +6,15 @@ mod crypto;
 mod event_target;
 #[cfg(feature = "fetch")]
 mod fetch;
+#[cfg(feature = "js-temporal")]
+mod temporal;
+
+mod intl;
+
 mod formatter;
 pub mod iced;
 pub mod iced_host;
+
 pub mod timers;
 
 pub fn init_browser_apis(ctx: &Ctx<'_>) -> Result<()> {
@@ -16,6 +22,9 @@ pub fn init_browser_apis(ctx: &Ctx<'_>) -> Result<()> {
     console::init(ctx)?;
     crypto::init(ctx)?;
     timers::init(ctx)?;
+
+    #[cfg(feature = "js-temporal")]
+    temporal::init(ctx)?;
 
     #[cfg(feature = "fetch")]
     fetch::init(ctx)?;
