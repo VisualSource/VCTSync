@@ -9,7 +9,7 @@ mod plain_date_time;
 pub fn init(ctx: &rquickjs::Ctx<'_>) -> rquickjs::Result<()> {
     let temporal = Object::new_proto(ctx.clone(), None)?;
 
-    temporal.set("now", Now::new())?;
+    temporal.set("Now", Now::new())?;
 
     Class::<PlainDateTime>::define(&temporal)?;
     Class::<duration::Duration>::define(&temporal)?;

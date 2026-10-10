@@ -26,8 +26,6 @@ type Version = {
     digest: string;
 }
 
-
-
 const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
 const formatDiff = (diff: Temporal.Duration) => {
@@ -61,12 +59,12 @@ export const Builds = () => {
                     if (!response.ok) throw new Error(`failed to load remote versions: ${response.statusText}`);
 
                     const request = await response.json() as GithubVersion[];
-                    const now = Temporal.Now.plainDateTimeISO();
+                    const now = Temporal.Now.plainDateTimeISO("UTC");
 
                     return request.map(e => ({
                         id: e.assets[0]?.node_id,
                         version: e.tag_name,
-                        timestamp: formatDiff(Temporal.PlainDate.from(e.published_at).until(now, { largestUnit: "days" })),
+                        timestamp: formatDiff(Temporal.PlainDateTime.from(e.published_at.replace("Z", "")).until(now, { largestUnit: "days" })),
                         content_type: "remote",
                         source_url: e.assets[0]?.browser_download_url,
                         digest: e.assets[0]?.digest,

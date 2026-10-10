@@ -22,10 +22,10 @@ pub fn init_browser_apis(ctx: &Ctx<'_>) -> Result<()> {
     console::init(ctx)?;
     crypto::init(ctx)?;
     timers::init(ctx)?;
+    intl::init(ctx)?;
 
     #[cfg(feature = "js-temporal")]
     temporal::init(ctx)?;
-
     #[cfg(feature = "fetch")]
     fetch::init(ctx)?;
 

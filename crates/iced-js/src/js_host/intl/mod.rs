@@ -1,21 +1,17 @@
-use rquickjs::{Ctx, JsLifetime, class::Trace, function::Opt};
+use rquickjs::Ctx;
 
+#[cfg(feature = "js-temporal")]
 mod relative_time_format;
 
-use relative_time_format::RelativeTimeFormat;
+pub fn init<'js>(ctx: &Ctx<'js>) -> rquickjs::Result<()> {
+    let globals = ctx.globals();
 
-#[derive(Trace, JsLifetime)]
-#[rquickjs::class(frozen)]
-pub struct Intl {}
+    let intl = rquickjs::Object::new_proto(ctx.clone(), None)?;
 
-#[rquickjs::methods(rename_all = "PascalCase")]
-impl<'js> Intl {
-    #[qjs(static)]
-    pub fn relative_time_format(
-        ctx: Ctx<'js>,
-        locale: rquickjs::Value<'js>,
-        opts: Opt<rquickjs::Object<'js>>,
-    ) -> rquickjs::Result<rquickjs::Class<'js, RelativeTimeFormat>> {
-        todo!()
-    }
+    #[cfg(feature = "js-temporal")]
+    rquickjs::Class::<relative_time_format::RelativeTimeFormat>::define(&intl)?;
+
+    globals.set("Intl", intl)?;
+
+    Ok(())
 }
