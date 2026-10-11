@@ -7,7 +7,7 @@ export const Logs = () => {
     const { isLoading, isError, error, data } = useQuery({
         queryKey: ["logs", modLogLines],
         queryFn: () => {
-            return invoke<string[]>("fetch_log_lines", {});
+            return invoke<string[]>("logs::list-lines", {});
         }
     });
 

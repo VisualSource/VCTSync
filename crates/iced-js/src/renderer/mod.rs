@@ -164,6 +164,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 color,
                 center,
                 shaping,
+                font,
                 ..
             } => {
                 debug_assert_eq!(children.len(), 1);
@@ -182,15 +183,17 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 apply_opt!(node, height, height);
                 apply_opt!(node, align_x, align_x);
                 apply_opt!(node, align_y, align_y);
-                node = node.color_maybe(*color);
-
+                apply_opt!(node, shaping, shaping);
                 apply_opt!(node, line_height, line_height);
+                node = node.color_maybe(*color);
 
                 if center.is_some_and(|x| x) {
                     node = node.center();
                 }
 
-                apply_opt!(node, shaping, shaping);
+                if let Some(font) = font {
+                    node = node.font(*font);
+                }
 
                 node.into()
             }

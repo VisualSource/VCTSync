@@ -128,6 +128,18 @@ const collectCallbackIds = (node: IcedChild, live: Set<number>): void => {
     for (const child of node.children) collectCallbackIds(child, live);
 };
 
+/** Check that the given object is plain object that extends the 
+ * Object.prototype or null
+  */
+const isPlainObject = (value: unknown): value is Object => {
+    if (typeof value !== "object" || value === null) {
+        return false;
+    }
+
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === null || prototype === Object.prototype;
+}
+
 /** A prop holding a callback id rather than a plain value. Keeping the naming
  *  convention in one place means Rust and TS can't drift apart on it. */
 const isCallbackProp = (key: string): boolean => key.startsWith("on");
@@ -173,7 +185,7 @@ const sanitizeProps = (type: IcedTag, props: RawProps): IcedProps => {
                 out[key] = registerCallback(value as Function);
                 break;
             case "object": {
-                if (Array.isArray(value)) {
+                if (Array.isArray(value) || isPlainObject(value)) {
                     out[key] = value;
                     break;
                 }

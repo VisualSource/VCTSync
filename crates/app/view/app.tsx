@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Tooltip } from "./utils.js";
 
-import { Builds } from "./pages/builds.js";
+import { Builds } from "./pages/builds/page.js";
 import { Logs } from "./pages/logs.js";
 import { Profiles } from "./pages/profiles.js";
 import { Settings } from "./pages/settings.js";

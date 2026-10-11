@@ -20,7 +20,8 @@
   "type": "module",
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",
-    "react-iced-native": "link:../iced-js"
+    "react-iced-native": "link:../iced-js",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

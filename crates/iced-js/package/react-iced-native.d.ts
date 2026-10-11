@@ -76,7 +76,15 @@ declare namespace Iced {
 
             font?: {
                 style?: unknown
-                weight?: "bold" | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
+                weight?: "extraLight" |
+                "light" |
+                "thin" |
+                "normal" |
+                "medium" |
+                "semibold" |
+                "bold" |
+                "extraBold" |
+                "black"
                 family?: string;
                 stretch?: "UltraCondensed" | "ExtraCondensed" | "Condensed" | "SemiCondensed" | "Normal" | "SemiExpanded" | "Expanded" | "ExtraExpanded" | "UltraExpanded"
             } | "default" | "monospace";

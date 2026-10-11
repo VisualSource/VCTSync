@@ -1,8 +1,8 @@
-use crate::renderer::props::IcedId;
-
-use super::props::{IcedHorizontal, IcedLength, IcedPadding, IcedTooltipPosition, IcedVertical};
+use super::props::{
+    IcedFont, IcedHorizontal, IcedId, IcedLength, IcedPadding, IcedTooltipPosition, IcedVertical,
+};
 use iced::{
-    Color, Length, Padding, Pixels,
+    Color, Font, Length, Padding, Pixels,
     alignment::{Horizontal, Vertical},
     widget::{
         self,
@@ -75,6 +75,7 @@ pub enum Tag {
         disabled: bool,
     },
     Text {
+        font: Option<Font>,
         size: Option<Pixels>,
         line_height: Option<LineHeight>,
         // font object,
@@ -332,15 +333,15 @@ impl<'js> FromJs<'js> for Tag {
                     (align_x, "alignX", Horizontal, IcedHorizontal),
                     (align_y, "alignY", Vertical, IcedVertical),
                     (wrapping, "wrapping", bool, bool),
+                    (font, "font", Font, IcedFont),
                     // color
                     // colorMaybe
-                    // font
-                    // fontMaybe
                     (center, "center", bool, bool) // shapping
                 );
 
                 Ok(Tag::Text {
                     size,
+                    font,
                     line_height: None,
                     width,
                     height,

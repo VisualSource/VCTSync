@@ -1,8 +1,9 @@
 use iced::{
-    Length, Padding,
+    Font, Length, Padding,
     alignment::{Horizontal, Vertical},
+    font::{Family, Weight},
 };
-use rquickjs::FromJs;
+use rquickjs::{FromJs, Object};
 
 /// wrapper type for iced length so we can have a simple api for converting js value to length
 pub struct IcedLength(Length);
@@ -232,5 +233,64 @@ impl<'js> FromJs<'js> for IcedId {
     ) -> rquickjs::Result<Self> {
         let data = value.get::<String>()?;
         Ok(IcedId(data.into()))
+    }
+}
+
+pub struct IcedFont(Font);
+
+impl From<IcedFont> for Font {
+    fn from(value: IcedFont) -> Self {
+        value.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedFont {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        let font = if let Ok(value) = value.get::<String>() {
+            match value.as_str() {
+                "default" => Font::DEFAULT,
+                "monospace" => Font::MONOSPACE,
+                _ => {
+                    return Err(rquickjs::Error::new_from_js_message(
+                        "string",
+                        "Font",
+                        "invalid font",
+                    ));
+                }
+            }
+        } else if let Ok(value) = value.get::<Object<'js>>() {
+            let weight = value
+                .get::<_, String>("weight")
+                .ok()
+                .map(|w| match w.as_str() {
+                    "extraLight" => Weight::ExtraLight,
+                    "light" => Weight::Light,
+                    "thin" => Weight::Thin,
+                    "normal" => Weight::Normal,
+                    "medium" => Weight::Medium,
+                    "semibold" => Weight::Semibold,
+                    "bold" => Weight::Bold,
+                    "extraBold" => Weight::ExtraBold,
+                    "black" => Weight::Black,
+                    _ => Weight::default(),
+                })
+                .unwrap_or_default();
+
+            Font {
+                weight,
+                ..Default::default()
+            }
+        } else {
+            return Err(rquickjs::Error::new_from_js_message(
+                value.type_name(),
+                "Font",
+                "cannot convert type to Font",
+            ));
+        };
+
+        Ok(IcedFont(font))
     }
 }
