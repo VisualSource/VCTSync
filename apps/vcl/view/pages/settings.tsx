@@ -9,15 +9,19 @@ export const Settings = () => {
 
     return (
         <col>
-            <text>Common</text>
+            <text font={{ weight: "bold" }}>Common</text>
+            <hr />
+            <space height={2} />
             <col>
-                <text>Stream</text>
+                <text>Steam</text>
                 <input type="text" placeholder="steam dir" value={""} />
             </col>
 
             <space height={8} />
 
-            <text>Dev Agent</text>
+            <text font={{ weight: "bold" }}>Dev Agent</text>
+            <hr />
+            <space height={2} />
             <col>
                 <text>Agent Address</text>
                 <input type="text" placeholder="192.168.1.94:9787" value={devApiUrl} onChange={(ev) => setDevApiUrl(ev.value)} />
@@ -26,11 +30,10 @@ export const Settings = () => {
                 <input type="text" placeholder="shared bearer token" value={devApiToken} onChange={(ev) => setDevApiToken(ev.value)} />
 
                 <text>Save dir (default downloads)</text>
-                <row>
+                <row spacing={2} alignX="center">
                     <input type="text" placeholder="C:\\Downloads" value={saveDir} onChange={(ev) => setSaveDir(ev.value)} />
-                    <space />
                     <Tooltip tip="Select folder">
-                        <button onPress={() => {
+                        <button width="shrink" onPress={() => {
                             void invoke<{ path: string | null; }>("open-folder", {}).then((result) => {
                                 if (!result.path) return;
                                 setSaveDir(result.path);
