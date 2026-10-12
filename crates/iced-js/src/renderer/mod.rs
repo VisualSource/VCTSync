@@ -367,6 +367,23 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 node.into()
             }
 
+            Tag::Select {
+                value,
+                placeholder,
+                on_select,
+                options,
+            } => {
+                let mut node = iced::widget::pick_list(options.as_slice(), value.as_ref(), |x| {
+                    Event::Callback(*on_select, Payload::TextInputChange(x))
+                });
+
+                if let Some(placeholder) = placeholder {
+                    node = node.placeholder(placeholder);
+                }
+
+                node.into()
+            }
+
             #[cfg(feature = "svg-element")]
             Tag::Svg { src, width, height } => {
                 debug_assert_eq!(children.len(), 0);

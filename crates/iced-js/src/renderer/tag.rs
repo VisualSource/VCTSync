@@ -164,6 +164,12 @@ pub enum Tag {
         state_id: String,
         on_change: Option<CallbackId>,
     },
+    Select {
+        placeholder: Option<String>,
+        on_select: CallbackId,
+        value: Option<String>,
+        options: Vec<String>,
+    },
 }
 
 macro_rules! map_props {
@@ -493,6 +499,13 @@ impl<'js> FromJs<'js> for Tag {
                 }
             }
 
+            "select" => Ok(Tag::Select {
+                placeholder: (),
+                on_select: (),
+                value: (),
+                options: (),
+            }),
+
             #[cfg(feature = "code-element")]
             "code" => {
                 unimplemented!()
@@ -540,6 +553,7 @@ impl<'js> FromJs<'js> for Tag {
 impl Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Tag::Select { .. } => write!(f, "select"),
             Tag::Col { .. } => write!(f, "col"),
             Tag::Row { .. } => write!(f, "row"),
             Tag::View { .. } => write!(f, "view"),
