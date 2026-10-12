@@ -2,12 +2,10 @@
 resolver = "3"
 
 members = [
-    "crates/iced-xml",
-    "crates/app",
-    "crates/iced-query",
-    "crates/bepinex-lib", "crates/iced-js", "crates/iced-js-example-app",
+    "crates/*",
+    "apps/*"
 ]
-default-members = ["crates/app"]
+default-members = ["apps/vcl"]
 
 [workspace.dependencies]
 anyhow = "1.0"
@@ -16,6 +14,8 @@ reqwest = { version = "0.13", features = ["stream", "json"] }
 tokio = "1.53"
 [workspace.package]
 edition = "2024"
+iced-js = { path = "crates/iced-js" }
+
 
 [profile.release]
 opt-level = 3          # Max speed optimizations (default)

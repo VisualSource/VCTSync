@@ -170,23 +170,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bepinex-lib",
- "chrono",
- "chrono-humanize",
- "env_logger",
- "iced",
- "iced-js",
- "iced_aw",
- "log",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -707,15 +690,6 @@ dependencies = [
  "num-traits",
  "wasm-bindgen",
  "windows-link",
-]
-
-[[package]]
-name = "chrono-humanize"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "799627e6b4d27827a814e837b9d8a504832086081806d45b1afa34dc982b023b"
-dependencies = [
- "chrono",
 ]
 
 [[package]]
@@ -5687,6 +5661,21 @@ dependencies = [
  "aligned-vec",
  "num-traits",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "vcl"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bepinex-lib",
+ "env_logger",
+ "iced",
+ "iced-js",
+ "iced_aw",
+ "log",
+ "serde",
+ "tokio",
 ]
 
 [[package]]
