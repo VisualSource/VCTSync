@@ -1,26 +1,3 @@
-use iced::{
-    Alignment, Color, Element, Length, Shadow, Task, Theme, Vector,
-    widget::{Column, container},
-};
-use iced_aw::{
-    DropDown,
-    drop_down::{self, Offset},
-};
-use iced_query::{Query, QueryClient};
-use iced_xml::ui;
-
-use crate::{
-    asset,
-    state::Message,
-    traits::IcedScreen,
-    utils::{style_svg, tooltip_label},
-};
-
-mod fetcher;
-pub mod state;
-
-use state::Action;
-
 const MENU_W: f32 = 200.0;
 /// 16px text * 1.3 line-height + button::DEFAULT_PADDING (5 top/bottom).
 /// Retune if the button's font size or padding changes.
@@ -38,25 +15,6 @@ fn dd_bg(theme: &Theme) -> container::Style {
         },
         snap: false,
         ..Default::default()
-    }
-}
-
-#[derive(Debug)]
-pub struct Screen {
-    show_mod_only_lines: bool,
-
-    menu_expand: bool,
-
-    log_lines: Query<Vec<String>>,
-}
-
-impl Screen {
-    pub fn new(client: &QueryClient) -> Self {
-        Self {
-            show_mod_only_lines: false,
-            menu_expand: false,
-            log_lines: Query::new(client, "logs::files", fetcher::fetch_log_file, None),
-        }
     }
 }
 
@@ -128,41 +86,5 @@ impl IcedScreen<state::Action> for Screen {
                 {rv}
             </col>
         }
-    }
-
-    fn update(
-        &mut self,
-        ev: state::Action,
-        _client: &iced_query::QueryClient,
-    ) -> iced::Task<crate::state::Message> {
-        match ev {
-            Action::ToggleVCTLinesOnly(v) => {
-                self.show_mod_only_lines = v;
-            }
-            Action::ExportLogFile => {
-                self.menu_expand = false;
-            }
-            Action::ExportToAgent => {
-                self.menu_expand = false;
-            }
-            Action::Expand => self.menu_expand = !self.menu_expand,
-            Action::Dismiss => {
-                self.menu_expand = false;
-            }
-        }
-
-        Task::none()
-    }
-
-    fn mount(&self, client: &iced_query::QueryClient) -> iced::Task<crate::state::Message> {
-        Task::none()
-    }
-
-    fn sync(&mut self, client: &iced_query::QueryClient) {}
-}
-
-fn log_line<'a>(line: &'a str) -> Element<'a, Message> {
-    ui! {
-        <text size={12}>{line}</text>
     }
 }

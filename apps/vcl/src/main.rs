@@ -4,6 +4,7 @@
 )]
 
 mod app;
+mod http;
 mod state;
 use crate::{app::Application, state::Message};
 use env_logger::{Builder, Target};

@@ -2,7 +2,7 @@ mod node;
 mod props;
 mod tag;
 
-use iced::{Element, Font};
+use iced::Element;
 pub(crate) use node::{Node, to_node};
 pub(crate) use tag::Tag;
 
@@ -313,6 +313,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 node.into()
             }
             Tag::Checkbox {
+                label,
                 value,
                 disabled,
                 on_change,
@@ -330,6 +331,10 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                     node = node.on_toggle_maybe(callback);
                 } else if *disabled {
                     node = node.on_toggle_maybe(Option::<fn(bool) -> Event>::None);
+                }
+
+                if let Some(label) = label {
+                    node = node.label(label);
                 }
 
                 node.into()

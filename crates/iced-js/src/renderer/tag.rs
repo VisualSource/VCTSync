@@ -154,6 +154,7 @@ pub enum Tag {
         value: bool,
         on_change: Option<CallbackId>,
         disabled: bool,
+        label: Option<String>,
     },
     Switch {
         value: bool,
@@ -383,11 +384,11 @@ impl<'js> FromJs<'js> for Tag {
                     (height, "height", Length, IcedLength),
                     (width, "width", Length, IcedLength),
                     (horizontal, "horizontal", bool, bool),
-                    (anchor_bottom, "anchor_bottom", bool, bool),
-                    (anchor_left, "anchor_left", bool, bool),
-                    (anchor_right, "anchor_right", bool, bool),
-                    (anchor_top, "anchor_top", bool, bool),
-                    (auto_scroll, "auto_scroll", bool, bool),
+                    (anchor_bottom, "anchorBottom", bool, bool),
+                    (anchor_left, "anchorLeft", bool, bool),
+                    (anchor_right, "anchorRight", bool, bool),
+                    (anchor_top, "anchorTop", bool, bool),
+                    (auto_scroll, "autoScroll", bool, bool),
                     (spacing, "spacing", Pixels, f32)
                 );
 
@@ -472,11 +473,15 @@ impl<'js> FromJs<'js> for Tag {
                     }
                     "checkbox" => {
                         let value = props.get::<_, bool>("checked")?;
+                        let label = props.get::<_, String>("label").ok();
+                        let disabled = props.get::<_, bool>("disabled").ok();
+                        let callback = props.get::<_, CallbackId>("onChange").ok();
 
                         Ok(Tag::Checkbox {
                             value,
-                            disabled: false,
-                            on_change: None,
+                            label,
+                            disabled: disabled.unwrap_or_default(),
+                            on_change: callback,
                         })
                     }
 

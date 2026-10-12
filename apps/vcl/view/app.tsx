@@ -5,14 +5,14 @@ import { useState } from "react";
 import { Tooltip } from "./utils.js";
 
 import { Builds } from "./pages/builds/page.js";
-import { Logs } from "./pages/logs.js";
+import { Logs } from "./pages/logs/page.js";
 import { Profiles } from "./pages/profiles.js";
 import { Settings } from "./pages/settings.js";
 
 import Library from "./assets/icons/library.svg" with {type: "svg" };
-import Boxes from "./assets/icons/boxes.svg"with {type: "svg" };
-import ScrollText from "./assets/icons/scroll-text.svg"with {type: "svg" };
-import SettingsSvg from "./assets/icons/settings.svg"with {type: "svg" };
+import Boxes from "./assets/icons/boxes.svg" with {type: "svg" };
+import ScrollText from "./assets/icons/scroll-text.svg" with {type: "svg" };
+import SettingsSvg from "./assets/icons/settings.svg" with {type: "svg" };
 
 const client = new QueryClient();
 
@@ -51,14 +51,14 @@ const App = () => {
                 <vr />
                 <space width={4} />
                 <view>
-                    <View tab={tab} />
+                    <Router tab={tab} />
                 </view>
             </row>
         </QueryClientProvider>
     );
 }
 
-const View = ({ tab }: { tab: string }) => {
+const Router = ({ tab }: { tab: string }) => {
     switch (tab) {
         case "builds":
             return <Builds />;

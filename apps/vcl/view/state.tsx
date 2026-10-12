@@ -6,9 +6,12 @@ type AppState = {
 
     saveDir: string;
 
+    modOnlyLogLines: boolean;
+
     setSaveDir: (value: string) => void;
     setDevApiToken: (value: string) => void;
     setDevApiUrl: (value: string) => void;
+    setModOnlyLogLines: (value: boolean) => void;
 }
 
 export const useApp = create<AppState>()((set) => ({
@@ -16,6 +19,8 @@ export const useApp = create<AppState>()((set) => ({
     devApiToken: "",
 
     saveDir: "",
+
+    modOnlyLogLines: false,
 
     setSaveDir(value: string) {
         set({ saveDir: value })
@@ -25,5 +30,8 @@ export const useApp = create<AppState>()((set) => ({
     },
     setDevApiToken(value: string) {
         set({ devApiToken: value });
+    },
+    setModOnlyLogLines(value: boolean) {
+        set({ modOnlyLogLines: value });
     }
 }));

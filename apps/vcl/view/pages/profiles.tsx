@@ -82,7 +82,6 @@ const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError
                         <row>
                             <text>{profile.name}</text>
                             <space />
-
                         </row>
                     </view>
                 ))}
