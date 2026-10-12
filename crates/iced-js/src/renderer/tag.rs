@@ -9,7 +9,7 @@ use iced::{
         text::{LineHeight, Shaping},
     },
 };
-use rquickjs::FromJs;
+use rquickjs::{FromJs, Object};
 use std::fmt::Display;
 
 type CallbackId = u64;
@@ -18,6 +18,44 @@ type CallbackId = u64;
 pub enum ViewStyle {
     RoundedBox,
     Custom {},
+}
+
+#[derive(Debug, Clone)]
+pub struct SelectOption {
+    pub value: String,
+    pub label: String,
+}
+
+impl PartialEq for SelectOption {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+impl Display for SelectOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.label)
+    }
+}
+
+impl<'js> FromJs<'js> for SelectOption {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        if let Some(value) = value.get::<String>().ok() {
+            return Ok(Self {
+                label: value.clone(),
+                value,
+            });
+        }
+
+        let obj = value.get::<Object<'js>>()?;
+
+        let label = obj.get::<_, String>("label")?;
+        let value = obj.get::<_, String>("value")?;
+
+        Ok(Self { value, label })
+    }
 }
 
 #[derive(Debug)]
@@ -168,7 +206,7 @@ pub enum Tag {
         placeholder: Option<String>,
         on_select: CallbackId,
         value: Option<String>,
-        options: Vec<String>,
+        options: Vec<SelectOption>,
     },
 }
 
@@ -499,12 +537,24 @@ impl<'js> FromJs<'js> for Tag {
                 }
             }
 
-            "select" => Ok(Tag::Select {
-                placeholder: (),
-                on_select: (),
-                value: (),
-                options: (),
-            }),
+            "select" => {
+                map_props!(
+                    "select",
+                    props,
+                    (placeholder, "placeholder", String, String),
+                    (value, "value", String, String)
+                );
+
+                let on_select = props.get::<_, CallbackId>("onSelect")?;
+                let options = props.get::<_, Vec<SelectOption>>("options")?;
+
+                Ok(Tag::Select {
+                    placeholder,
+                    on_select,
+                    value,
+                    options,
+                })
+            }
 
             #[cfg(feature = "code-element")]
             "code" => {

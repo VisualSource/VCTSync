@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 type AppState = {
+    activeProfile: string | null;
     devApiUrl: string;
     devApiToken: string;
 
@@ -12,9 +13,12 @@ type AppState = {
     setDevApiToken: (value: string) => void;
     setDevApiUrl: (value: string) => void;
     setModOnlyLogLines: (value: boolean) => void;
+    setActiveProfile: (id: string) => void;
 }
 
 export const useApp = create<AppState>()((set) => ({
+    activeProfile: null,
+
     devApiUrl: "",
     devApiToken: "",
 
@@ -33,5 +37,8 @@ export const useApp = create<AppState>()((set) => ({
     },
     setModOnlyLogLines(value: boolean) {
         set({ modOnlyLogLines: value });
-    }
+    },
+    setActiveProfile(id) {
+        set({ activeProfile: id })
+    },
 }));

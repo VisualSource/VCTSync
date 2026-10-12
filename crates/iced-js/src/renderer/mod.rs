@@ -373,8 +373,12 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 on_select,
                 options,
             } => {
-                let mut node = iced::widget::pick_list(options.as_slice(), value.as_ref(), |x| {
-                    Event::Callback(*on_select, Payload::TextInputChange(x))
+                let selected = value
+                    .as_ref()
+                    .and_then(|v| options.iter().find(|o| &o.value == v));
+
+                let mut node = iced::widget::pick_list(options.as_slice(), selected, |x| {
+                    Event::Callback(*on_select, Payload::TextInputChange(x.value))
                 });
 
                 if let Some(placeholder) = placeholder {

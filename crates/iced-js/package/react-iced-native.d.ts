@@ -49,6 +49,13 @@ declare namespace Iced {
             spacing?: Pixels;
         }
 
+        interface Select extends React.Attributes {
+            value?: string | undefined,
+            options?: (string | { value: string; label: string })[];
+            placeholder?: string;
+            onSelect: (ev: { type: "change", value: string; }) => void;
+        }
+
         interface Svg extends React.Attributes {
             width?: Pixels;
             height?: Pixels;
@@ -229,7 +236,8 @@ declare module "react/jsx-runtime" {
             // only when svg-element is enabled
             svg: Iced.Elements.Svg,
 
-            textarea: Iced.Elements.Textarea
+            textarea: Iced.Elements.Textarea;
+            select: Iced.Elements.Select;
         }
     }
 }

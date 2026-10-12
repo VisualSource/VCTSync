@@ -3,6 +3,8 @@ import LayersPlus from "../../assets/icons/layers-plus.svg" with { type: "svg" }
 import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
 import Play from "../../assets/icons/square-library.svg" with { type: "svg" };
 import { invoke } from "react-iced-native";
+import { useMemo } from "react";
+import { useApp } from "../../state.js";
 
 type Profile = {
     name: string;
@@ -15,6 +17,8 @@ type Profile = {
 }
 
 export const Profiles = () => {
+    const activeProfile = useApp(state => state.activeProfile);
+    const setActiveProfile = useApp(state => state.setActiveProfile);
     const { isLoading, isError, error, data } = useQuery({
         queryKey: ["profiles"],
         queryFn: async () => {
@@ -22,14 +26,14 @@ export const Profiles = () => {
         }
     });
 
+    const options = useMemo(() => data?.map(e => ({ label: e.name, value: e.id })) ?? [], []);
+
     return (
         <col>
             <row>
                 <row spacing={2}>
                     <text>Active profile</text>
-                    <select value={1}>
-                        <option value="1">Profile Name</option>
-                    </select>
+                    <select options={options} onSelect={(ev) => setActiveProfile(ev.value)} value={activeProfile ?? undefined} />
                 </row>
                 <space width="fill" />
                 <button onPress={() => {
@@ -45,12 +49,12 @@ export const Profiles = () => {
             </row>
             <hr />
             <space height={10} />
-            <View isError={isError} isLoading={isLoading} error={error} data={data} />
+            <View activeProfile={activeProfile} isError={isError} isLoading={isLoading} error={error} data={data} />
         </col>
     )
 }
 
-const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError: boolean; error: Error | null, data: Profile[] | undefined }) => {
+const View = ({ isLoading, isError, error, data, activeProfile }: { activeProfile?: string | null, isLoading: boolean; isError: boolean; error: Error | null, data: Profile[] | undefined }) => {
     if (isLoading) return (
         <view height="fill" center="fill" width="fill">
             <col alignX="center" spacing={6}>
@@ -117,7 +121,7 @@ const View = ({ isLoading, isError, error, data }: { isLoading: boolean; isError
                                 </col>
                                 <space width="fill" />
 
-                                {profile.id === "" ? (
+                                {profile.id === activeProfile ? (
                                     <view>
                                         <text>Active</text>
                                     </view>
