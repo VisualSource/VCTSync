@@ -32,7 +32,7 @@ export const Settings = () => {
                 <text>Save dir (default downloads)</text>
                 <row spacing={2} alignX="center">
                     <input type="text" placeholder="C:\\Downloads" value={saveDir} onChange={(ev) => setSaveDir(ev.value)} />
-                    <Tooltip tip="Select folder">
+                    <Tooltip tip="Select folder" position="left">
                         <button width="shrink" onPress={() => {
                             void invoke<{ path: string | null; }>("open-folder", {}).then((result) => {
                                 if (!result.path) return;

@@ -1,16 +1,16 @@
-use crate::state::Message;
+use crate::{
+    ipc_mappings::{
+        InstallBuildConfig, MessageDialogConfig, MessageDialogResult, OpenDialogResult,
+    },
+    state::{AppSettings, Message},
+};
 use iced::{Element, Task, Theme};
 use iced_js::Host;
-use nanoserde::DeJson;
-
-#[derive(Debug, Default, DeJson)]
-struct MessageDialogConfig {
-    pub title: String,
-    pub description: String,
-}
+use nanoserde::{DeJson, SerJson, SerRon};
 
 pub struct Application {
     host: iced_js::Host,
+    settings: AppSettings,
 }
 
 impl Application {
@@ -20,6 +20,7 @@ impl Application {
     pub fn new() -> (Self, Task<Message>) {
         let state = Self {
             host: Host::new([("main", "app.js")]),
+            settings: AppSettings::new(),
         };
 
         (state, Task::none())
@@ -31,9 +32,53 @@ impl Application {
                 use iced_js::Event;
                 if let iced_js::Event::Ipc(cmd, id, payload) = event {
                     match cmd.as_str() {
-                        "fetch::install_build" => Task::done(Message::Js(
-                            iced_js::Event::IpcDispatch(cmd, id, format!("null")),
-                        )),
+                        "save::settings" => {
+                            let config = match AppSettings::deserialize_json(&payload) {
+                                Ok(e) => e,
+                                Err(err) => {
+                                    log::error!("{}", err);
+
+                                    return Task::done(Message::Js(Event::IpcDispatch(
+                                        cmd,
+                                        id,
+                                        format!("null"),
+                                    )));
+                                }
+                            };
+
+                            let ron = config.serialize_ron();
+                            state.settings = config;
+
+                            Task::perform(
+                                async move {
+                                    let Some(config_dir) = dirs::config_dir() else {
+                                        log::error!(
+                                            "failed to write config write do to supported config dir"
+                                        );
+                                        return Event::IpcDispatch(cmd, id, "null".to_string());
+                                    };
+
+                                    let settings_file =
+                                        config_dir.join("vcl.visualsource.github/settings.ron");
+
+                                    if let Err(err) = tokio::fs::write(settings_file, ron).await {
+                                        log::error!("{}", err)
+                                    }
+
+                                    Event::IpcDispatch(cmd, id, "null".to_string())
+                                },
+                                Message::Js,
+                            )
+                        }
+                        "fetch::settings" => {
+                            let data = state.settings.serialize_json();
+
+                            Task::done(Message::Js(Event::IpcDispatch(cmd, id, data)))
+                        }
+                        "fetch::install_build" => Task::perform(
+                            async move { Event::IpcDispatch(cmd, id, format!("null")) },
+                            Message::Js,
+                        ),
                         "logs::list-lines" => Task::perform(
                             async move {
                                 iced_js::Event::IpcDispatch(
@@ -45,7 +90,20 @@ impl Application {
                             Message::Js,
                         ),
                         "install::build" => Task::perform(
-                            async move { iced_js::Event::IpcDispatch(cmd, id, "{}".to_string()) },
+                            async move {
+                                let config = match InstallBuildConfig::deserialize_json(&payload) {
+                                    Ok(e) => e,
+                                    Err(err) => {
+                                        log::error!("{}", err);
+
+                                        return Event::IpcDispatch(cmd, id, format!("null"));
+                                    }
+                                };
+
+                                log::info!("Install: {:#?}", config);
+
+                                iced_js::Event::IpcDispatch(cmd, id, "{}".to_string())
+                            },
                             Message::Js,
                         ),
                         "message-dialog" => Task::perform(
@@ -78,11 +136,9 @@ impl Application {
                                     rfd::MessageDialogResult::Custom(custom) => custom,
                                 };
 
-                                Event::IpcDispatch(
-                                    cmd,
-                                    id,
-                                    format!("{{ \"result\": \"{}\" }}", output),
-                                )
+                                let data = MessageDialogResult::new(output);
+
+                                Event::IpcDispatch(cmd, id, data.serialize_json())
                             },
                             Message::Js,
                         ),
@@ -92,13 +148,14 @@ impl Application {
 
                                 let result = if let Some(handle) = picker {
                                     let path_str = handle.path().to_string_lossy();
-
-                                    format!("{{\"path\": \"{}\"}}", path_str)
+                                    Some(path_str.to_string())
                                 } else {
-                                    r#"{ "path": null }"#.to_string()
+                                    None
                                 };
 
-                                Event::IpcDispatch(cmd, id, result)
+                                let data = OpenDialogResult::new(result);
+
+                                Event::IpcDispatch(cmd, id, data.serialize_json())
                             },
                             Message::Js,
                         ),

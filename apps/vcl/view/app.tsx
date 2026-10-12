@@ -6,7 +6,7 @@ import { Tooltip } from "./utils.js";
 
 import { Builds } from "./pages/builds/page.js";
 import { Logs } from "./pages/logs/page.js";
-import { Profiles } from "./pages/profiles.js";
+import { Profiles } from "./pages/profiles/page.js";
 import { Settings } from "./pages/settings.js";
 
 import Library from "./assets/icons/library.svg" with {type: "svg" };

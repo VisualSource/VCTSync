@@ -5,7 +5,9 @@
 
 mod app;
 mod http;
+mod ipc_mappings;
 mod state;
+
 use crate::{app::Application, state::Message};
 use env_logger::{Builder, Target};
 use iced::{Font, Size, Subscription};
