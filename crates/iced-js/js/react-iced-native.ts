@@ -24,6 +24,8 @@ export const React = ReactNamespace;
 export const jsxRuntime = JsxRuntimeNamespace;
 export const compilerRuntime = CompilerRuntimeNamespace;
 
+export { AnimActivity } from "./components.js";
+
 declare global {
     /** The host object Rust installs. */
     var __ICED_INTERNALS__: {
@@ -50,8 +52,10 @@ type RawProps = Record<string, unknown>;
 /** Props after {@link sanitizeProps}: only what the Rust side can decode.
  *  Callbacks have already been swapped for their registry id. */
 type IcedProps = Record<string, string | number | boolean | SvgHandle>;
-type IcedNode = { type: IcedTag, props: IcedProps, children: IcedChild[], _stateId?: string | undefined; };
-type IcedText = { text: string }
+/** `hidden` marks a subtree hidden by `<Activity mode="hidden">`; Rust draws
+ *  nothing for it. */
+type IcedNode = { type: IcedTag, props: IcedProps, children: IcedChild[], _stateId?: string | undefined; hidden?: true };
+type IcedText = { text: string, hidden?: true }
 type IcedChild = IcedNode | IcedText;
 type IcedContainer = { commit(children: readonly IcedChild[]): void }
 
@@ -253,18 +257,21 @@ const config: IcedHostConfig = {
     clearContainer(container) {
         container.commit([]);
     },
+    // Called for the topmost host nodes under a hidden `<Activity>`. Showing
+    // them again goes through `cloneInstance`, which drops the flag.
     cloneHiddenInstance(instance, type, props, internalInstanceHandle) {
         return {
             _stateId: needsUniqueId(type) ? nanoid() : undefined,
             type,
             props: sanitizeProps(type, props),
-            children: instance.children
+            children: instance.children,
+            hidden: true,
         }
     },
     cloneHiddenTextInstance(instance, text, internalInstanceHandle) {
-
         return {
-            text
+            text,
+            hidden: true,
         }
     },
     shouldSetTextContent(type, props) {

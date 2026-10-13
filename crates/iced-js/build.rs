@@ -31,6 +31,7 @@ fn main() {
     let manifest_dir = Path::new(&manifest_dir);
 
     println!("cargo:rerun-if-changed=js/react-iced-native.ts");
+    println!("cargo:rerun-if-changed=js/components.tsx");
     println!("cargo:rerun-if-changed=js/vendor");
     println!("cargo:rerun-if-changed=package.json");
     println!("cargo:rerun-if-changed=pnpm-lock.yaml");

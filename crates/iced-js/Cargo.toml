@@ -14,7 +14,7 @@ rquickjs = { version = "0.14.0", features = [
     "parallel",
 ] }
 tokio = { workspace = true, features = ["macros", "fs", "sync", "time"] }
-iced = { workspace = true, features = ["tokio"] }
+iced = { workspace = true, features = ["tokio", "advanced"] }
 reqwest = { workspace = true, optional = true }
 rust-silos = { version = "0.3.2", optional = true }
 rand = "0.10.3"

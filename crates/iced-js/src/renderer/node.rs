@@ -16,6 +16,18 @@ pub(crate) fn to_node(node: rquickjs::Object<'_>, depth: u32) -> rquickjs::Resul
             message: Some("max component depth".into()),
         });
     }
+    // Set by the host config on a subtree that an `<Activity mode="hidden">`
+    // hides. Nothing of it is drawn, so the children are not even decoded.
+    if node.get::<_, Option<bool>>("hidden")?.unwrap_or_default() {
+        return Ok(Node::Element {
+            tag: Tag::Space {
+                width: Some(iced::Length::Fixed(0.0)),
+                height: Some(iced::Length::Fixed(0.0)),
+            },
+            children: Vec::new(),
+        });
+    }
+
     if node.contains_key("text")? {
         let text = node.get::<_, String>("text")?.into_boxed_str();
         return Ok(Node::Text(text));
@@ -38,4 +50,52 @@ pub(crate) fn to_node(node: rquickjs::Object<'_>, depth: u32) -> rquickjs::Resul
     }
 
     Ok(Node::Element { tag, children })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rquickjs::{Context, Runtime};
+
+    fn parse(js: &str) -> Node {
+        let rt = Runtime::new().unwrap();
+        let ctx = Context::full(&rt).unwrap();
+        ctx.with(|ctx| {
+            let obj = ctx.eval::<rquickjs::Object, _>(js).unwrap();
+            to_node(obj, 0).unwrap()
+        })
+    }
+
+    #[test]
+    fn hidden_node_becomes_empty_space() {
+        // The child is not a valid node, which also shows it is never decoded.
+        let node =
+            parse(r#"({ type: "view", hidden: true, props: {}, children: [{ type: "bogus" }] })"#);
+
+        let Node::Element { tag, children } = node else {
+            panic!("expected an element");
+        };
+
+        assert!(children.is_empty());
+        assert!(matches!(
+            tag,
+            Tag::Space {
+                width: Some(iced::Length::Fixed(0.0)),
+                height: Some(iced::Length::Fixed(0.0)),
+            }
+        ));
+    }
+
+    #[test]
+    fn hidden_text_becomes_empty_space() {
+        let node = parse(r#"({ text: "hi", hidden: true })"#);
+
+        assert!(matches!(
+            node,
+            Node::Element {
+                tag: Tag::Space { .. },
+                ..
+            }
+        ));
+    }
 }

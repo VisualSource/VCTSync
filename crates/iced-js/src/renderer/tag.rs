@@ -1,9 +1,10 @@
-use super::props::{Prop, SelectOption};
+use super::props::{Keyframe, Prop, SelectOption};
 use super::styles::{ButtonStyle, ViewStyle};
 
 use iced::{
     Color, Font, Length, Padding, Pixels,
     alignment::{Horizontal, Vertical},
+    animation::Easing,
     widget::{
         self,
         text::{LineHeight, Shaping},
@@ -106,6 +107,15 @@ pub enum Tag {
     },
     Float {
         scale: Option<f32>,
+    },
+    Anim {
+        active: bool,
+        from: Option<Keyframe>,
+        to: Option<Keyframe>,
+        duration: Option<u64>,
+        easing: Option<Easing>,
+        hide_when_inactive: bool,
+        on_settle: Option<CallbackId>,
     },
     TextInput {
         placeholder: String,
@@ -405,6 +415,30 @@ impl<'js> FromJs<'js> for Tag {
                 Ok(Tag::Float { scale })
             }
 
+            "anim" => {
+                map_props!(
+                    "anim",
+                    props,
+                    (active, "active", bool),
+                    (from, "from", Keyframe),
+                    (to, "to", Keyframe),
+                    (duration, "duration", u64),
+                    (easing, "easing", Easing),
+                    (hide_when_inactive, "hideWhenInactive", bool),
+                    (on_settle, "onSettle", CallbackId)
+                );
+
+                Ok(Tag::Anim {
+                    active: active.unwrap_or_default(),
+                    from,
+                    to,
+                    duration,
+                    easing,
+                    hide_when_inactive: hide_when_inactive.unwrap_or_default(),
+                    on_settle,
+                })
+            }
+
             "canvas" => {
                 unimplemented!()
             }
@@ -579,6 +613,7 @@ impl Display for Tag {
             Self::Checkbox { .. } => write!(f, "input(checkbox)"),
 
             Self::Float { .. } => write!(f, "float"),
+            Self::Anim { .. } => write!(f, "anim"),
             Self::TextInput { .. } => write!(f, "input(text)"),
             Self::Textarea { .. } => write!(f, "textarea"),
 
@@ -598,6 +633,7 @@ impl Tag {
             | Tag::Checkbox { .. }
             | Tag::Switch { .. } => len == 0,
             Self::Float { .. }
+            | Self::Anim { .. }
             | Tag::View { .. }
             | Tag::Button { .. }
             | Tag::Text { .. }
@@ -606,5 +642,105 @@ impl Tag {
             Tag::Tooltip { .. } => len == 2,
             _ => true,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::renderer::props::Offset;
+    use rquickjs::{Context, Runtime};
+
+    fn parse(js: &str) -> Tag {
+        let rt = Runtime::new().unwrap();
+        let ctx = Context::full(&rt).unwrap();
+        ctx.with(|ctx| ctx.eval::<Tag, _>(js).unwrap())
+    }
+
+    #[test]
+    fn anim_parses_all_props() {
+        let tag = parse(
+            r#"({ type: "anim", props: {
+                active: true,
+                from: { x: "100%", scale: 0.5 },
+                to: { y: -8 },
+                duration: 220,
+                easing: "easeInOut",
+                hideWhenInactive: true,
+                onSettle: 7,
+            } })"#,
+        );
+
+        let Tag::Anim {
+            active,
+            from,
+            to,
+            duration,
+            easing,
+            hide_when_inactive,
+            ..
+        } = tag
+        else {
+            panic!("expected anim, got {tag}");
+        };
+
+        assert!(active);
+        assert_eq!(
+            from,
+            Some(Keyframe {
+                x: Offset::Percent(100.0),
+                y: Offset::Px(0.0),
+                scale: 0.5,
+            })
+        );
+        assert_eq!(
+            to,
+            Some(Keyframe {
+                x: Offset::Px(0.0),
+                y: Offset::Px(-8.0),
+                scale: 1.0,
+            })
+        );
+        assert_eq!(duration, Some(220));
+        assert_eq!(easing, Some(Easing::EaseInOut));
+        assert!(hide_when_inactive);
+        assert!(matches!(
+            tag,
+            Tag::Anim {
+                on_settle: Some(7),
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn anim_defaults() {
+        let tag = parse(r#"({ type: "anim", props: {} })"#);
+
+        let Tag::Anim {
+            active,
+            from,
+            to,
+            duration,
+            easing,
+            hide_when_inactive,
+            ..
+        } = tag
+        else {
+            panic!("expected anim, got {tag}");
+        };
+
+        assert!(!active);
+        assert_eq!(from, None);
+        assert_eq!(to, None);
+        assert_eq!(duration, None);
+        assert_eq!(easing, None);
+        assert!(!hide_when_inactive);
+    }
+
+    #[test]
+    fn offset_resolves_against_size() {
+        assert_eq!(Offset::Percent(50.0).resolve(300.0), 150.0);
+        assert_eq!(Offset::Px(12.0).resolve(300.0), 12.0);
     }
 }

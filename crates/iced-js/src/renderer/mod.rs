@@ -1,3 +1,4 @@
+mod anim;
 mod node;
 mod props;
 mod styles;
@@ -323,6 +324,36 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
 
                 let mut node = iced::widget::float(content);
                 apply_opt!(node, scale, scale);
+
+                node.into()
+            }
+
+            Tag::Anim {
+                active,
+                from,
+                to,
+                duration,
+                easing,
+                hide_when_inactive,
+                on_settle,
+            } => {
+                debug_assert_eq!(children.len(), 1);
+                let content = render_tree(&children[0]);
+
+                let mut node =
+                    anim::Anim::new(content, *active).hide_when_inactive(*hide_when_inactive);
+                apply_opt!(node, from, from);
+                apply_opt!(node, to, to);
+                apply_opt!(node, easing, easing);
+
+                if let Some(ms) = duration {
+                    node = node.duration(std::time::Duration::from_millis(*ms));
+                }
+
+                if let Some(id) = on_settle {
+                    node = node
+                        .on_settle(|active| Event::Callback(*id, Payload::BoolInputChange(active)));
+                }
 
                 node.into()
             }

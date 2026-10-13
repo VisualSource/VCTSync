@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import LayersPlus from "../../assets/icons/layers-plus.svg" with { type: "svg" };
 import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
 import Play from "../../assets/icons/square-library.svg" with { type: "svg" };
-import { invoke } from "react-iced-native";
+import { AnimActivity, invoke } from "react-iced-native";
 import { useApp } from "../../state.js";
 import { ModPanel } from "./mod-panel.js";
 import { useState } from "react";
@@ -54,7 +54,9 @@ export const Profiles = () => {
                 <View toggleShowDetails={() => setShowDetails(e => !e)} activeProfile={activeProfile} isError={isError} isLoading={isLoading} error={error} data={data} />
             </col>
 
-            {showDetails ? (<ModPanel onClose={() => setShowDetails(false)} />) : null}
+            <AnimActivity active={showDetails} from={{ x: "100%" }} to={{ x: 0 }} duration={220}>
+                <ModPanel onClose={() => setShowDetails(false)} />
+            </AnimActivity>
         </stack>
     )
 }

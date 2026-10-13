@@ -311,6 +311,111 @@ impl JsProp for Pixels {
     }
 }
 
+/// A distance along one axis, either in pixels or relative to the size of the
+/// element it applies to.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Offset {
+    Px(f32),
+    Percent(f32),
+}
+
+impl Default for Offset {
+    fn default() -> Self {
+        Self::Px(0.0)
+    }
+}
+
+impl Offset {
+    pub fn resolve(self, size: f32) -> f32 {
+        match self {
+            Offset::Px(px) => px,
+            Offset::Percent(percent) => size * percent / 100.0,
+        }
+    }
+}
+
+impl JsProp for Offset {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        if let Ok(px) = value.get::<f32>() {
+            return Ok(Offset::Px(px));
+        }
+
+        let data = value.get::<String>()?;
+        let percent = data
+            .strip_suffix('%')
+            .ok_or_else(|| {
+                rquickjs::Error::new_from_js_message("string", "Offset", "expected a percentage")
+            })?
+            .parse::<f32>()
+            .map_err(|err| {
+                rquickjs::Error::new_from_js_message("string", "Offset", err.to_string())
+            })?;
+
+        Ok(Offset::Percent(percent))
+    }
+}
+
+/// A transform that an `anim` element tweens to or from.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Keyframe {
+    pub x: Offset,
+    pub y: Offset,
+    pub scale: f32,
+}
+
+impl Default for Keyframe {
+    fn default() -> Self {
+        Self {
+            x: Offset::default(),
+            y: Offset::default(),
+            scale: 1.0,
+        }
+    }
+}
+
+impl JsProp for Keyframe {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        let obj = value.get::<Object<'_>>()?;
+        let mut frame = Keyframe::default();
+
+        if let Some(x) = obj.get::<_, Option<Prop<Offset>>>("x")? {
+            frame.x = x.0;
+        }
+        if let Some(y) = obj.get::<_, Option<Prop<Offset>>>("y")? {
+            frame.y = y.0;
+        }
+        if let Some(scale) = obj.get::<_, Option<f32>>("scale")? {
+            frame.scale = scale;
+        }
+
+        Ok(frame)
+    }
+}
+
+impl JsProp for iced::animation::Easing {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        use iced::animation::Easing;
+        let data = value.get::<String>()?;
+
+        match data.as_str() {
+            "linear" => Ok(Easing::Linear),
+            "easeIn" => Ok(Easing::EaseIn),
+            "easeOut" => Ok(Easing::EaseOut),
+            "easeInOut" => Ok(Easing::EaseInOut),
+            "easeInCubic" => Ok(Easing::EaseInCubic),
+            "easeOutCubic" => Ok(Easing::EaseOutCubic),
+            "easeInOutCubic" => Ok(Easing::EaseInOutCubic),
+            "easeOutBack" => Ok(Easing::EaseOutBack),
+            "easeOutBounce" => Ok(Easing::EaseOutBounce),
+            _ => Err(rquickjs::Error::new_from_js_message(
+                "string",
+                "Easing",
+                "unknown easing name",
+            )),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SelectOption {
     pub value: String,

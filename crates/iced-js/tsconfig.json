@@ -1,6 +1,8 @@
 {
   "include": [
     "js/**/*",
+    // Element typings, so `js/components.tsx` can use the intrinsics.
+    "package/elements.d.ts",
   ],
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
