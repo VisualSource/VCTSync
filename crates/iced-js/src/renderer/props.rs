@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use iced::{
-    Background, Color, Font, Length, Padding,
+    Background, Color, Font, Length, Padding, Pixels,
     alignment::{Horizontal, Vertical},
     font::Weight,
 };
@@ -31,6 +31,10 @@ impl<'js, T: JsProp> FromJs<'js> for Prop<T> {
         let inner = T::from_prop(value)?;
         Ok(Self(inner))
     }
+}
+
+pub fn to_inner<T: JsProp>(value: Prop<T>) -> T {
+    value.0
 }
 
 impl_via_from_js!(f32);
@@ -298,6 +302,12 @@ impl JsProp for iced::border::Radius {
                 "invalid count of readies",
             )),
         }
+    }
+}
+
+impl JsProp for Pixels {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        Ok(Pixels::from(value.get::<f32>()?))
     }
 }
 

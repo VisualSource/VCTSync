@@ -4,6 +4,8 @@ import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
 import Play from "../../assets/icons/square-library.svg" with { type: "svg" };
 import { invoke } from "react-iced-native";
 import { useApp } from "../../state.js";
+import { ModPanel } from "./mod-panel.js";
+import { useState } from "react";
 
 type Profile = {
     name: string;
@@ -16,6 +18,7 @@ type Profile = {
 }
 
 export const Profiles = () => {
+    const [showDetails, setShowDetails] = useState(false);
     const activeProfile = useApp(state => state.activeProfile);
     const setActiveProfile = useApp(state => state.setActiveProfile);
     const { isLoading, isError, error, data } = useQuery({
@@ -28,32 +31,36 @@ export const Profiles = () => {
     const options = data?.map(e => ({ label: e.name, value: e.id })) ?? [];
 
     return (
-        <col>
-            <row padding={6}>
-                <row spacing={2} alignY="center">
-                    <text>Active profile</text>
-                    <select options={options} placeholder="Select profile" onSelect={(ev) => setActiveProfile(ev.value)} value={activeProfile ?? undefined} />
-                </row>
-                <space width="fill" />
-                <button onPress={() => {
-                    void invoke("launch-game", {}).catch((err) => {
-                        console.error(err);
-                    })
-                }}>
-                    <row alignX="center" alignY="center">
-                        <svg height={15} width={15} style="currentColor" src={Play} />
-                        <text>Launch</text>
+        <stack>
+
+            <col>
+                <row padding={6}>
+                    <row spacing={2} alignY="center">
+                        <select options={options} placeholder="Select profile" onSelect={(ev) => setActiveProfile(ev.value)} value={activeProfile ?? undefined} />
                     </row>
-                </button>
-            </row>
-            <hr />
-            <space height={10} />
-            <View activeProfile={activeProfile} isError={isError} isLoading={isLoading} error={error} data={data} />
-        </col>
+                    <space width="fill" />
+                    <button onPress={() => {
+                        void invoke("launch-game", {}).catch((err) => {
+                            console.error(err);
+                        })
+                    }}>
+                        <row alignX="center" alignY="center">
+                            <svg height={15} width={15} style="currentColor" src={Play} />
+                            <text>Launch</text>
+                        </row>
+                    </button>
+                </row>
+                <hr />
+                <space height={10} />
+                <View toggleShowDetails={() => setShowDetails(e => !e)} activeProfile={activeProfile} isError={isError} isLoading={isLoading} error={error} data={data} />
+            </col>
+
+            {showDetails ? (<ModPanel onClose={() => setShowDetails(false)} />) : null}
+        </stack>
     )
 }
 
-const View = ({ isLoading, isError, error, data, activeProfile }: { activeProfile?: string | null, isLoading: boolean; isError: boolean; error: Error | null, data: Profile[] | undefined }) => {
+const View = ({ isLoading, isError, error, data, activeProfile, toggleShowDetails }: { toggleShowDetails: () => void, activeProfile?: string | null, isLoading: boolean; isError: boolean; error: Error | null, data: Profile[] | undefined }) => {
     if (isLoading) return (
         <view height="fill" center="fill" width="fill">
             <col alignX="center" spacing={6}>
@@ -126,7 +133,7 @@ const View = ({ isLoading, isError, error, data, activeProfile }: { activeProfil
                                     </view>
                                 ) : null}
 
-                                <button width="shrink" style="text" onPress={() => { }}>
+                                <button width="shrink" style="text" onPress={() => toggleShowDetails()}>
                                     <svg style="currentColor" src={Settings} />
                                 </button>
                             </row>

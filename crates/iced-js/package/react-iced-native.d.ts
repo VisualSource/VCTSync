@@ -213,7 +213,9 @@ declare namespace Iced {
             width?: Pixels
         }
 
-        interface Opaque extends React.Attributes { }
+        interface Opaque extends React.Attributes {
+            children: React.ReactNode;
+        }
 
 
         namespace Inputs {

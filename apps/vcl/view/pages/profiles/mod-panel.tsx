@@ -1,53 +1,59 @@
 import Trash from "../../assets/icons/library.svg" with {type: "svg" };
 
-export const ModPanel = () => {
+type Props = {
+    onClose: () => void;
+}
+
+export const ModPanel = ({ onClose }: Props) => {
     return (
-        <col>
-            <row>
-                <text>Profile Name</text>
-                <space width="fill" />
-                <button>
-                    X
-                </button>
-            </row>
-            <space height={4} />
-            <row>
-
-            </row>
-            <hr />
-
+        <view style={{ background: "" }}>
             <col>
-                <text>Name</text>
-                <input type="text" placeholder="profile name" value={""} />
+                <row>
+                    <text>Profile Name</text>
+                    <space width="fill" />
+                    <button onPress={onClose}>
+                        X
+                    </button>
+                </row>
+                <space height={4} />
+                <row>
+
+                </row>
+                <hr />
+
+                <col>
+                    <text>Name</text>
+                    <input type="text" placeholder="profile name" value={""} />
+                </col>
+
+                <col>
+                    <text>Icon</text>
+                    <row></row>
+                </col>
+
+                <col>
+                    <text>Launch Arguments</text>
+                    <input type="text" placeholder="-windowed -console" value={""} />
+                </col>
+
+                <col>
+                    <text>Profile folder</text>
+                    <input type="text" placeholder="path://" value={""} />
+                </col>
+
+                <space height="fill" />
+
+                <hr />
+                <row>
+                    <text>Deletes the profile folder</text>
+                    <button>
+                        <row>
+                            <svg src={Trash} />
+                            <text>Delete Profile</text>
+                        </row>
+                    </button>
+                </row>
             </col>
-
-            <col>
-                <text>Icon</text>
-                <row></row>
-            </col>
-
-            <col>
-                <text>Launch Arguments</text>
-                <input type="text" placeholder="-windowed -console" value={""} />
-            </col>
-
-            <col>
-                <text>Profile folder</text>
-                <input type="text" placeholder="path://" value={""} />
-            </col>
-
-            <space height="fill" />
-
-            <hr />
-            <row>
-                <text>Deletes the profile folder</text>
-                <button>
-                    <row>
-                        <svg src={Trash} />
-                        <text>Delete Profile</text>
-                    </row>
-                </button>
-            </row>
-        </col>
+        </view>
     );
 }

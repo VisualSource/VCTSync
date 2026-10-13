@@ -1,7 +1,5 @@
+use crate::renderer::props::{JsProp, Prop, to_inner};
 use iced::{Background, Border, Color, Shadow, Vector};
-use rquickjs::FromJs;
-
-use crate::renderer::props::{JsProp, Prop};
 
 #[derive(Debug)]
 pub enum ViewStyle {
@@ -33,13 +31,13 @@ impl JsProp for ViewStyle {
         let border = {
             let width = obj.get::<_, f32>("borderWidth").ok().unwrap_or_default();
             let color = obj
-                .get::<_, IcedColor>("borderColor")
+                .get::<_, Prop<Color>>("borderColor")
                 .ok()
-                .map(Color::from)
+                .map(to_inner)
                 .unwrap_or_default();
             let radius = obj
-                .get::<_, IcedBorderRadius>("borderRadius")
-                .map(iced::border::Radius::from)
+                .get::<_, Prop<iced::border::Radius>>("borderRadius")
+                .map(to_inner)
                 .unwrap_or_default();
 
             Border {
@@ -51,9 +49,9 @@ impl JsProp for ViewStyle {
 
         let shadow = {
             let color = obj
-                .get::<_, IcedColor>("shadowColor")
+                .get::<_, Prop<Color>>("shadowColor")
                 .ok()
-                .map(Color::from)
+                .map(to_inner)
                 .unwrap_or_default();
             let blur_radius = obj
                 .get::<_, f32>("shadowBlurRadius")
@@ -95,11 +93,8 @@ pub enum ButtonStyle {
     Custom,
 }
 
-impl<'js> FromJs<'js> for ButtonStyle {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
+impl JsProp for ButtonStyle {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
         if let Ok(value) = value.get::<String>() {
             return match value.as_str() {
                 "text" => Ok(ButtonStyle::Text),
@@ -129,11 +124,8 @@ pub enum SvgStyle {
     Custom,
 }
 
-impl<'js> FromJs<'js> for SvgStyle {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
+impl JsProp for SvgStyle {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
         if let Ok(v) = value.get::<String>() {
             return match v.as_str() {
                 "currentColor" => Ok(SvgStyle::CurrentColor),

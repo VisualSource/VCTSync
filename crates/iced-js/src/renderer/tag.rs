@@ -56,90 +56,57 @@ pub enum Tag {
         style: Option<ViewStyle>,
     },
     Button {
-        // class
         clip: Option<bool>,
         on_press: Option<CallbackId>,
-        //on_press_maybe
-        //on_press_with
         padding: Option<Padding>,
-        //style
         width: Option<Length>,
         height: Option<Length>,
-
         disabled: bool,
-
         style: Option<ButtonStyle>,
     },
     Text {
         font: Option<Font>,
         size: Option<Pixels>,
         line_height: Option<LineHeight>,
-        // font object,
         width: Option<Length>,
         height: Option<Length>,
         align_x: Option<Horizontal>,
         align_y: Option<Vertical>,
         wrapping: Option<bool>,
-        // style callback
         color: Option<Color>,
-        // colorMaybe
-        // font
-        // fontMaybe
         center: Option<bool>,
         shaping: Option<Shaping>,
     },
     Scroll {
         width: Option<Length>,
         height: Option<Length>,
-
         horizontal: Option<bool>,
-
         anchor_bottom: Option<bool>,
         anchor_left: Option<bool>,
         anchor_right: Option<bool>,
         anchor_top: Option<bool>,
-
         auto_scroll: Option<bool>,
-
-        spacing: Option<Pixels>, //anchor_y
-                                 //anchor_x
-                                 // direction
-                                 //id
-                                 //on_scroll
-                                 //style
+        spacing: Option<Pixels>,
     },
     Space {
         width: Option<Length>,
         height: Option<Length>,
     },
     Hr {
-        //style
         height: Pixels,
     },
     Vr {
-        //style
         width: Pixels,
     },
     Tooltip {
-        // delay,
         padding: Option<Pixels>,
         gap: Option<Pixels>,
         snap_within_viewport: Option<bool>,
-        position: iced::widget::tooltip::Position, //style
+        position: iced::widget::tooltip::Position,
     },
-
     Float {
         scale: Option<f32>,
     },
-
-    #[cfg(feature = "svg-element")]
-    Svg {
-        src: iced::widget::svg::Handle,
-        width: Option<Length>,
-        height: Option<Length>,
-        style: Option<super::styles::SvgStyle>,
-    },
-
     TextInput {
         placeholder: String,
         value: String,
@@ -172,8 +139,14 @@ pub enum Tag {
         width: Option<Length>,
         clip: Option<bool>,
     },
-
     Opaque,
+    #[cfg(feature = "svg-element")]
+    Svg {
+        src: iced::widget::svg::Handle,
+        width: Option<Length>,
+        height: Option<Length>,
+        style: Option<super::styles::SvgStyle>,
+    },
 }
 
 macro_rules! map_props {
@@ -352,7 +325,7 @@ impl<'js> FromJs<'js> for Tag {
                     align_x,
                     align_y,
                     wrapping,
-                    color: None,
+                    color,
                     center,
                     shaping: None,
                 })
