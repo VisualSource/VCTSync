@@ -99,7 +99,7 @@ const View = ({ isLoading, isError, error, data, activeProfile }: { activeProfil
             <row alignX="center" alignY="center">
                 <text size={14}>PROFILES</text>
                 <space width="fill" />
-                <button width="shrink">
+                <button width="shrink" onPress={() => { }}>
                     <row alignY="center" spacing={4}>
                         <svg style="currentColor" height={15} width={15} src={LayersPlus} />
                         <text size={14}>New Profile</text>
