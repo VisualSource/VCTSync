@@ -1,12 +1,13 @@
 mod node;
 mod props;
+mod styles;
 mod tag;
 
 use iced::Element;
 pub(crate) use node::{Node, to_node};
 pub(crate) use tag::Tag;
 
-use crate::{Event, renderer::tag::ViewStyle, runtime::Payload};
+use crate::{Event, renderer::styles::ViewStyle, runtime::Payload};
 
 macro_rules! apply_opt {
     ($node: ident, $prop: ident, $fn: ident) => {
@@ -99,7 +100,9 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                         ViewStyle::RoundedBox => {
                             node = node.style(iced::widget::container::rounded_box)
                         }
-                        ViewStyle::Custom {} => {}
+                        ViewStyle::Custom(style) => {
+                            node = node.style(|_| *style);
+                        }
                     }
                 }
 
@@ -132,6 +135,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 width,
                 height,
                 disabled,
+                style,
             } => {
                 debug_assert_eq!(children.len(), 1);
                 let content = render_tree(&children[0]);
@@ -145,6 +149,36 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                         Some(Event::Callback(*id, Payload::Click))
                     };
                     btn = btn.on_press_maybe(callback);
+                }
+
+                if let Some(style) = style {
+                    match style {
+                        styles::ButtonStyle::Text => {
+                            btn = btn.style(iced::widget::button::text);
+                        }
+                        styles::ButtonStyle::Custom => todo!(),
+                        styles::ButtonStyle::Background => {
+                            btn = btn.style(iced::widget::button::background);
+                        }
+                        styles::ButtonStyle::Success => {
+                            btn = btn.style(iced::widget::button::success);
+                        }
+                        styles::ButtonStyle::Danger => {
+                            btn = btn.style(iced::widget::button::danger);
+                        }
+                        styles::ButtonStyle::Primary => {
+                            btn = btn.style(iced::widget::button::primary);
+                        }
+                        styles::ButtonStyle::Secondary => {
+                            btn = btn.style(iced::widget::button::secondary);
+                        }
+                        styles::ButtonStyle::Warning => {
+                            btn = btn.style(iced::widget::button::warning);
+                        }
+                        styles::ButtonStyle::Subtle => {
+                            btn = btn.style(iced::widget::button::subtle);
+                        }
+                    }
                 }
 
                 apply_opt!(btn, width, width);
@@ -389,16 +423,42 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
             }
 
             #[cfg(feature = "svg-element")]
-            Tag::Svg { src, width, height } => {
+            Tag::Svg {
+                src,
+                width,
+                height,
+                style,
+            } => {
                 debug_assert_eq!(children.len(), 0);
 
                 let mut node = iced::widget::svg(src.clone());
                 apply_opt!(node, width, width);
                 apply_opt!(node, height, height);
 
+                if let Some(style) = style {
+                    match style {
+                        styles::SvgStyle::CurrentColor => {
+                            node = node.style(style_svg);
+                        }
+                        styles::SvgStyle::Custom => todo!(),
+                    }
+                }
+
                 node.into()
             }
         },
         Node::Text(txt) => iced::widget::text(&**txt).into(),
+    }
+}
+
+#[cfg(feature = "svg-element")]
+pub fn style_svg(
+    theme: &iced::Theme,
+    _status: iced::widget::svg::Status,
+) -> iced::widget::svg::Style {
+    let pal = theme.palette();
+
+    iced::widget::svg::Style {
+        color: Some(pal.text),
     }
 }

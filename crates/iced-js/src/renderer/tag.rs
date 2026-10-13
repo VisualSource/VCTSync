@@ -1,6 +1,9 @@
 use super::props::{
     IcedFont, IcedHorizontal, IcedId, IcedLength, IcedPadding, IcedTooltipPosition, IcedVertical,
+    SelectOption,
 };
+use super::styles::{ButtonStyle, ViewStyle};
+
 use iced::{
     Color, Font, Length, Padding, Pixels,
     alignment::{Horizontal, Vertical},
@@ -9,54 +12,10 @@ use iced::{
         text::{LineHeight, Shaping},
     },
 };
-use rquickjs::{FromJs, Object};
+use rquickjs::FromJs;
 use std::fmt::Display;
 
 type CallbackId = u64;
-
-#[derive(Debug)]
-pub enum ViewStyle {
-    RoundedBox,
-    Custom {},
-}
-
-#[derive(Debug, Clone)]
-pub struct SelectOption {
-    pub value: String,
-    pub label: String,
-}
-
-impl PartialEq for SelectOption {
-    fn eq(&self, other: &Self) -> bool {
-        self.value == other.value
-    }
-}
-impl Display for SelectOption {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.label)
-    }
-}
-
-impl<'js> FromJs<'js> for SelectOption {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        if let Some(value) = value.get::<String>().ok() {
-            return Ok(Self {
-                label: value.clone(),
-                value,
-            });
-        }
-
-        let obj = value.get::<Object<'js>>()?;
-
-        let label = obj.get::<_, String>("label")?;
-        let value = obj.get::<_, String>("value")?;
-
-        Ok(Self { value, label })
-    }
-}
 
 #[derive(Debug)]
 pub enum Tag {
@@ -111,6 +70,8 @@ pub enum Tag {
         height: Option<Length>,
 
         disabled: bool,
+
+        style: Option<ButtonStyle>,
     },
     Text {
         font: Option<Font>,
@@ -179,6 +140,7 @@ pub enum Tag {
         src: iced::widget::svg::Handle,
         width: Option<Length>,
         height: Option<Length>,
+        style: Option<super::styles::SvgStyle>,
     },
 
     TextInput {
@@ -300,7 +262,6 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "view",
                     props,
-                    ignore["style"],
                     (padding, "padding", Padding, IcedPadding),
                     (width, "width", Length, IcedLength),
                     (height, "height", Length, IcedLength),
@@ -316,16 +277,9 @@ impl<'js> FromJs<'js> for Tag {
                     (align_x, "alignX", Horizontal, IcedHorizontal),
                     (align_y, "alignY", Vertical, IcedVertical),
                     (clip, "clip", bool, bool),
-                    (id, "id", Id, IcedId)
+                    (id, "id", Id, IcedId),
+                    (style, "style", ViewStyle, ViewStyle)
                 );
-
-                let style = props.get::<_, String>("style").ok().and_then(|v| {
-                    if v == "roundedBox" {
-                        return Some(ViewStyle::RoundedBox);
-                    }
-
-                    None
-                });
 
                 Ok(Tag::View {
                     style,
@@ -356,10 +310,12 @@ impl<'js> FromJs<'js> for Tag {
                     (padding, "padding", Padding, IcedPadding),
                     (width, "width", Length, IcedLength),
                     (height, "height", Length, IcedLength),
-                    (disabled, "disabled", bool, bool)
+                    (disabled, "disabled", bool, bool),
+                    (style, "style", ButtonStyle, ButtonStyle)
                 );
 
                 Ok(Tag::Button {
+                    style,
                     clip,
                     on_press,
                     padding,
@@ -541,6 +497,7 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "select",
                     props,
+                    ignore["src","onSelect","options"],
                     (placeholder, "placeholder", String, String),
                     (value, "value", String, String)
                 );
@@ -576,6 +533,7 @@ impl<'js> FromJs<'js> for Tag {
             }
             #[cfg(feature = "svg-element")]
             "svg" => {
+                use super::styles::SvgStyle;
                 let handle =
                     props.get::<_, rquickjs::Class<'js, crate::loaders::svg::SvgHandle>>("src")?;
                 let src = handle.borrow().handle.clone();
@@ -585,10 +543,16 @@ impl<'js> FromJs<'js> for Tag {
                     props,
                     ignore["src"],
                     (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength)
+                    (height, "height", Length, IcedLength),
+                    (style, "style", SvgStyle, SvgStyle)
                 );
 
-                Ok(Tag::Svg { src, width, height })
+                Ok(Tag::Svg {
+                    src,
+                    width,
+                    height,
+                    style,
+                })
             }
 
             _ => Err(rquickjs::Error::new_from_js_message(

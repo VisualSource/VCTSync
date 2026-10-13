@@ -1,7 +1,9 @@
+use std::fmt::Display;
+
 use iced::{
-    Font, Length, Padding,
+    Background, Color, Font, Length, Padding,
     alignment::{Horizontal, Vertical},
-    font::{Family, Weight},
+    font::Weight,
 };
 use rquickjs::{FromJs, Object};
 
@@ -292,5 +294,143 @@ impl<'js> FromJs<'js> for IcedFont {
         };
 
         Ok(IcedFont(font))
+    }
+}
+
+pub struct IcedBackground(Background);
+
+impl From<IcedBackground> for Background {
+    fn from(value: IcedBackground) -> Self {
+        value.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedBackground {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        let value = value.get::<IcedColor>()?;
+        Ok(IcedBackground(Background::Color(value.into())))
+    }
+}
+
+pub struct IcedColor(Color);
+
+impl From<IcedColor> for Color {
+    fn from(value: IcedColor) -> Self {
+        value.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedColor {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        let v = value.get::<String>()?;
+
+        let c = v.parse::<Color>().map_err(|err| {
+            rquickjs::Error::new_from_js_message("string", "color", err.to_string())
+        })?;
+
+        Ok(IcedColor(c))
+    }
+}
+
+pub struct IcedBorderRadius(iced::border::Radius);
+
+impl From<IcedBorderRadius> for iced::border::Radius {
+    fn from(value: IcedBorderRadius) -> Self {
+        value.0
+    }
+}
+
+impl<'js> FromJs<'js> for IcedBorderRadius {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        if let Ok(value) = value.get::<f32>() {
+            return Ok(IcedBorderRadius(iced::border::radius(value)));
+        }
+        let value = value.get::<String>()?;
+
+        let mut data = Vec::with_capacity(4);
+        for item in value.split_whitespace().take(4) {
+            let r = item.parse::<f32>().map_err(|err| {
+                rquickjs::Error::new_from_js_message("string", "f32", err.to_string())
+            })?;
+
+            data.push(r);
+        }
+
+        match data.len() {
+            1 => Ok(IcedBorderRadius(iced::border::radius(data[0]))),
+            2 => Ok(IcedBorderRadius(
+                iced::border::Radius::default()
+                    .top(data[0])
+                    .bottom(data[0])
+                    .left(data[1])
+                    .right(data[1]),
+            )),
+            3 => Ok(IcedBorderRadius(
+                iced::border::Radius::default()
+                    .top(data[0])
+                    .bottom(data[2])
+                    .left(data[1])
+                    .right(data[1]),
+            )),
+            4 => Ok(IcedBorderRadius(
+                iced::border::Radius::default()
+                    .top(data[0])
+                    .left(data[1])
+                    .right(data[2])
+                    .bottom(data[3]),
+            )),
+            _ => Err(rquickjs::Error::new_from_js_message(
+                "string",
+                "Radius",
+                "invalid count of readies",
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SelectOption {
+    pub value: String,
+    pub label: String,
+}
+
+impl PartialEq for SelectOption {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+impl Display for SelectOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.label)
+    }
+}
+
+impl<'js> FromJs<'js> for SelectOption {
+    fn from_js(
+        _ctx: &rquickjs::prelude::Ctx<'js>,
+        value: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<Self> {
+        if let Some(value) = value.get::<String>().ok() {
+            return Ok(Self {
+                label: value.clone(),
+                value,
+            });
+        }
+
+        let obj = value.get::<Object<'js>>()?;
+
+        let label = obj.get::<_, String>("label")?;
+        let value = obj.get::<_, String>("value")?;
+
+        Ok(Self { value, label })
     }
 }

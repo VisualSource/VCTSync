@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VCL Profiles Mockup</title>
+<style>
+/* Layout: app window frame (icon rail | page) with a right-anchored slide-out over the page. Dark-only, mirrors iced Theme::Dark. */
+:root {
+  color-scheme: dark;
+  --bg: #202225;          /* iced Dark background */
+  --surface: #2a2c30;
+  --surface-2: #33363b;
+  --line: #3b3e44;
+  --fg: #e6e6e6;
+  --muted: #9a9ea6;
+  --primary: #5865f2;     /* iced Dark primary */
+  --primary-fg: #ffffff;
+  --success: #12664f;
+  --danger: #c3423f;
+  --tag: #d9a441;
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+}
+html, body { height: 100%; }
+body {
+  margin: 0; background: #141517; color: var(--fg); font-family: var(--font); font-size: 14px;
+  padding-inline: 16px; padding-block: 16px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; color: var(--muted); font-size: 12px; }
+.toolbar strong { color: var(--fg); font-size: 13px; }
+.toolbar label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
+.window {
+  flex: 1; min-height: 520px; max-width: 980px; width: 100%; margin-inline: auto;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  display: flex; overflow: hidden; position: relative;
+}
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.sm { width: 15px; height: 15px; }
+
+/* icon rail (col of buttons + vr) */
+.rail { display: flex; flex-direction: column; gap: 4px; padding: 4px; border-right: 1px solid var(--line); }
+.rail .spacer { flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--primary); color: var(--primary-fg); border: 0; border-radius: 2px;
+  padding: 5px 10px; font: inherit; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { filter: brightness(1.12); }
+.btn:focus-visible, .select:focus-visible, input:focus-visible, .row:focus-visible { outline: 2px solid var(--fg); outline-offset: 1px; }
+.btn.ghost { background: transparent; color: var(--fg); }
+.btn.ghost:hover { background: var(--surface-2); filter: none; }
+.btn.secondary { background: var(--surface-2); color: var(--fg); }
+.btn.danger { background: var(--danger); }
+.btn.success { background: var(--success); }
+.btn.icon { padding: 6px; }
+.rail .btn { padding: 6px; }
+.rail .btn.on { outline: 1px solid var(--muted); }
+
+.page { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 8px 10px; gap: 8px; position: relative; }
+.topbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.topbar .lbl { color: var(--muted); }
+.select {
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 2px;
+  padding: 5px 8px; font: inherit; min-width: 0;
+}
+.topbar .select { width: 220px; max-width: 100%; }
+.fill { flex: 1; }
+.launch { padding: 6px 18px; font-weight: 600; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 0; width: 100%; }
+
+.list-head { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.list { display: flex; flex-direction: column; gap: 4px; overflow: auto; }
+.row {
+  display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 8px;
+  background: var(--surface); border: 1px solid transparent; border-radius: 3px; cursor: pointer;
+}
+.row:hover { background: var(--surface-2); }
+.row.active { border-color: var(--primary); }
+.avatar { width: 30px; height: 30px; border-radius: 4px; display: grid; place-items: center; color: #fff; flex: none; }
+.row .name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.row .name span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 9px; background: var(--primary); color: #fff; }
+
+.empty { flex: 1; display: grid; place-items: center; }
+.empty > div { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+/* slide-out (right -> left) */
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.scrim.open { opacity: 1; pointer-events: auto; }
+.panel {
+  position: absolute; top: 0; bottom: 0; right: 0; width: min(440px, 100%);
+  background: var(--bg); border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.4);
+  transform: translateX(100%); transition: transform .22s ease-out;
+  display: flex; flex-direction: column;
+}
+.panel.open { transform: translateX(0); }
+@media (prefers-reduced-motion: reduce) { .panel, .scrim { transition: none; } }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+.panel-head .title { flex: 1; min-width: 0; font-weight: 600; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); padding-inline: 10px; }
+.tab { background: none; border: 0; color: var(--muted); font: inherit; padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; display: inline-flex; gap: 6px; align-items: center; }
+.tab.on { color: var(--fg); border-bottom-color: var(--primary); }
+.tab-body { flex: 1; overflow: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 12px; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > span { color: var(--muted); font-size: 12px; }
+input[type=text], input[type=search] {
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 2px; padding: 6px 8px; font: inherit; width: 100%; box-sizing: border-box;
+}
+.icons { display: flex; flex-wrap: wrap; gap: 6px; }
+.icons button { border: 2px solid transparent; padding: 0; background: none; cursor: pointer; border-radius: 6px; }
+.icons button.on { border-color: var(--fg); }
+.danger-zone { margin-top: auto; border-top: 1px solid var(--line); padding-top: 12px; display: flex; align-items: center; gap: 8px; }
+.danger-zone .fill { color: var(--muted); font-size: 12px; }
+
+.mod { display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: var(--surface); border-radius: 3px; }
+.mod .name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mod .name span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mod.off .name, .mod.off .avatar { opacity: .45; }
+.toggler { position: relative; width: 34px; height: 18px; flex: none; }
+.toggler input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.toggler i { position: absolute; inset: 0; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--line); transition: background .15s; pointer-events: none; }
+.toggler i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--fg); transition: transform .15s; }
+.toggler input:checked + i { background: var(--primary); border-color: var(--primary); }
+.toggler input:checked + i::after { transform: translateX(16px); }
+.toggler input:focus-visible + i { outline: 2px solid var(--fg); outline-offset: 1px; }
+
+/* modal */
+.modal { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; width: min(340px, 100%); }
+.card h3 { margin: 0; padding: 10px 12px; font-size: 14px; background: var(--surface-2); }
+.card p { margin: 0; padding: 12px; color: var(--muted); }
+.card .actions { display: flex; justify-content: flex-end; gap: 8px; padding: 0 12px 12px; }
+
+/* iced only: tabs become a row of buttons */
+.iced-only .tabs { border-bottom: 0; gap: 4px; padding: 0 10px 8px; }
+.iced-only .tab { background: var(--surface-2); color: var(--fg); border: 0; border-radius: 2px; padding: 5px 10px; }
+.iced-only .tab.on { background: var(--primary); color: var(--primary-fg); }
+.iced-only .tab .meta { color: inherit; opacity: .75; }
+#add-combo { width: 150px; flex: none; }
+.annotate.iced-only [data-core]::before { content: attr(data-core); display: block; }
+.annotate.iced-only [data-core] { outline: 1px dashed var(--tag); outline-offset: 2px; }
+.annotate.iced-only .scrim[data-core]::before { top: 8px; left: 8px; right: auto; }
+
+/* widget annotations */
+[data-w]::before, [data-core]::before {
+  content: attr(data-w); display: none; position: absolute; top: -7px; right: 4px; z-index: 5;
+  font: 10px/1.3 var(--mono); color: #1a1a1a; background: var(--tag); padding: 0 4px; border-radius: 2px; pointer-events: none; white-space: nowrap;
+}
+.annotate [data-w] { outline: 1px dashed var(--tag); outline-offset: 2px; }
+.annotate [data-w]::before { display: block; }
+.annotate [data-w]:not(.panel):not(.modal), .annotate [data-core]:not(.panel):not(.modal):not(.scrim) { position: relative; }
+
+@media (max-width: 520px) {
+  .topbar .select { width: auto; flex: 1; }
+  .topbar .lbl { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <strong>VCL · Profiles page mockup</strong>
+  <label><input type="checkbox" id="opt-annotate"> Show iced widget names</label>
+  <label><input type="checkbox" id="opt-empty"> Empty state</label>
+  <label><input type="checkbox" id="opt-core"> iced only (no iced_aw)</label>
+  <span>Click a row to make it active · gear opens profile settings</span>
+</div>
+
+<div class="window" id="win">
+  <nav class="rail" data-w="col (rail)">
+    <button class="btn on" title="Profiles" aria-label="Profiles"><svg class="i"><use href="#i-library"/></svg></button>
+    <button class="btn" title="Builds" aria-label="Builds"><svg class="i"><use href="#i-boxes"/></svg></button>
+    <button class="btn" title="Logs" aria-label="Logs"><svg class="i"><use href="#i-scroll"/></svg></button>
+    <div class="spacer"></div>
+    <button class="btn" title="Settings" aria-label="Settings"><svg class="i"><use href="#i-settings"/></svg></button>
+  </nav>
+
+  <main class="page" id="page">
+    <div class="topbar">
+      <span class="lbl">Active profile</span>
+      <select class="select" id="active" data-w="pick_list"></select>
+      <span class="fill"></span>
+      <button class="btn launch" id="launch" data-w="button (primary)"><svg class="i sm"><use href="#i-play"/></svg>Launch</button>
+    </div>
+    <hr>
+    <div class="list-head" id="list-head">
+      <span>Profiles</span><span class="fill"></span>
+      <button class="btn secondary" id="new" data-w="button"><svg class="i sm"><use href="#i-layers-plus"/></svg>New profile</button>
+    </div>
+    <div class="list" id="list" data-w="scroll › col"></div>
+    <div class="empty" id="empty" hidden>
+      <div>
+        <span>No profiles</span>
+        <button class="btn" id="create-first">Create <svg class="i sm"><use href="#i-layers-plus"/></svg></button>
+      </div>
+    </div>
+
+    <div class="scrim" id="scrim" data-core="opaque(mouse_area) → on_press: Close"></div>
+    <aside class="panel" id="panel" aria-hidden="true" data-w="iced_aw::Sidebar / stack overlay" data-core="stack › opaque(container) right-aligned">
+      <div class="panel-head">
+        <div class="avatar" id="p-avatar"></div>
+        <div class="title" id="p-title"></div>
+        <button class="btn ghost icon" id="close" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="tabs" data-w="iced_aw::TabBar" data-core="row of button (selected = primary)">
+        <button class="tab on" data-tab="settings"><svg class="i sm"><use href="#i-sliders"/></svg>Profile settings</button>
+        <button class="tab" data-tab="mods"><svg class="i sm"><use href="#i-puzzle"/></svg>Mods <span class="meta" id="mod-count"></span></button>
+      </div>
+
+      <div class="tab-body" id="tab-settings">
+        <label class="field"><span>Name</span><input type="text" id="f-name" data-w="text_input"></label>
+        <div class="field"><span>Icon</span><div class="icons" id="f-icons" data-w="row of button"></div></div>
+        <label class="field"><span>Game build</span>
+          <select class="select" id="f-build" data-w="pick_list">
+            <option>Stable · 1.0.3.2</option><option>Beta · 1.1.0-b4</option><option>Dev · nightly 2026-10-11</option>
+          </select></label>
+        <label class="field"><span>BepInEx version</span>
+          <select class="select" id="f-bep" data-w="pick_list">
+            <option>5.4.23.2</option><option>6.0.0-be.725</option>
+          </select></label>
+        <label class="field"><span>Launch arguments</span><input type="text" id="f-args" data-w="text_input" placeholder="-windowed -console"></label>
+        <label class="field"><span>Profile folder</span><input type="text" id="f-path" readonly data-w="text_input (read-only)"></label>
+        <div class="danger-zone">
+          <span class="fill">Deletes the profile folder and its mod configs.</span>
+          <button class="btn danger" id="del" data-w="button (danger) → Modal"><svg class="i sm"><use href="#i-trash"/></svg>Delete profile</button>
+        </div>
+      </div>
+
+      <div class="tab-body" id="tab-mods" hidden>
+        <div class="topbar">
+          <input type="search" id="mod-search" placeholder="Search mods" class="fill" data-w="text_input" style="flex:1;width:auto">
+          <button class="btn" id="add-mod" data-w="button → iced_aw::DropDown"><svg class="i sm"><use href="#i-plus"/></svg>Add mod</button>
+          <input type="text" id="add-combo" list="catalog" placeholder="Add mod…" hidden data-core="combo_box">
+          <datalist id="catalog"><option value="ModernCamera"><option value="Bloodcraft"><option value="KindredCommands"><option value="QuickStash"><option value="UnityExplorer"><option value="XPRising"></datalist>
+        </div>
+        <div class="list" id="mods" data-w="scroll › col"></div>
+      </div>
+    </aside>
+
+    <div class="modal" id="modal" hidden data-w="iced_aw::Modal + Card" data-core="stack › opaque › center(container)">
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="m-title">
+        <h3 id="m-title">Delete profile?</h3>
+        <p id="m-body"></p>
+        <div class="actions">
+          <button class="btn secondary" id="m-cancel">Cancel</button>
+          <button class="btn danger" id="m-ok">Delete</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></symbol>
+    <symbol id="i-boxes" viewBox="0 0 24 24"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></symbol>
+    <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-layers-plus" viewBox="0 0 24 24"><path d="M10 2.5 2.6 6.1a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l2.2-1"/><path d="M2 12a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9A1 1 0 0 0 22 17"/><path d="M16 6h6"/><path d="M19 3v6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M15.39 4.39a1 1 0 0 0 1.68-.47 2.5 2.5 0 1 1 3.01 3.01 1 1 0 0 0-.47 1.68l1.68 1.68a2.4 2.4 0 0 1 0 3.42l-1.6 1.6a1 1 0 0 1-1.68-.47 2.5 2.5 0 1 0-3.01 3.01 1 1 0 0 1 .47 1.68l-1.6 1.6a2.4 2.4 0 0 1-3.42 0l-1.68-1.68a1 1 0 0 0-1.68.47 2.5 2.5 0 1 1-3.01-3.01 1 1 0 0 0 .47-1.68l-1.68-1.68a2.4 2.4 0 0 1 0-3.42l1.68-1.68a1 1 0 0 1 1.68.47 2.5 2.5 0 1 0 3.01-3.01 1 1 0 0 1-.47-1.68l1.68-1.68a2.4 2.4 0 0 1 3.42 0z"/></symbol>
+    <symbol id="i-sword" viewBox="0 0 24 24"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></symbol>
+    <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 2v7.53a2 2 0 0 1-.21.9L4.72 20.55A1 1 0 0 0 5.61 22h12.78a1 1 0 0 0 .9-1.45l-5.07-10.12a2 2 0 0 1-.21-.9V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="M11.56 3.27a.5.5 0 0 1 .88 0l2.95 5.6a1 1 0 0 0 1.52.3l4.27-3.66a.5.5 0 0 1 .82.5l-2.83 10.25a1 1 0 0 1-.96.74H5.81a1 1 0 0 1-.96-.74L2.02 6.01a.5.5 0 0 1 .82-.5l4.27 3.66a1 1 0 0 0 1.52-.3z"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+  </defs>
+</svg>
+
+<script>
+const ICONS = [
+  ["i-leaf", "#2f8a5b"], ["i-sword", "#b5523b"], ["i-flask", "#7a5bd1"],
+  ["i-crown", "#b8892c"], ["i-rocket", "#3a7bc8"], ["i-box", "#5c6370"],
+];
+const mod = (name, author, ver, on = true) => ({ name, author, ver, on, icon: ICONS[(name.length) % ICONS.length] });
+const data = {
+  active: "p2",
+  profiles: [
+    { id: "p1", name: "Vanilla+", icon: 0, build: 0, bep: 0, args: "", mods: [
+      mod("BepInExPack", "BepInEx", "5.4.2100"), mod("QoL Tweaks", "kirin", "1.4.0"), mod("Better Minimap", "ozzy", "2.0.1"),
+    ]},
+    { id: "p2", name: "Modded Main", icon: 1, build: 0, bep: 0, args: "-windowed", mods: [
+      mod("BepInExPack", "BepInEx", "5.4.2100"), mod("ServerLaunch", "trodi", "0.9.3"), mod("KindredCommands", "odjit", "2.1.4"),
+      mod("Bloodcraft", "zfolmt", "1.6.8"), mod("XPRising", "aontas", "0.3.2", false), mod("ModernCamera", "deca", "1.5.0"),
+    ]},
+    { id: "p3", name: "Testing", icon: 2, build: 1, bep: 1, args: "-console -windowed", mods: [
+      mod("BepInExPack", "BepInEx", "6.0.0-be.725"), mod("UnityExplorer", "sinai", "4.12.3"), mod("VCL Debug Hooks", "local", "0.0.1-dev"),
+    ]},
+    { id: "p4", name: "Speedrun Practice", icon: 4, build: 0, bep: 0, args: "", mods: [
+      mod("BepInExPack", "BepInEx", "5.4.2100"), mod("LiveSplit Bridge", "rune", "1.0.2"),
+    ]},
+  ],
+};
+const $ = s => document.querySelector(s);
+const get = id => data.profiles.find(p => p.id === id);
+let editing = null, empty = false;
+
+const avatar = (i, size = 30) => {
+  const [sym, c] = ICONS[i];
+  return `<div class="avatar" style="background:${c};width:${size}px;height:${size}px"><svg class="i sm"><use href="#${sym}"/></svg></div>`;
+};
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function render() {
+  const ps = empty ? [] : data.profiles;
+  $("#active").innerHTML = ps.length
+    ? ps.map(p => `<option value="${p.id}" ${p.id === data.active ? "selected" : ""}>${esc(p.name)}</option>`).join("")
+    : `<option>None</option>`;
+  $("#active").disabled = $("#launch").disabled = !ps.length;
+  $("#launch").style.opacity = ps.length ? 1 : .5;
+  $("#list").hidden = $("#list-head").hidden = !ps.length;
+  $("#empty").hidden = !!ps.length;
+  $("#list").innerHTML = ps.map(p => {
+    const on = p.mods.filter(m => m.on).length;
+    return `<div class="row ${p.id === data.active ? "active" : ""}" data-id="${p.id}" tabindex="0" ${p.id === "p1" ? 'data-w="button-styled row"' : ""}>
+      ${avatar(p.icon)}
+      <div class="name"><span>${esc(p.name)}</span><span class="meta">${on}/${p.mods.length} mods · BepInEx ${["5.4.23.2", "6.0.0-be.725"][p.bep]}</span></div>
+      ${p.id === data.active ? '<span class="badge">Active</span>' : ""}
+      <button class="btn ghost icon gear" aria-label="Settings for ${esc(p.name)}" ${p.id === "p1" ? 'data-w="button (gear)"' : ""}><svg class="i"><use href="#i-settings"/></svg></button>
+    </div>`;
+  }).join("");
+}
+
+function open(id) {
+  editing = get(id);
+  $("#p-avatar").outerHTML = `<div id="p-avatar">${avatar(editing.icon)}</div>`;
+  $("#p-title").textContent = editing.name;
+  $("#f-name").value = editing.name;
+  $("#f-build").selectedIndex = editing.build;
+  $("#f-bep").selectedIndex = editing.bep;
+  $("#f-args").value = editing.args;
+  $("#f-path").value = `%APPDATA%\\VCL\\profiles\\${editing.id}`;
+  $("#f-icons").innerHTML = ICONS.map((_, i) => `<button data-i="${i}" class="${i === editing.icon ? "on" : ""}" aria-label="Icon ${i + 1}">${avatar(i, 32)}</button>`).join("");
+  $("#mod-search").value = "";
+  renderMods();
+  $("#panel").classList.add("open"); $("#scrim").classList.add("open");
+  $("#panel").setAttribute("aria-hidden", "false");
+}
+function close() {
+  $("#panel").classList.remove("open"); $("#scrim").classList.remove("open");
+  $("#panel").setAttribute("aria-hidden", "true");
+}
+function renderMods() {
+  const q = $("#mod-search").value.toLowerCase();
+  $("#mod-count").textContent = `${editing.mods.filter(m => m.on).length}/${editing.mods.length}`;
+  $("#mods").innerHTML = editing.mods.map((m, i) => m.name.toLowerCase().includes(q) ? `
+    <div class="mod ${m.on ? "" : "off"}" ${i === 0 ? 'data-w="row"' : ""}>
+      <div class="avatar" style="background:${m.icon[1]};width:26px;height:26px"><svg class="i sm"><use href="#${m.icon[0]}"/></svg></div>
+      <div class="name"><span>${esc(m.name)}</span><span class="meta">${esc(m.author)} · v${esc(m.ver)}</span></div>
+      <label class="toggler" ${i === 0 ? 'data-w="toggler"' : ""}><input type="checkbox" data-m="${i}" ${m.on ? "checked" : ""} aria-label="Enable ${esc(m.name)}"><i></i></label>
+      <button class="btn ghost icon" data-rm="${i}" aria-label="Remove ${esc(m.name)}"><svg class="i sm"><use href="#i-trash"/></svg></button>
+    </div>` : "").join("") || `<span class="meta">No mods match "${esc(q)}".</span>`;
+}
+
+$("#list").addEventListener("click", e => {
+  const row = e.target.closest(".row"); if (!row) return;
+  if (e.target.closest(".gear")) return open(row.dataset.id);
+  data.active = row.dataset.id; render();
+});
+$("#list").addEventListener("keydown", e => {
+  const row = e.target.closest(".row");
+  if (row && e.target === row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); data.active = row.dataset.id; render(); }
+});
+$("#active").addEventListener("change", e => { data.active = e.target.value; render(); });
+$("#launch").addEventListener("click", () => {
+  const b = $("#launch"); b.innerHTML = `Launching ${esc(get(data.active).name)}…`; b.classList.add("success");
+  setTimeout(() => { b.innerHTML = '<svg class="i sm"><use href="#i-play"/></svg>Launch'; b.classList.remove("success"); }, 1400);
+});
+$("#close").onclick = close; $("#scrim").onclick = close;
+document.addEventListener("keydown", e => { if (e.key === "Escape") { $("#modal").hidden ? close() : ($("#modal").hidden = true); } });
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  $("#tab-settings").hidden = t.dataset.tab !== "settings";
+  $("#tab-mods").hidden = t.dataset.tab !== "mods";
+});
+$("#f-name").addEventListener("input", e => { editing.name = e.target.value || "Untitled"; $("#p-title").textContent = editing.name; render(); });
+$("#f-args").addEventListener("input", e => editing.args = e.target.value);
+$("#f-build").addEventListener("change", e => editing.build = e.target.selectedIndex);
+$("#f-bep").addEventListener("change", e => { editing.bep = e.target.selectedIndex; render(); });
+$("#f-icons").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (!b) return; editing.icon = +b.dataset.i; open(editing.id); render(); });
+$("#mod-search").addEventListener("input", renderMods);
+$("#mods").addEventListener("change", e => { const i = e.target.dataset.m; if (i == null) return; editing.mods[i].on = e.target.checked; renderMods(); render(); });
+$("#mods").addEventListener("click", e => { const b = e.target.closest("[data-rm]"); if (!b) return; editing.mods.splice(+b.dataset.rm, 1); renderMods(); render(); });
+$("#add-mod").onclick = () => { editing.mods.push(mod(`New Mod ${editing.mods.length + 1}`, "thunderstore", "1.0.0")); renderMods(); render(); };
+$("#del").onclick = () => { $("#m-body").textContent = `"${editing.name}" and its ${editing.mods.length} mods will be removed from disk.`; $("#modal").hidden = false; };
+$("#m-cancel").onclick = () => $("#modal").hidden = true;
+$("#m-ok").onclick = () => {
+  data.profiles = data.profiles.filter(p => p !== editing);
+  if (data.active === editing.id) data.active = data.profiles[0]?.id;
+  $("#modal").hidden = true; close(); render();
+};
+const newProfile = () => {
+  empty = false; $("#opt-empty").checked = false;
+  const id = "p" + Date.now();
+  data.profiles.push({ id, name: "New Profile", icon: 5, build: 0, bep: 0, args: "", mods: [mod("BepInExPack", "BepInEx", "5.4.2100")] });
+  data.active ??= id; render(); open(id);
+};
+$("#new").onclick = newProfile; $("#create-first").onclick = newProfile;
+$("#opt-empty").onchange = e => { empty = e.target.checked; close(); render(); };
+$("#opt-core").onchange = e => {
+  $("#win").classList.toggle("iced-only", e.target.checked);
+  $("#add-mod").hidden = e.target.checked; $("#add-combo").hidden = !e.target.checked;
+};
+$("#add-combo").addEventListener("change", e => {
+  const v = e.target.value.trim(); if (!v) return;
+  editing.mods.push(mod(v, "thunderstore", "1.0.0")); e.target.value = ""; renderMods(); render();
+});
+$("#opt-annotate").onchange = e => $("#win").classList.toggle("annotate", e.target.checked);
+render();
+</script>
+</body>
+</html>

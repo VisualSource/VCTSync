@@ -59,8 +59,8 @@ declare namespace Iced {
         interface Svg extends React.Attributes {
             width?: Pixels;
             height?: Pixels;
-
-            src: SvgHandle
+            style?: "currentColor" | { background?: string; }
+            src: SvgHandle;
         }
 
         interface Column extends Common { }
@@ -106,6 +106,15 @@ declare namespace Iced {
             disabled?: boolean;
 
             children: React.ReactNode;
+
+            style?: "text" |
+            "background" |
+            "success" |
+            "danger" |
+            "primary" |
+            "secondary" |
+            "warning" |
+            "subtle" | { background?: string; }
         }
         interface View extends React.Attributes {
             id?: string;
@@ -113,7 +122,18 @@ declare namespace Iced {
             width?: Length,
             height?: Length,
 
-            style?: "roundedBox" | { background?: string; color?: string; border?: string; }
+            style?: "roundedBox" | {
+                background?: string;
+                color?: string;
+                borderWidth?: number;
+                borderColor?: string;
+                borderRadius?: number | string;
+                shadowColor?: string;
+                shadowBlurRadius?: number;
+                shadowOffsetX?: number;
+                shadowOffsetY?: number;
+                snap?: boolean;
+            }
 
             center?: Length
 

@@ -3,7 +3,6 @@ import LayersPlus from "../../assets/icons/layers-plus.svg" with { type: "svg" }
 import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
 import Play from "../../assets/icons/square-library.svg" with { type: "svg" };
 import { invoke } from "react-iced-native";
-import { useMemo } from "react";
 import { useApp } from "../../state.js";
 
 type Profile = {
@@ -22,18 +21,18 @@ export const Profiles = () => {
     const { isLoading, isError, error, data } = useQuery({
         queryKey: ["profiles"],
         queryFn: async () => {
-            return [] as Profile[];
+            return [{ name: "Example", id: "test example", mods: [] }] as Profile[];
         }
     });
 
-    const options = useMemo(() => data?.map(e => ({ label: e.name, value: e.id })) ?? [], []);
+    const options = data?.map(e => ({ label: e.name, value: e.id })) ?? [];
 
     return (
         <col>
-            <row>
-                <row spacing={2}>
+            <row padding={6}>
+                <row spacing={2} alignY="center">
                     <text>Active profile</text>
-                    <select options={options} onSelect={(ev) => setActiveProfile(ev.value)} value={activeProfile ?? undefined} />
+                    <select options={options} placeholder="Select profile" onSelect={(ev) => setActiveProfile(ev.value)} value={activeProfile ?? undefined} />
                 </row>
                 <space width="fill" />
                 <button onPress={() => {
@@ -41,8 +40,8 @@ export const Profiles = () => {
                         console.error(err);
                     })
                 }}>
-                    <row>
-                        <svg src={Play} />
+                    <row alignX="center" alignY="center">
+                        <svg height={15} width={15} style="currentColor" src={Play} />
                         <text>Launch</text>
                     </row>
                 </button>
@@ -88,7 +87,7 @@ const View = ({ isLoading, isError, error, data, activeProfile }: { activeProfil
                 <button onPress={() => { }}>
                     <row width="shrink" spacing={6}>
                         <text>Create</text>
-                        <svg src={LayersPlus} />
+                        <svg style="currentColor" src={LayersPlus} />
                     </row>
                 </button>
             </col>
@@ -96,28 +95,28 @@ const View = ({ isLoading, isError, error, data, activeProfile }: { activeProfil
     );
 
     return (
-        <col>
-            <row>
-                <text>PROFILES</text>
+        <col padding={[0, 4]} spacing={6}>
+            <row alignX="center" alignY="center">
+                <text size={14}>PROFILES</text>
                 <space width="fill" />
-                <button>
-                    <row>
-                        <svg src={LayersPlus} />
-                        <text>New Profile</text>
+                <button width="shrink">
+                    <row alignY="center" spacing={4}>
+                        <svg style="currentColor" height={15} width={15} src={LayersPlus} />
+                        <text size={14}>New Profile</text>
                     </row>
                 </button>
             </row>
             <scroll>
                 <col>
                     {data.map(profile => (
-                        <view key={profile.id}>
-                            <row>
-                                <view>
-                                    <row />
+                        <view key={profile.id} style={{ background: "#5f5f5f", borderRadius: 4 }}>
+                            <row padding={6} spacing={6} alignY="center">
+                                <view width="shrink">
+                                    <svg height={30} width={30} src={LayersPlus} />
                                 </view>
                                 <col>
                                     <text>{profile.name}</text>
-                                    <text>{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>
+                                    <text size={13} font={{ weight: "light" }}>{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>
                                 </col>
                                 <space width="fill" />
 
@@ -127,8 +126,8 @@ const View = ({ isLoading, isError, error, data, activeProfile }: { activeProfil
                                     </view>
                                 ) : null}
 
-                                <button>
-                                    <svg src={Settings} />
+                                <button width="shrink" style="text" onPress={() => { }}>
+                                    <svg style="currentColor" src={Settings} />
                                 </button>
                             </row>
                         </view>
