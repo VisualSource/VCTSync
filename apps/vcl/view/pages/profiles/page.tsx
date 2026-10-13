@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import LayersPlus from "../../assets/icons/layers-plus.svg" with { type: "svg" };
 import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
-import Play from "../../assets/icons/square-library.svg" with { type: "svg" };
+import Play from "../../assets/icons/play.svg" with { type: "svg" };
 import { AnimActivity, invoke } from "react-iced-native";
 import { useApp } from "../../state.js";
 import { ModPanel } from "./mod-panel.js";
@@ -117,25 +117,25 @@ const View = ({ isLoading, isError, error, data, activeProfile, toggleShowDetail
             <scroll>
                 <col>
                     {data.map(profile => (
-                        <view key={profile.id} style={{ background: "#5f5f5f", borderRadius: 4 }}>
+                        <view key={profile.id} style={{ background: "background.weaker", borderRadius: 4 }}>
                             <row padding={6} spacing={6} alignY="center">
-                                <view width="shrink">
-                                    <svg height={30} width={30} src={LayersPlus} />
+                                <view alignX="center" alignY="center" style={{ background: "#2f8a5b", borderRadius: 4 }} width={30} height={30}>
+                                    <svg style="currentColor" height={15} width={15} src={LayersPlus} />
                                 </view>
                                 <col>
-                                    <text>{profile.name}</text>
-                                    <text size={13} font={{ weight: "light" }}>{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>
+                                    <text size={14}>{profile.name}</text>
+                                    <text size={12}>{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>
                                 </col>
                                 <space width="fill" />
 
                                 {profile.id === activeProfile ? (
-                                    <view>
-                                        <text>Active</text>
+                                    <view style={{ background: "primary", borderRadius: 9 }} padding={[1, 6]}>
+                                        <text size={11}>Active</text>
                                     </view>
                                 ) : null}
 
-                                <button width="shrink" style="text" onPress={() => toggleShowDetails()}>
-                                    <svg style="currentColor" src={Settings} />
+                                <button height={36} width={36} style="subtle" onPress={() => toggleShowDetails()}>
+                                    <svg height={30} width={30} style="currentColor" src={Settings} />
                                 </button>
                             </row>
                         </view>
