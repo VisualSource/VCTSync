@@ -322,7 +322,6 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 let content = render_tree(&children[0]);
 
                 let mut node = iced::widget::float(content);
-
                 apply_opt!(node, scale, scale);
 
                 node.into()
@@ -420,6 +419,32 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 }
 
                 node.into()
+            }
+
+            Tag::Stack {
+                height,
+                width,
+                clip,
+            } => {
+                let mut node = if children.is_empty() {
+                    iced::widget::Stack::new()
+                } else {
+                    let items = children.iter().map(render_tree);
+                    iced::widget::stack(items)
+                };
+
+                apply_opt!(node, height, height);
+                apply_opt!(node, width, width);
+                apply_opt!(node, clip, clip);
+
+                node.into()
+            }
+
+            Tag::Opaque {} => {
+                debug_assert_eq!(children.len(), 1);
+
+                let content = render_tree(&children[0]);
+                iced::widget::opaque(content)
             }
 
             #[cfg(feature = "svg-element")]

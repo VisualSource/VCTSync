@@ -170,6 +170,13 @@ pub enum Tag {
         value: Option<String>,
         options: Vec<SelectOption>,
     },
+    Stack {
+        height: Option<Length>,
+        width: Option<Length>,
+        clip: Option<bool>,
+    },
+
+    Opaque,
 }
 
 macro_rules! map_props {
@@ -513,6 +520,24 @@ impl<'js> FromJs<'js> for Tag {
                 })
             }
 
+            "stack" => {
+                map_props!(
+                    "stack",
+                    props,
+                    (width, "width", Length, IcedLength),
+                    (height, "height", Length, IcedLength),
+                    (clip, "clip", bool, bool)
+                );
+
+                Ok(Tag::Stack {
+                    width,
+                    height,
+                    clip,
+                })
+            }
+
+            "opaque" => Ok(Tag::Opaque),
+
             #[cfg(feature = "code-element")]
             "code" => {
                 unimplemented!()
@@ -567,6 +592,8 @@ impl<'js> FromJs<'js> for Tag {
 impl Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Tag::Opaque => write!(f, "opaque"),
+            Tag::Stack { .. } => write!(f, "stack"),
             Tag::Select { .. } => write!(f, "select"),
             Tag::Col { .. } => write!(f, "col"),
             Tag::Row { .. } => write!(f, "row"),
@@ -605,7 +632,8 @@ impl Tag {
             | Tag::View { .. }
             | Tag::Button { .. }
             | Tag::Text { .. }
-            | Tag::Textarea { .. } => len == 1,
+            | Tag::Textarea { .. }
+            | Tag::Opaque => len == 1,
             Tag::Tooltip { .. } => len == 2,
             _ => true,
         }

@@ -36,6 +36,14 @@ declare namespace Iced {
     type TooltipPosition = "top" | "bottom" | "left" | "right" | "followCursor";
 
     namespace Elements {
+        interface Stack extends React.Attributes {
+            height?: Length,
+            width?: Length,
+            clip?: boolean;
+
+            children?: React.ReactNode[]
+        }
+
         interface Common extends React.Attributes {
             children?: React.ReactNode[];
             padding?: Padding;
@@ -205,6 +213,8 @@ declare namespace Iced {
             width?: Pixels
         }
 
+        interface Opaque extends React.Attributes { }
+
 
         namespace Inputs {
             interface Range {
@@ -249,6 +259,7 @@ declare module "react/jsx-runtime" {
             hr: Iced.Elements.Hr,
             vr: Iced.Elements.Vr,
             tooltip: Iced.Elements.Tooltip,
+            /** A widget that can make its contents float over other widgets. */
             float: Iced.Elements.Float,
 
             input: Iced.Elements.Input,
@@ -258,6 +269,15 @@ declare module "react/jsx-runtime" {
 
             textarea: Iced.Elements.Textarea;
             select: Iced.Elements.Select;
+
+            /** container that displays children on top of each other. */
+            stack: Iced.Elements.Stack,
+            /** 
+             * Wraps the given widget and captures any mouse button presses inside the bounds of the widget—effectively making it opaque.
+             *
+             * This helper is meant to be used to mark elements in a Stack to avoid mouse events from passing through layers.
+            */
+            opaque: Iced.Elements.Opaque
         }
     }
 }
