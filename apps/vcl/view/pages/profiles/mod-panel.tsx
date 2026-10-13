@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Trash from "../../assets/icons/trash.svg" with {type: "svg" };
 import XIcon from "../../assets/icons/x.svg" with {type: "svg" };
+
 type Props = {
     onClose: () => void;
 }
