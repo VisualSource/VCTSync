@@ -6,7 +6,7 @@ type Props = {
 
 export const ModPanel = ({ onClose }: Props) => {
     return (
-        <view style={{ background: "" }}>
+        <view style={{ background: "background" }} height="fill">
             <col>
                 <row>
                     <text>Profile Name</text>
@@ -46,7 +46,8 @@ export const ModPanel = ({ onClose }: Props) => {
                 <hr />
                 <row>
                     <text>Deletes the profile folder</text>
-                    <button>
+                    <space width="fill" />
+                    <button width="shrink">
                         <row>
                             <svg src={Trash} />
                             <text>Delete Profile</text>

@@ -32,8 +32,7 @@ export const Profiles = () => {
 
     return (
         <stack>
-
-            <col>
+            <col height="fill">
                 <row padding={6}>
                     <row spacing={2} alignY="center">
                         <select options={options} placeholder="Select profile" onSelect={(ev) => setActiveProfile(ev.value)} value={activeProfile ?? undefined} />
