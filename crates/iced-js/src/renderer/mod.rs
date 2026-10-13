@@ -440,7 +440,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 node.into()
             }
 
-            Tag::Opaque {} => {
+            Tag::Opaque => {
                 debug_assert_eq!(children.len(), 1);
 
                 let content = render_tree(&children[0]);
