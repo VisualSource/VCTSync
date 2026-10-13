@@ -633,12 +633,14 @@ impl Tag {
             | Tag::Checkbox { .. }
             | Tag::Switch { .. } => len == 0,
             Self::Float { .. }
-            | Self::Anim { .. }
             | Tag::View { .. }
             | Tag::Button { .. }
             | Tag::Text { .. }
             | Tag::Textarea { .. }
             | Tag::Opaque => len == 1,
+            // Empty while a hidden `<Activity>` inside it has not rendered its
+            // children yet.
+            Self::Anim { .. } => len <= 1,
             Tag::Tooltip { .. } => len == 2,
             _ => true,
         }

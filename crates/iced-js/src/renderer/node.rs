@@ -87,6 +87,20 @@ mod tests {
     }
 
     #[test]
+    fn anim_allows_no_children() {
+        // What a hidden `<Activity>` commits before it has rendered anything.
+        let node = parse(r#"({ type: "anim", props: { active: false }, children: [] })"#);
+
+        assert!(matches!(
+            node,
+            Node::Element {
+                tag: Tag::Anim { .. },
+                ..
+            }
+        ));
+    }
+
+    #[test]
     fn hidden_text_becomes_empty_space() {
         let node = parse(r#"({ text: "hi", hidden: true })"#);
 

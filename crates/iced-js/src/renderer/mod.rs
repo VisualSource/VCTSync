@@ -337,8 +337,11 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 hide_when_inactive,
                 on_settle,
             } => {
-                debug_assert_eq!(children.len(), 1);
-                let content = render_tree(&children[0]);
+                debug_assert!(children.len() <= 1);
+                let content = match children.first() {
+                    Some(child) => render_tree(child),
+                    None => iced::widget::Space::new().into(),
+                };
 
                 let mut node =
                     anim::Anim::new(content, *active).hide_when_inactive(*hide_when_inactive);
