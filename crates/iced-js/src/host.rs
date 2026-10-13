@@ -97,6 +97,7 @@ impl Host {
                 }
             }
             Event::Committed { root_id, tree } => {
+                log::debug!(target: "iced_js::tree", "commit {root_id}: {}", tree.outline(8));
                 self.trees.insert(root_id, tree);
             }
             Event::Callback(id, payload) => {

@@ -521,3 +521,74 @@ pub fn style_svg(
         color: Some(pal.text),
     }
 }
+
+#[cfg(test)]
+mod replay_tests {
+    use super::*;
+    use iced::advanced::widget::Tree;
+    use rquickjs::{Context, Runtime};
+
+    /// Commits as the profiles page sends them (from a real session's
+    /// outline log), diffed into one long-lived tree the way iced rebuilds.
+    #[test]
+    fn opening_profiles_panel_keeps_anim_state() {
+        let rt = Runtime::new().unwrap();
+        let ctx = Context::full(&rt).unwrap();
+
+        let nodes: Vec<Node> = ctx.with(|ctx| {
+            let commits = ctx
+                .eval::<Vec<rquickjs::Object>, _>(
+                    r#"
+                const e = (type, props, ...children) => ({ type, props: props ?? {}, children });
+                const t = () => e("text", {}, { text: "x" });
+                const tip = () => e("tooltip", {}, e("button", {}, e("space")), e("view", {}, t()));
+                const side = e("col", {}, tip(), tip(), tip(), e("space"), tip(), e("space"));
+                const page = (body) => e("row", {}, side, e("vr"), e("space"), e("view", {}, body));
+                const head = e("col", {},
+                    e("row", {}, e("row", {}, e("space")), e("space"), e("button", {}, e("row", {}, e("space"), t()))),
+                    e("hr"), e("space"), "LIST");
+                const withList = (list) => { const h = JSON.parse(JSON.stringify(head)); h.children[3] = list; return h; };
+                const loading = e("view", {}, e("col", {}, t()));
+                const list = e("col", {},
+                    e("row", {}, t(), e("space"), e("button", {}, e("row", {}, e("space"), t()))),
+                    e("scroll", {}, e("col", {}, e("view", {}, e("row", {}, t())))));
+                const panel = e("view", {}, e("col", {},
+                    e("row", {}, t(), e("space"), e("button", {}, { text: "X" })),
+                    e("space"), e("row"), e("hr"),
+                    e("col", {}, t(), e("space")), e("col", {}, t(), e("row")),
+                    e("col", {}, t(), e("space")), e("col", {}, t(), e("space")),
+                    e("space"), e("hr"), e("row", {}, t(), e("space"), e("button", {}, e("row", {}, e("space"), t())))));
+                const anim = (active, ...children) => e("anim", { active }, ...children);
+                const hidden = { ...e("view", {}, e("col")), hidden: true };
+                [
+                    page(e("col", {}, e("row", {}, e("input", { type: "checkbox", checked: false }), e("space")), e("hr"), e("view", {}, e("col", {}, t())))),
+                    page(e("col", {}, e("row", {}, e("input", { type: "checkbox", checked: false }), e("space")), e("hr"), e("scroll", {}, e("col", {}, t())))),
+                    page(e("stack", {}, withList(loading), anim(false))),
+                    page(e("stack", {}, withList(loading), anim(false, hidden))),
+                    page(e("stack", {}, withList(list), anim(false, hidden))),
+                    page(e("stack", {}, withList(list), anim(true, panel))),
+                ]
+            "#,
+                )
+                .unwrap();
+            commits
+                .into_iter()
+                .map(|c| node::to_node(c, 0).unwrap())
+                .collect()
+        });
+
+        let mut tree = Tree::new(&render_tree(&nodes[0]));
+        for (i, node) in nodes.iter().enumerate().skip(1) {
+            let before = anim::tests::NEW_STATES.with(|n| n.get());
+            tree.diff(&render_tree(node));
+            let created = anim::tests::NEW_STATES.with(|n| n.get()) - before;
+            println!(
+                "commit {i}: {}  -> anim states created: {created}",
+                node.outline(3)
+            );
+        }
+
+        // Created once when the page first shows it, never again.
+        assert_eq!(anim::tests::NEW_STATES.with(|n| n.get()), 1);
+    }
+}

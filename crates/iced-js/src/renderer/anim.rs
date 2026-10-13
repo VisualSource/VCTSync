@@ -20,6 +20,11 @@ use iced::{
 
 use super::props::Keyframe;
 
+/// The most a single frame may advance an animation. A frame that stalls
+/// (e.g. the first one to draw freshly shown content, which has to shape text
+/// and rasterize svgs) would otherwise skip straight past a short animation.
+const MAX_FRAME_STEP: Duration = Duration::from_millis(50);
+
 pub struct Anim<'a, Message, Theme, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
     active: bool,
@@ -106,8 +111,12 @@ impl<'a, Message, Theme, Renderer> Anim<'a, Message, Theme, Renderer> {
 
 struct State {
     animation: Animation<bool>,
-    /// Time of the last frame, `draw` has no clock of its own.
+    /// The animation's own clock. It follows the frames' timestamps but
+    /// advances by at most [`MAX_FRAME_STEP`] per frame. `draw` has no clock
+    /// of its own, so this is also what it renders at.
     now: Instant,
+    /// Real timestamp of the last frame, to measure the next step from.
+    last_frame: Instant,
     /// Whether the previous frame was still animating, to catch the frame it
     /// settles on.
     was_animating: bool,
@@ -133,11 +142,14 @@ where
     }
 
     fn state(&self) -> tree::State {
+        #[cfg(test)]
+        tests::NEW_STATES.with(|n| n.set(n.get() + 1));
         tree::State::new(State {
             animation: Animation::new(self.active)
                 .duration(self.duration)
                 .easing(self.easing),
             now: Instant::now(),
+            last_frame: Instant::now(),
             was_animating: false,
         })
     }
@@ -154,9 +166,10 @@ where
         // its own and `update` keeps it going from there.
         let state = tree.state.downcast_mut::<State>();
         if state.animation.value() != self.active {
-            let now = Instant::now();
-            state.animation.go_mut(self.active, now);
-            state.now = now;
+            // Measure the first step from here, not from whenever the last
+            // frame was drawn before the element went idle.
+            state.last_frame = Instant::now();
+            state.animation.go_mut(self.active, state.now);
         }
     }
 
@@ -165,7 +178,15 @@ where
     }
 
     fn size_hint(&self) -> Size<Length> {
-        self.content.as_widget().size_hint()
+        // `stack`, `col` and `row` drop children with a void size hint. While
+        // the content is a zero-size placeholder (e.g. a hidden `<Activity>`)
+        // that would throw this widget away along with its animation state.
+        let hint = self.content.as_widget().size_hint();
+        if hint.is_void() {
+            Size::new(Length::Shrink, Length::Shrink)
+        } else {
+            hint
+        }
     }
 
     fn layout(
@@ -193,7 +214,10 @@ where
         let state = tree.state.downcast_mut::<State>();
 
         if let Event::Window(window::Event::RedrawRequested(now)) = event {
-            state.now = *now;
+            state.now += now
+                .saturating_duration_since(state.last_frame)
+                .min(MAX_FRAME_STEP);
+            state.last_frame = *now;
 
             let is_animating = state.is_animating();
 
@@ -336,5 +360,113 @@ where
 {
     fn from(anim: Anim<'a, Message, Theme, Renderer>) -> Self {
         Element::new(anim)
+    }
+}
+
+#[cfg(test)]
+pub(super) mod tests {
+    use super::*;
+
+    thread_local! {
+        pub static NEW_STATES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    }
+    use crate::renderer::props::Offset;
+    use iced::{Point, advanced::clipboard};
+
+    type El = Element<'static, (), iced::Theme, ()>;
+
+    fn anim(active: bool, w: f32) -> El {
+        Anim::new(iced::widget::Space::new().width(w).height(50.0), active)
+            .from(Keyframe {
+                x: Offset::Percent(100.0),
+                ..Keyframe::default()
+            })
+            .duration(Duration::from_millis(220))
+            .hide_when_inactive(true)
+            .into()
+    }
+
+    /// Diffs `next` into `tree` like a rebuild would, then runs 20 frames
+    /// 16ms apart and returns the progress after each.
+    fn run(tree: &mut Tree, mut next: El) -> Vec<f32> {
+        tree.diff(&next);
+        let node = next.as_widget_mut().layout(
+            tree,
+            &(),
+            &layout::Limits::new(Size::ZERO, Size::new(800.0, 600.0)),
+        );
+        let start = Instant::now();
+        let mut out = Vec::new();
+
+        for k in 1..=20 {
+            let event = Event::Window(window::Event::RedrawRequested(
+                start + Duration::from_millis(16 * k),
+            ));
+            let mut messages = Vec::new();
+            next.as_widget_mut().update(
+                tree,
+                &event,
+                Layout::new(&node),
+                mouse::Cursor::Unavailable,
+                &(),
+                &mut clipboard::Null,
+                &mut Shell::new(&mut messages),
+                &Rectangle::new(Point::ORIGIN, Size::new(800.0, 600.0)),
+            );
+            out.push(tree.state.downcast_ref::<State>().progress());
+        }
+
+        out
+    }
+
+    /// The shape the profiles page commits: a stack whose second layer is an
+    /// `anim`, with its child going from a hidden placeholder to real content.
+    fn page(active: bool, open_content: bool) -> El {
+        let content: El = if open_content {
+            iced::widget::container(iced::widget::column![iced::widget::Space::new()]).into()
+        } else {
+            // What a hidden node becomes, see `to_node`.
+            iced::widget::Space::new().width(0.0).height(0.0).into()
+        };
+        iced::widget::container(iced::widget::stack![
+            iced::widget::column![iced::widget::Space::new()],
+            Anim::new(content, active),
+        ])
+        .into()
+    }
+
+    fn anim_state(root: &Tree) -> &State {
+        // `container` shares its tree with its content, so this is the stack.
+        root.children[1].state.downcast_ref::<State>()
+    }
+
+    #[test]
+    fn swapping_in_content_keeps_state() {
+        let mut tree = Tree::new(&page(false, false));
+        let before = anim_state(&tree) as *const State;
+
+        tree.diff(&page(true, true));
+
+        assert_eq!(
+            before,
+            anim_state(&tree) as *const State,
+            "state was recreated"
+        );
+        assert!(anim_state(&tree).animation.value());
+    }
+
+    #[test]
+    fn opens_and_closes_over_time() {
+        let mut tree = Tree::new(&anim(false, 0.0));
+        run(&mut tree, anim(false, 0.0));
+
+        let open = run(&mut tree, anim(true, 100.0));
+        let close = run(&mut tree, anim(false, 100.0));
+        println!("open:  {open:.2?}\nclose: {close:.2?}");
+
+        assert!(open[0] < 0.5, "opening jumped: {open:?}");
+        assert!(close[0] > 0.5, "closing jumped: {close:?}");
+        assert_eq!(*open.last().unwrap(), 1.0);
+        assert_eq!(*close.last().unwrap(), 0.0);
     }
 }

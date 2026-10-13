@@ -8,6 +8,26 @@ pub enum Node {
 
 static MAX_DEPTH: u32 = 256;
 
+impl Node {
+    /// A compact outline of the tree, e.g. `stack[col[..],anim[view[..]]]`,
+    /// for logging commits.
+    pub fn outline(&self, depth: usize) -> String {
+        match self {
+            Node::Text(_) => "\"\"".into(),
+            Node::Element { tag, children } => {
+                if children.is_empty() {
+                    return tag.to_string();
+                }
+                if depth == 0 {
+                    return format!("{tag}[..]");
+                }
+                let inner: Vec<_> = children.iter().map(|c| c.outline(depth - 1)).collect();
+                format!("{tag}[{}]", inner.join(","))
+            }
+        }
+    }
+}
+
 pub(crate) fn to_node(node: rquickjs::Object<'_>, depth: u32) -> rquickjs::Result<Node> {
     if depth >= MAX_DEPTH {
         return Err(rquickjs::Error::FromJs {
