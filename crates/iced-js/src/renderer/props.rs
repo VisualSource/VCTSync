@@ -7,39 +7,58 @@ use iced::{
 };
 use rquickjs::{FromJs, Object};
 
-/// wrapper type for iced length so we can have a simple api for converting js value to length
-pub struct IcedLength(Length);
-
-impl From<IcedLength> for Length {
-    fn from(value: IcedLength) -> Self {
-        value.0
-    }
+pub trait JsProp: Sized {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self>;
 }
 
-impl<'js> FromJs<'js> for IcedLength {
+macro_rules! impl_via_from_js {
+    ($type: ident) => {
+        impl JsProp for $type {
+            fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+                value.get::<$type>()
+            }
+        }
+    };
+}
+
+pub struct Prop<T>(pub T);
+
+impl<'js, T: JsProp> FromJs<'js> for Prop<T> {
     fn from_js(
         _ctx: &rquickjs::prelude::Ctx<'js>,
         value: rquickjs::Value<'js>,
     ) -> rquickjs::Result<Self> {
-        match value.type_of() {
-            rquickjs::Type::Int | rquickjs::Type::Float => {
-                let data = value.get::<f32>()?;
+        let inner = T::from_prop(value)?;
+        Ok(Self(inner))
+    }
+}
 
-                Ok(IcedLength(Length::Fixed(data)))
+impl_via_from_js!(f32);
+impl_via_from_js!(String);
+impl_via_from_js!(bool);
+impl_via_from_js!(u64);
+
+impl JsProp for Length {
+    fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        match v.type_of() {
+            rquickjs::Type::Int | rquickjs::Type::Float => {
+                let data = v.get::<f32>()?;
+
+                Ok(Length::Fixed(data))
             }
             rquickjs::Type::String => {
-                let data = value.get::<String>()?;
+                let data = v.get::<String>()?;
 
                 if data.ends_with('%') {
                     let present = data[0..data.len() - 1].parse::<u16>().map_err(|err| {
                         rquickjs::Error::new_from_js_message("string", "u16", err.to_string())
                     })?;
-                    return Ok(IcedLength(Length::FillPortion(present)));
+                    return Ok(Length::FillPortion(present));
                 }
 
                 match data.as_str() {
-                    "shrink" => Ok(IcedLength(Length::Shrink)),
-                    "fill" => Ok(IcedLength(Length::Fill)),
+                    "shrink" => Ok(Length::Shrink),
+                    "fill" => Ok(Length::Fill),
                     _ => Err(rquickjs::Error::new_from_js_message(
                         "string",
                         "Length",
@@ -48,7 +67,7 @@ impl<'js> FromJs<'js> for IcedLength {
                 }
             }
             _ => Err(rquickjs::Error::new_from_js_message(
-                value.type_name(),
+                v.type_name(),
                 "Length",
                 "unsupported type conversion",
             )),
@@ -56,57 +75,39 @@ impl<'js> FromJs<'js> for IcedLength {
     }
 }
 
-pub struct IcedPadding(Padding);
-
-impl From<IcedPadding> for Padding {
-    fn from(value: IcedPadding) -> Self {
-        value.0
-    }
-}
-
-impl<'js> FromJs<'js> for IcedPadding {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        match value.type_of() {
-            rquickjs::Type::Float | rquickjs::Type::Int => {
-                let data = value.get::<f32>()?;
-                Ok(IcedPadding(Padding::from(data)))
-            }
+impl JsProp for Padding {
+    fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        match v.type_of() {
+            rquickjs::Type::Float | rquickjs::Type::Int => Ok(Padding::from(v.get::<f32>()?)),
             rquickjs::Type::Array => {
                 // we just check that this was an array;
-                let list = unsafe { value.ref_array() };
+                let list = unsafe { v.ref_array() };
 
                 match list.len() {
                     2 => {
                         let y = list.get::<f32>(0)?;
                         let x = list.get::<f32>(1)?;
 
-                        Ok(IcedPadding(Padding::from([y, x])))
+                        Ok(Padding::from([y, x]))
                     }
                     3 => {
                         let top = list.get::<f32>(0)?;
                         let hor = list.get::<f32>(1)?;
                         let bottom = list.get::<f32>(2)?;
 
-                        Ok(IcedPadding(
-                            Padding::ZERO.horizontal(hor).top(top).bottom(bottom),
-                        ))
+                        Ok(Padding::ZERO.horizontal(hor).top(top).bottom(bottom))
                     }
                     4 => {
                         let top = list.get::<f32>(0)?;
                         let right = list.get::<f32>(1)?;
-                        let left = list.get::<f32>(12)?;
-                        let bottom = list.get::<f32>(3)?;
+                        let bottom = list.get::<f32>(2)?;
+                        let left = list.get::<f32>(3)?;
 
-                        Ok(IcedPadding(
-                            Padding::ZERO
-                                .left(left)
-                                .right(right)
-                                .top(top)
-                                .bottom(bottom),
-                        ))
+                        Ok(Padding::ZERO
+                            .left(left)
+                            .right(right)
+                            .top(top)
+                            .bottom(bottom))
                     }
                     _ => Err(rquickjs::Error::new_from_js_message(
                         "Array",
@@ -116,7 +117,7 @@ impl<'js> FromJs<'js> for IcedPadding {
                 }
             }
             _ => Err(rquickjs::Error::new_from_js_message(
-                value.type_name(),
+                v.type_name(),
                 "Padding",
                 "unsupported type",
             )),
@@ -124,25 +125,14 @@ impl<'js> FromJs<'js> for IcedPadding {
     }
 }
 
-pub struct IcedHorizontal(Horizontal);
-
-impl From<IcedHorizontal> for Horizontal {
-    fn from(value: IcedHorizontal) -> Horizontal {
-        value.0
-    }
-}
-
-impl<'js> FromJs<'js> for IcedHorizontal {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let data = value.get::<String>()?;
+impl JsProp for Horizontal {
+    fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        let data = v.get::<String>()?;
 
         match data.as_str() {
-            "center" => Ok(IcedHorizontal(Horizontal::Center)),
-            "left" => Ok(IcedHorizontal(Horizontal::Left)),
-            "right" => Ok(IcedHorizontal(Horizontal::Right)),
+            "center" => Ok(Horizontal::Center),
+            "left" => Ok(Horizontal::Left),
+            "right" => Ok(Horizontal::Right),
             _ => Err(rquickjs::Error::new_from_js_message(
                 "string",
                 "Horizontal",
@@ -152,25 +142,14 @@ impl<'js> FromJs<'js> for IcedHorizontal {
     }
 }
 
-pub struct IcedVertical(Vertical);
-
-impl From<IcedVertical> for Vertical {
-    fn from(value: IcedVertical) -> Vertical {
-        value.0
-    }
-}
-
-impl<'js> FromJs<'js> for IcedVertical {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let data = value.get::<String>()?;
+impl JsProp for Vertical {
+    fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        let data = v.get::<String>()?;
 
         match data.as_str() {
-            "center" => Ok(IcedVertical(Vertical::Center)),
-            "bottom" => Ok(IcedVertical(Vertical::Bottom)),
-            "top" => Ok(IcedVertical(Vertical::Top)),
+            "center" => Ok(Vertical::Center),
+            "bottom" => Ok(Vertical::Bottom),
+            "top" => Ok(Vertical::Top),
             _ => Err(rquickjs::Error::new_from_js_message(
                 "string",
                 "Horizontal",
@@ -180,36 +159,17 @@ impl<'js> FromJs<'js> for IcedVertical {
     }
 }
 
-pub struct IcedTooltipPosition(iced::widget::tooltip::Position);
-
-impl From<IcedTooltipPosition> for iced::widget::tooltip::Position {
-    fn from(value: IcedTooltipPosition) -> iced::widget::tooltip::Position {
-        value.0
-    }
-}
-
-impl<'js> FromJs<'js> for IcedTooltipPosition {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
+impl JsProp for iced::widget::tooltip::Position {
+    fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
         use iced::widget::tooltip::Position;
-        if !value.is_string() {
-            return Err(rquickjs::Error::new_from_js_message(
-                value.type_name(),
-                "Position",
-                "was expecting a string",
-            ));
-        }
-
-        let data = value.get::<String>()?;
+        let data = v.get::<String>()?;
 
         match data.as_str() {
-            "bottom" => Ok(IcedTooltipPosition(Position::Bottom)),
-            "followCursor" => Ok(IcedTooltipPosition(Position::FollowCursor)),
-            "left" => Ok(IcedTooltipPosition(Position::Left)),
-            "right" => Ok(IcedTooltipPosition(Position::Right)),
-            "top" => Ok(IcedTooltipPosition(Position::Top)),
+            "bottom" => Ok(Position::Bottom),
+            "followCursor" => Ok(Position::FollowCursor),
+            "left" => Ok(Position::Left),
+            "right" => Ok(Position::Right),
+            "top" => Ok(Position::Top),
 
             _ => Err(rquickjs::Error::new_from_js_message(
                 "string",
@@ -220,37 +180,15 @@ impl<'js> FromJs<'js> for IcedTooltipPosition {
     }
 }
 
-pub struct IcedId(iced::widget::Id);
-
-impl From<IcedId> for iced::widget::Id {
-    fn from(value: IcedId) -> Self {
-        value.0
+impl JsProp for iced::widget::Id {
+    fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        let data = v.get::<String>()?;
+        Ok(data.into())
     }
 }
 
-impl<'js> FromJs<'js> for IcedId {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let data = value.get::<String>()?;
-        Ok(IcedId(data.into()))
-    }
-}
-
-pub struct IcedFont(Font);
-
-impl From<IcedFont> for Font {
-    fn from(value: IcedFont) -> Self {
-        value.0
-    }
-}
-
-impl<'js> FromJs<'js> for IcedFont {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
+impl JsProp for Font {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
         let font = if let Ok(value) = value.get::<String>() {
             match value.as_str() {
                 "default" => Font::DEFAULT,
@@ -263,7 +201,7 @@ impl<'js> FromJs<'js> for IcedFont {
                     ));
                 }
             }
-        } else if let Ok(value) = value.get::<Object<'js>>() {
+        } else if let Ok(value) = value.get::<Object<'_>>() {
             let weight = value
                 .get::<_, String>("weight")
                 .ok()
@@ -293,66 +231,35 @@ impl<'js> FromJs<'js> for IcedFont {
             ));
         };
 
-        Ok(IcedFont(font))
+        Ok(font)
     }
 }
 
-pub struct IcedBackground(Background);
-
-impl From<IcedBackground> for Background {
-    fn from(value: IcedBackground) -> Self {
-        value.0
-    }
-}
-
-impl<'js> FromJs<'js> for IcedBackground {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
-        let value = value.get::<IcedColor>()?;
-        Ok(IcedBackground(Background::Color(value.into())))
-    }
-}
-
-pub struct IcedColor(Color);
-
-impl From<IcedColor> for Color {
-    fn from(value: IcedColor) -> Self {
-        value.0
-    }
-}
-
-impl<'js> FromJs<'js> for IcedColor {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
+impl JsProp for Color {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
         let v = value.get::<String>()?;
 
         let c = v.parse::<Color>().map_err(|err| {
             rquickjs::Error::new_from_js_message("string", "color", err.to_string())
         })?;
 
-        Ok(IcedColor(c))
+        Ok(c)
     }
 }
 
-pub struct IcedBorderRadius(iced::border::Radius);
-
-impl From<IcedBorderRadius> for iced::border::Radius {
-    fn from(value: IcedBorderRadius) -> Self {
-        value.0
+impl JsProp for Background {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        let value = value.get::<Prop<Color>>()?;
+        Ok(Background::Color(value.0))
     }
 }
 
-impl<'js> FromJs<'js> for IcedBorderRadius {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
+impl JsProp for iced::border::Radius {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        use iced::border::Radius;
+
         if let Ok(value) = value.get::<f32>() {
-            return Ok(IcedBorderRadius(iced::border::radius(value)));
+            return Ok(iced::border::radius(value));
         }
         let value = value.get::<String>()?;
 
@@ -366,28 +273,25 @@ impl<'js> FromJs<'js> for IcedBorderRadius {
         }
 
         match data.len() {
-            1 => Ok(IcedBorderRadius(iced::border::radius(data[0]))),
-            2 => Ok(IcedBorderRadius(
-                iced::border::Radius::default()
-                    .top(data[0])
-                    .bottom(data[0])
-                    .left(data[1])
-                    .right(data[1]),
-            )),
-            3 => Ok(IcedBorderRadius(
-                iced::border::Radius::default()
-                    .top(data[0])
-                    .bottom(data[2])
-                    .left(data[1])
-                    .right(data[1]),
-            )),
-            4 => Ok(IcedBorderRadius(
-                iced::border::Radius::default()
-                    .top(data[0])
-                    .left(data[1])
-                    .right(data[2])
-                    .bottom(data[3]),
-            )),
+            1 => Ok(iced::border::radius(data[0])),
+            2 => Ok(Radius {
+                top_left: data[0],
+                top_right: data[0],
+                bottom_right: data[1],
+                bottom_left: data[1],
+            }),
+            3 => Ok(Radius {
+                top_left: data[0],
+                top_right: data[1],
+                bottom_right: data[2],
+                bottom_left: data[1],
+            }),
+            4 => Ok(Radius {
+                top_left: data[0],
+                top_right: data[1],
+                bottom_right: data[2],
+                bottom_left: data[3],
+            }),
             _ => Err(rquickjs::Error::new_from_js_message(
                 "string",
                 "Radius",

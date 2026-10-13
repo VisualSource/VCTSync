@@ -1,7 +1,4 @@
-use super::props::{
-    IcedFont, IcedHorizontal, IcedId, IcedLength, IcedPadding, IcedTooltipPosition, IcedVertical,
-    SelectOption,
-};
+use super::props::{Prop, SelectOption};
 use super::styles::{ButtonStyle, ViewStyle};
 
 use iced::{
@@ -180,7 +177,7 @@ pub enum Tag {
 }
 
 macro_rules! map_props {
-    ($el: literal, $props: ident, ignore [$($ignored: literal),* $(,)?], $( ($name: ident, $propKey: literal, $type: ident ,$to: ident) ), *) => {
+    ($el: literal, $props: ident, ignore [$($ignored: literal),* $(,)?], $( ($name: ident, $propKey: literal, $type: ident) ), *) => {
         $(
             let mut $name: Option<$type> = None;
         )*
@@ -189,7 +186,7 @@ macro_rules! map_props {
             let (key, value) = prop?;
             match key.as_str() {
                 $(
-                    $propKey => $name = Some(value.get::<$to>()?.into()),
+                    $propKey => $name = value.get::<Prop<$type>>().ok().map(|x|x.0),
                 )*
                 // props with special handling outside of the macro
                 $(
@@ -202,8 +199,8 @@ macro_rules! map_props {
         }
 
     };
-    ($el: literal, $props: ident, $( ($name: ident, $propKey: literal, $type: ident ,$to: ident) ), *) => {
-        map_props!($el, $props, ignore [], $( ($name, $propKey, $type, $to) ),*)
+    ($el: literal, $props: ident, $( ($name: ident, $propKey: literal, $type: ident) ), *) => {
+        map_props!($el, $props, ignore [], $( ($name, $propKey, $type) ),*)
     };
 }
 
@@ -230,14 +227,14 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "row",
                     props,
-                    (padding, "padding", Padding, IcedPadding),
-                    (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength),
-                    (align_x, "alignX", Horizontal, IcedHorizontal),
-                    (align_y, "alignY", Vertical, IcedVertical),
-                    (clip, "clip", bool, bool),
-                    (warp, "warp", bool, bool),
-                    (spacing, "spacing", Pixels, f32)
+                    (padding, "padding", Padding),
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (align_x, "alignX", Horizontal),
+                    (align_y, "alignY", Vertical),
+                    (clip, "clip", bool),
+                    (warp, "warp", bool),
+                    (spacing, "spacing", Pixels)
                 );
                 Ok(if tag_type == "row" {
                     Tag::Row {
@@ -269,23 +266,23 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "view",
                     props,
-                    (padding, "padding", Padding, IcedPadding),
-                    (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength),
-                    (max_width, "maxWidth", Pixels, f32),
-                    (max_height, "maxHeight", Pixels, f32),
-                    (center_x, "centerX", Length, IcedLength),
-                    (center_y, "centerY", Length, IcedLength),
-                    (center, "center", Length, IcedLength),
-                    (align_left, "alignLeft", Length, IcedLength),
-                    (align_right, "alignRight", Length, IcedLength),
-                    (align_top, "alignTop", Length, IcedLength),
-                    (align_bottom, "alignBottom", Length, IcedLength),
-                    (align_x, "alignX", Horizontal, IcedHorizontal),
-                    (align_y, "alignY", Vertical, IcedVertical),
-                    (clip, "clip", bool, bool),
-                    (id, "id", Id, IcedId),
-                    (style, "style", ViewStyle, ViewStyle)
+                    (padding, "padding", Padding),
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (max_width, "maxWidth", Pixels),
+                    (max_height, "maxHeight", Pixels),
+                    (center_x, "centerX", Length),
+                    (center_y, "centerY", Length),
+                    (center, "center", Length),
+                    (align_left, "alignLeft", Length),
+                    (align_right, "alignRight", Length),
+                    (align_top, "alignTop", Length),
+                    (align_bottom, "alignBottom", Length),
+                    (align_x, "alignX", Horizontal),
+                    (align_y, "alignY", Vertical),
+                    (clip, "clip", bool),
+                    (id, "id", Id),
+                    (style, "style", ViewStyle)
                 );
 
                 Ok(Tag::View {
@@ -312,13 +309,13 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "button",
                     props,
-                    (clip, "clip", bool, bool),
-                    (on_press, "onPress", CallbackId, CallbackId),
-                    (padding, "padding", Padding, IcedPadding),
-                    (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength),
-                    (disabled, "disabled", bool, bool),
-                    (style, "style", ButtonStyle, ButtonStyle)
+                    (clip, "clip", bool),
+                    (on_press, "onPress", CallbackId),
+                    (padding, "padding", Padding),
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (disabled, "disabled", bool),
+                    (style, "style", ButtonStyle)
                 );
 
                 Ok(Tag::Button {
@@ -335,16 +332,15 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "text",
                     props,
-                    (size, "size", Pixels, f32),
-                    (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength),
-                    (align_x, "alignX", Horizontal, IcedHorizontal),
-                    (align_y, "alignY", Vertical, IcedVertical),
-                    (wrapping, "wrapping", bool, bool),
-                    (font, "font", Font, IcedFont),
-                    // color
-                    // colorMaybe
-                    (center, "center", bool, bool) // shapping
+                    (size, "size", Pixels),
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (align_x, "alignX", Horizontal),
+                    (align_y, "alignY", Vertical),
+                    (wrapping, "wrapping", bool),
+                    (font, "font", Font),
+                    (color, "color", Color),
+                    (center, "center", bool)
                 );
 
                 Ok(Tag::Text {
@@ -365,21 +361,21 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "space",
                     props,
-                    (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength)
+                    (width, "width", Length),
+                    (height, "height", Length)
                 );
 
                 Ok(Tag::Space { width, height })
             }
             "hr" => {
-                map_props!("hr", props, (height, "height", Pixels, f32));
+                map_props!("hr", props, (height, "height", Pixels));
 
                 Ok(Tag::Hr {
                     height: height.unwrap_or_else(|| Pixels::from(1)),
                 })
             }
             "vr" => {
-                map_props!("vr", props, (width, "width", Pixels, f32));
+                map_props!("vr", props, (width, "width", Pixels));
                 Ok(Tag::Vr {
                     width: width.unwrap_or_else(|| Pixels::from(1)),
                 })
@@ -388,15 +384,15 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "scroll",
                     props,
-                    (height, "height", Length, IcedLength),
-                    (width, "width", Length, IcedLength),
-                    (horizontal, "horizontal", bool, bool),
-                    (anchor_bottom, "anchorBottom", bool, bool),
-                    (anchor_left, "anchorLeft", bool, bool),
-                    (anchor_right, "anchorRight", bool, bool),
-                    (anchor_top, "anchorTop", bool, bool),
-                    (auto_scroll, "autoScroll", bool, bool),
-                    (spacing, "spacing", Pixels, f32)
+                    (height, "height", Length),
+                    (width, "width", Length),
+                    (horizontal, "horizontal", bool),
+                    (anchor_bottom, "anchorBottom", bool),
+                    (anchor_left, "anchorLeft", bool),
+                    (anchor_right, "anchorRight", bool),
+                    (anchor_top, "anchorTop", bool),
+                    (auto_scroll, "autoScroll", bool),
+                    (spacing, "spacing", Pixels)
                 );
 
                 Ok(Tag::Scroll {
@@ -416,10 +412,10 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "tooltip",
                     props,
-                    (gap, "gap", Pixels, f32),
-                    (padding, "padding", Pixels, f32),
-                    (snap_within_viewport, "snapWithinViewport", bool, bool),
-                    (position, "position", Position, IcedTooltipPosition)
+                    (gap, "gap", Pixels),
+                    (padding, "padding", Pixels),
+                    (snap_within_viewport, "snapWithinViewport", bool),
+                    (position, "position", Position)
                 );
 
                 Ok(Tag::Tooltip {
@@ -431,7 +427,7 @@ impl<'js> FromJs<'js> for Tag {
             }
 
             "float" => {
-                map_props!("float", props, (scale, "scale", f32, f32));
+                map_props!("float", props, (scale, "scale", f32));
 
                 Ok(Tag::Float { scale })
             }
@@ -505,8 +501,8 @@ impl<'js> FromJs<'js> for Tag {
                     "select",
                     props,
                     ignore["src","onSelect","options"],
-                    (placeholder, "placeholder", String, String),
-                    (value, "value", String, String)
+                    (placeholder, "placeholder", String),
+                    (value, "value", String)
                 );
 
                 let on_select = props.get::<_, CallbackId>("onSelect")?;
@@ -524,9 +520,9 @@ impl<'js> FromJs<'js> for Tag {
                 map_props!(
                     "stack",
                     props,
-                    (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength),
-                    (clip, "clip", bool, bool)
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (clip, "clip", bool)
                 );
 
                 Ok(Tag::Stack {
@@ -567,9 +563,9 @@ impl<'js> FromJs<'js> for Tag {
                     "svg",
                     props,
                     ignore["src"],
-                    (width, "width", Length, IcedLength),
-                    (height, "height", Length, IcedLength),
-                    (style, "style", SvgStyle, SvgStyle)
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (style, "style", SvgStyle)
                 );
 
                 Ok(Tag::Svg {

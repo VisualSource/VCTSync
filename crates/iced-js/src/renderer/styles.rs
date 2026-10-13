@@ -1,7 +1,7 @@
 use iced::{Background, Border, Color, Shadow, Vector};
 use rquickjs::FromJs;
 
-use crate::renderer::props::{IcedBackground, IcedBorderRadius, IcedColor};
+use crate::renderer::props::{JsProp, Prop};
 
 #[derive(Debug)]
 pub enum ViewStyle {
@@ -9,11 +9,8 @@ pub enum ViewStyle {
     Custom(iced::widget::container::Style),
 }
 
-impl<'js> FromJs<'js> for ViewStyle {
-    fn from_js(
-        _ctx: &rquickjs::prelude::Ctx<'js>,
-        value: rquickjs::Value<'js>,
-    ) -> rquickjs::Result<Self> {
+impl JsProp for ViewStyle {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
         if let Ok(v) = value.get::<String>() {
             return match v.as_str() {
                 "roundedBox" => Ok(ViewStyle::RoundedBox),
@@ -25,13 +22,13 @@ impl<'js> FromJs<'js> for ViewStyle {
             };
         }
 
-        let obj = value.get::<rquickjs::Object<'js>>()?;
+        let obj = value.get::<rquickjs::Object<'_>>()?;
 
         let background = obj
-            .get::<_, IcedBackground>("background")
+            .get::<_, Prop<Background>>("background")
             .ok()
-            .map(Background::from);
-        let text_color = obj.get::<_, IcedColor>("color").ok().map(Color::from);
+            .map(|x| x.0);
+        let text_color = obj.get::<_, Prop<Color>>("color").ok().map(|x| x.0);
 
         let border = {
             let width = obj.get::<_, f32>("borderWidth").ok().unwrap_or_default();
