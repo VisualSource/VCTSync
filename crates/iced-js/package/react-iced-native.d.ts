@@ -124,6 +124,13 @@ declare namespace Iced {
             "warning" |
             "subtle" | { background?: string; }
         }
+        type PaletteShade = "base" | "weak" | "strong";
+        type BackgroundShade = PaletteShade | "weakest" | "weaker" | "neutral" | "stronger" | "strongest";
+        type PaletteToken =
+            | "background" | `background.${BackgroundShade}` | "background.text" | `background.${BackgroundShade}.text`
+            | `${"primary" | "secondary" | "success" | "warning" | "danger"}${"" | `.${PaletteShade}`}${"" | ".text"}`;
+        /** A color string (hex/rgb) or a theme palette token resolved at draw time. */
+        type ThemeColor = PaletteToken | (string & {});
         interface View extends React.Attributes {
             id?: string;
             padding?: Padding;
@@ -131,12 +138,12 @@ declare namespace Iced {
             height?: Length,
 
             style?: "roundedBox" | {
-                background?: string;
-                color?: string;
+                background?: ThemeColor;
+                color?: ThemeColor;
                 borderWidth?: number;
-                borderColor?: string;
+                borderColor?: ThemeColor;
                 borderRadius?: number | string;
-                shadowColor?: string;
+                shadowColor?: ThemeColor;
                 shadowBlurRadius?: number;
                 shadowOffsetX?: number;
                 shadowOffsetY?: number;

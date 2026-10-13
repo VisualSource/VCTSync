@@ -101,7 +101,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                             node = node.style(iced::widget::container::rounded_box)
                         }
                         ViewStyle::Custom(style) => {
-                            node = node.style(|_| *style);
+                            node = node.style(move |theme| style.to_style(theme));
                         }
                     }
                 }
