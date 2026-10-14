@@ -60,7 +60,13 @@ type IcedChild = IcedNode | IcedText;
 type IcedContainer = { commit(children: readonly IcedChild[]): void }
 
 type IcedHostContext = Readonly<Record<string, never>>;
-type IcedHostConfig = HostConfig<IcedTag, RawProps, IcedContainer, IcedNode, IcedText, never, never, never, IcedNode, IcedHostContext, IcedChild[], number, -1, null>;
+type IcedHostConfig = HostConfig<
+    IcedTag, RawProps, IcedContainer, IcedNode, IcedText,
+    never, never, never, never,     // Activity, Suspense, Hydratable, Form instances
+    IcedNode, IcedHostContext, IcedChild[], number, -1,
+    null, null,                     // TransitionStatus, SuspendedState
+    never, never, never, never      // RendererInspectionConfig, FormStateMarker, HoistableRoot, Resource
+>;
 
 
 export const invoke = async <T>(cmd: string, payload?: unknown) => {
@@ -241,7 +247,7 @@ const config: IcedHostConfig = {
             children: keepChildren ? instance.children : []
         }
     },
-    createContainerChildSet(container) {
+    createContainerChildSet() {
         return [];
     },
     appendChildToContainerChildSet(childSet, child) {
@@ -259,7 +265,7 @@ const config: IcedHostConfig = {
     },
     // Called for the topmost host nodes under a hidden `<Activity>`. Showing
     // them again goes through `cloneInstance`, which drops the flag.
-    cloneHiddenInstance(instance, type, props, internalInstanceHandle) {
+    cloneHiddenInstance(instance, type, props) {
         return {
             _stateId: needsUniqueId(type) ? nanoid() : undefined,
             type,
@@ -268,7 +274,7 @@ const config: IcedHostConfig = {
             hidden: true,
         }
     },
-    cloneHiddenTextInstance(instance, text, internalInstanceHandle) {
+    cloneHiddenTextInstance(instance, text) {
         return {
             text,
             hidden: true,
@@ -285,10 +291,10 @@ const config: IcedHostConfig = {
     getRootHostContext() {
         return HOST_CONTENT;
     },
-    getChildHostContext(parentHostContext, type, rootContainer) {
+    getChildHostContext(parentHostContext, type) {
         return parentHostContext;
     },
-    finalizeInitialChildren(instance, type, props, rootContainer, hostContext) {
+    finalizeInitialChildren(instance, type, props, hostContext) {
         return false;
     },
     prepareForCommit() {
@@ -370,17 +376,39 @@ const config: IcedHostConfig = {
     maySuspendCommit(type, props) {
         return false;
     },
+    maySuspendCommitOnUpdate(type, oldProps, newProps) {
+        return false;
+    },
+    maySuspendCommitInSyncRender(type, props) {
+        return false;
+    },
+    suspendOnActiveViewTransition(state, container) {
+        // No view transitions on this host.
+    },
+    getSuspendedCommitReason(state, container) {
+        return null;
+    },
     preloadInstance(type, props) {
         return true;
     },
     startSuspendingCommit() {
-        // `maySuspendCommit` is always false, so this is never reached.
+        // Runs on every Suspense retry, transition and visibility toggle; there
+        // is never anything to wait on, so the state is always empty.
+        return null;
     },
-    suspendInstance(type, props) {
+    suspendInstance(state, instance, type, props) {
         // `maySuspendCommit` is always false, so this is never reached.
     },
     waitForCommitToBeReady() {
         return null;
+    },
+
+    /**DevTools */
+    rendererVersion: "1.0.0",
+    rendererPackageName: "react-iced-native",
+    extraDevToolsConfig: null,
+    bindToConsole(methodName, args, badgeName) {
+        return (console as any)[methodName].bind(console, ...args);
     },
 
 };
@@ -389,7 +417,7 @@ const config: IcedHostConfig = {
  *  root's live ids, not just the one currently committing. */
 const roots = new Map<string, { root: OpaqueRoot, tree?: IcedChild }>();
 const reconciler = Reconciler(config);
-const onError = (err: Error) => { console.error(err); }
+const onError = (err: unknown) => { console.error(err); }
 
 /** An empty root. `space` with no children renders as an empty `Column`. */
 const emptyNode = (): IcedNode => ({ type: "space", props: {}, children: [] });
@@ -429,7 +457,7 @@ export const createRoot = (id: string) => {
         },
     }
 
-    const root = reconciler.createContainer(container, ConcurrentRoot, null, false, null, "", onError, onError, onError, () => { });
+    const root = reconciler.createContainer(container, ConcurrentRoot, null, false, null, "", onError, onError, onError, () => { }, null);
 
     roots.set(id, { root, });
 
