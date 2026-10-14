@@ -9,13 +9,14 @@ import type { Profile } from "./types.js";
 import { ProfileList } from "./profile-list.js";
 
 export const Profiles = () => {
+    const [detailsId, setDetailsId] = useState<string | null>(null);
     const [showDetails, setShowDetails] = useState(false);
     const activeProfile = useApp(state => state.activeProfile);
     const setActiveProfile = useApp(state => state.setActiveProfile);
     const { isLoading, isError, error, data } = useQuery({
         queryKey: ["profiles"],
         queryFn: async () => {
-            return [{ name: "Example", id: "test example", icon: "leaf", mods: [] }] as Profile[];
+            return [{ name: "Example", id: "test example", icon: "leaf", mods: [{ name: "BepinEx", author: "BepinEx", enabled: true, icon: "somepath", id: "adeddd" }], dir: "C:\\Repos", launch_args: "" }] as Profile[];
         }
     });
 
@@ -42,11 +43,12 @@ export const Profiles = () => {
                 </row>
                 <hr />
                 <space height={10} />
-                <ProfileList toggleShowDetails={() => setShowDetails(e => !e)} activeProfile={activeProfile} isError={isError} isLoading={isLoading} error={error} data={data} />
+                <ProfileList toggleShowDetails={(id: string) => { setDetailsId(id); setShowDetails(true); }} activeProfile={activeProfile} isError={isError} isLoading={isLoading} error={error} data={data} />
             </col>
 
+
             <AnimActivity active={showDetails} from={{ x: "100%" }} to={{ x: 0 }} duration={220}>
-                <ModPanel onClose={() => setShowDetails(false)} />
+                <ModPanel onClose={() => setShowDetails(false)} profileId={detailsId} />
             </AnimActivity>
         </stack>
     )

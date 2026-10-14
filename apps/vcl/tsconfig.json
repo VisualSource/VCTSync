@@ -16,7 +16,7 @@
     "module": "nodenext",
     "target": "es2020",
     "types": ["react-iced-native"],
-    "lib": ["ESNext.Temporal","ES2020","DOM"],
+    "lib": ["ESNext.Temporal","ES2022","DOM"],
     "paths": {
       "@icon/*": ["./view/assets/icons/*"]
       

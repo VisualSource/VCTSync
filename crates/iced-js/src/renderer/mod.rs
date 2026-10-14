@@ -413,9 +413,14 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 on_change,
                 on_submit,
                 disabled,
+                size,
+                padding,
             } => {
                 debug_assert_eq!(children.len(), 0);
                 let mut node = iced::widget::text_input(placeholder, value);
+
+                apply_opt!(node, size, size);
+                apply_opt!(node, padding, padding);
 
                 if let Some(id) = on_change {
                     let callback = if *disabled {
@@ -428,7 +433,13 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 }
 
                 if let Some(id) = on_submit {
-                    node = node.on_submit(Event::Callback(*id, Payload::Submit));
+                    let callback = if *disabled {
+                        None
+                    } else {
+                        Some(Event::Callback(*id, Payload::Submit))
+                    };
+
+                    node = node.on_submit_maybe(callback);
                 }
 
                 node.into()

@@ -311,6 +311,16 @@ impl JsProp for Pixels {
     }
 }
 
+impl JsProp for iced::widget::text::LineHeight {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        // use iced::widget::text::LineHeight;
+
+        //let value = value.get::<String>()?;
+
+        todo!()
+    }
+}
+
 /// A distance along one axis, either in pixels or relative to the size of the
 /// element it applies to.
 #[derive(Debug, Clone, Copy, PartialEq)]

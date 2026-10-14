@@ -4,7 +4,7 @@ import { ProfileIcon } from "./profile-icon.js";
 import type { Profile } from "./types.js";
 
 type Props = {
-    toggleShowDetails: () => void,
+    toggleShowDetails: (id: string) => void,
     activeProfile?: string | null,
     isLoading: boolean;
     isError: boolean;
@@ -73,7 +73,7 @@ export const ProfileList = ({ isLoading, isError, error, data, activeProfile, to
                                 <ProfileIcon type={profile.icon} />
                                 <col>
                                     <text size={14}>{profile.name}</text>
-                                    <text size={12}>{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>
+                                    <text size={12} color="#9a9ea6">{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>
                                 </col>
                                 <space width="fill" />
 
@@ -83,7 +83,7 @@ export const ProfileList = ({ isLoading, isError, error, data, activeProfile, to
                                     </view>
                                 ) : null}
 
-                                <button height={36} width={36} style="subtle" onPress={() => toggleShowDetails()}>
+                                <button height={36} width={36} style="subtle" onPress={() => toggleShowDetails(profile.id)}>
                                     <svg height={30} width={30} style="currentColor" src={Settings} />
                                 </button>
                             </row>

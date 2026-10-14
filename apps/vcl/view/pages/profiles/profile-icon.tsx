@@ -22,7 +22,7 @@ type IconProps = {
 
 export const ProfileIcon = ({ type }: IconProps) => {
     return (
-        <view alignX="center" alignY="center" width={30} height={30} style={{ background: ICON_MAP[type].color, borderRadius: 4 }}>
+        <view alignX="center" alignY="center" width={32} height={32} style={{ background: ICON_MAP[type].color, borderRadius: 4 }}>
             <svg style="currentColor" height={15} width={15} src={ICON_MAP[type].icon} />
         </view>
     );
@@ -35,7 +35,7 @@ type ButtonProps = {
 
 export const IconButton = ({ active, onPress, type }: ButtonProps) => {
     return (
-        <button onPress={onPress} width={30} height={30} style="background" padding={0}>
+        <button onPress={onPress} width={32} height={32} style="background" padding={0}>
             <view alignX="center" alignY="center" width="fill" height="fill" style={{
                 background: ICON_MAP[type].color,
                 borderRadius: 4,

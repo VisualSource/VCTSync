@@ -123,6 +123,8 @@ pub enum Tag {
         on_change: Option<CallbackId>,
         on_submit: Option<CallbackId>,
         disabled: bool,
+        size: Option<Pixels>,
+        padding: Option<Padding>,
     },
     Checkbox {
         value: bool,
@@ -458,19 +460,27 @@ impl<'js> FromJs<'js> for Tag {
                 match input_type.as_str() {
                     "text" => {
                         let value = props.get::<_, String>("value")?;
-                        let placeholder = props.get::<_, String>("placeholder")?;
 
-                        let on_change = props.get::<_, CallbackId>("onChange").ok();
-                        let on_submit = props.get::<_, CallbackId>("onSubmit").ok();
-
-                        let disabled = props.get::<_, bool>("disabled").ok().unwrap_or_default();
+                        map_props!(
+                            "input(text)",
+                            props,
+                            ignore["value","type"],
+                            (placeholder, "placeholder", String),
+                            (on_change, "onChange", CallbackId),
+                            (on_submit, "onSubmit", CallbackId),
+                            (disabled, "disabled", bool),
+                            (padding, "padding", Padding),
+                            (size, "size", Pixels)
+                        );
 
                         Ok(Tag::TextInput {
                             value,
-                            placeholder,
+                            placeholder: placeholder.unwrap_or_default(),
                             on_change,
                             on_submit,
-                            disabled,
+                            size,
+                            padding,
+                            disabled: disabled.unwrap_or_default(),
                         })
                     }
                     "switch" => {

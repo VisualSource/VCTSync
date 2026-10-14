@@ -66,6 +66,8 @@ declare namespace Iced {
             children: string;
             size?: Pixels;
 
+            color?: string,
+
             font?: {
                 style?: unknown
                 weight?: "extraLight" |
@@ -237,8 +239,11 @@ declare namespace Iced {
             interface Text {
                 type: "text",
                 value: string;
-                placeholder: string;
-                onChange?: (ev: { type: "change", value: string }) => void
+                onSubmit?: (ev: { type: "submit" }) => void;
+                placeholder?: string;
+                onChange?: (ev: { type: "change", value: string }) => void;
+                size?: Pixels;
+                padding?: Padding;
             }
             interface Switch {
                 type: "switch",

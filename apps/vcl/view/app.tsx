@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-iced-native";
 import { useState } from "react";
 
@@ -13,8 +13,7 @@ import Library from "./assets/icons/library.svg" with {type: "svg" };
 import Boxes from "./assets/icons/boxes.svg" with {type: "svg" };
 import ScrollText from "./assets/icons/scroll-text.svg" with {type: "svg" };
 import SettingsSvg from "./assets/icons/settings.svg" with {type: "svg" };
-
-const client = new QueryClient();
+import { client } from "./client.js";
 
 const App = () => {
     const [tab, setTab] = useState<string>("logs");
