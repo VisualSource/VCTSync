@@ -117,8 +117,8 @@ declare namespace Iced {
             style?: "roundedBox" | {
                 background?: ThemeColor;
                 color?: ThemeColor;
-                borderWidth?: number;
-                borderColor?: ThemeColor;
+                borderWidth?: number | undefined;
+                borderColor?: ThemeColor | undefined;
                 borderRadius?: number | string;
                 shadowColor?: ThemeColor;
                 shadowBlurRadius?: number;

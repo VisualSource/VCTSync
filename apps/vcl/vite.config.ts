@@ -1,26 +1,35 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 
-/** Re-adds the `with { type: "svg" }` attribute rolldown strips off external svg
- *  imports, and copies the referenced files into the bundle. */
+/** Externalizes svg imports (resolving tsconfig paths), re-adds the `with { type: "svg" }`
+ *  attribute rolldown strips off, and copies the referenced files into the bundle. */
 function svgAssets(srcDir: string): Plugin {
     return {
         name: "svg-assets",
+        enforce: "pre",
+        async resolveId(source, importer) {
+            if (!source.endsWith(".svg")) return null;
+            const resolved = await this.resolve(source, importer, { skipSelf: true });
+            return resolved && { id: resolved.id, external: "absolute" };
+        },
         generateBundle(_options, bundle) {
             const emitted = new Set<string>();
             for (const file of Object.values(bundle)) {
                 if (file.type !== "chunk") continue;
+                const chunkDir = dirname(file.fileName);
                 file.code = file.code.replace(
-                    /(\bfrom\s*)(["'])(\.{1,2}\/[^"']+\.svg)\2(?!\s*with)/g,
+                    /(\bfrom\s*)(["'])([^"']+\.svg)\2(?!\s*with)/g,
                     (_match, from: string, quote: string, spec: string) => {
-                        const rel = join(dirname(file.fileName), spec).replaceAll("\\", "/");
+                        const abs = resolve(srcDir, chunkDir, spec);
+                        const rel = relative(srcDir, abs).replaceAll("\\", "/");
                         if (!emitted.has(rel)) {
                             emitted.add(rel);
-                            this.emitFile({ type: "asset", fileName: rel, source: readFileSync(resolve(srcDir, rel)) });
+                            this.emitFile({ type: "asset", fileName: rel, source: readFileSync(abs) });
                         }
-                        return `${from}${quote}${spec}${quote} with { type: "svg" }`;
+                        const out = relative(chunkDir, rel).replaceAll("\\", "/");
+                        return `${from}${quote}${out.startsWith(".") ? out : `./${out}`}${quote} with { type: "svg" }`;
                     }
                 );
             }
@@ -39,6 +48,9 @@ export default defineConfig({
         }),
         svgAssets(resolve(import.meta.dirname, "view"))
     ],
+    resolve: {
+        tsconfigPaths: true
+    },
     build: {
         lib: {
             name: "app",
@@ -50,7 +62,7 @@ export default defineConfig({
             output: {
                 minify: true,
             },
-            external: ["react", "react/jsx-runtime", "react/compiler-runtime", "react-iced-native", /\.svg$/]
+            external: ["react", "react/jsx-runtime", "react/compiler-runtime", "react-iced-native"]
         }
     }
 

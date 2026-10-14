@@ -4,6 +4,8 @@ use nanoserde::{DeJson, SerJson};
 pub struct MessageDialogConfig {
     pub title: String,
     pub description: String,
+    pub buttons: String,
+    pub level: Option<String>,
 }
 
 #[derive(SerJson)]

@@ -1,5 +1,6 @@
 import LayersPlus from "../../assets/icons/layers-plus.svg" with { type: "svg" };
 import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
+import { ProfileIcon } from "./profile-icon.js";
 import type { Profile } from "./types.js";
 
 type Props = {
@@ -69,9 +70,7 @@ export const ProfileList = ({ isLoading, isError, error, data, activeProfile, to
                     {data.map(profile => (
                         <view key={profile.id} style={{ background: "background.weaker", borderRadius: 4 }}>
                             <row padding={6} spacing={6} alignY="center">
-                                <view alignX="center" alignY="center" style={{ background: "#2f8a5b", borderRadius: 4 }} width={30} height={30}>
-                                    <svg style="currentColor" height={15} width={15} src={LayersPlus} />
-                                </view>
+                                <ProfileIcon type={profile.icon} />
                                 <col>
                                     <text size={14}>{profile.name}</text>
                                     <text size={12}>{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>

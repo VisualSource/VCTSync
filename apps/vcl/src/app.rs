@@ -121,10 +121,29 @@ impl Application {
                                     }
                                 };
 
+                                let buttons = match config.buttons.as_str() {
+                                    "Ok" => rfd::MessageButtons::Ok,
+                                    "OkCancel" => rfd::MessageButtons::OkCancel,
+                                    "YesNo" => rfd::MessageButtons::YesNo,
+                                    "YesNoCancel" => rfd::MessageButtons::YesNoCancel,
+                                    _ => rfd::MessageButtons::OkCustom(config.buttons),
+                                };
+
+                                let level = if let Some(state) = config.level {
+                                    match state.as_str() {
+                                        "warning" => rfd::MessageLevel::Warning,
+                                        "error" => rfd::MessageLevel::Error,
+                                        _ => rfd::MessageLevel::Info,
+                                    }
+                                } else {
+                                    rfd::MessageLevel::Info
+                                };
+
                                 let dialog = rfd::AsyncMessageDialog::new()
                                     .set_title(config.title)
-                                    .set_buttons(rfd::MessageButtons::Ok)
-                                    .set_description(config.description);
+                                    .set_buttons(buttons)
+                                    .set_description(config.description)
+                                    .set_level(level);
 
                                 let result = dialog.show().await;
 

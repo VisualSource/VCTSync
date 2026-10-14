@@ -15,7 +15,7 @@ export const Profiles = () => {
     const { isLoading, isError, error, data } = useQuery({
         queryKey: ["profiles"],
         queryFn: async () => {
-            return [{ name: "Example", id: "test example", mods: [] }] as Profile[];
+            return [{ name: "Example", id: "test example", icon: "leaf", mods: [] }] as Profile[];
         }
     });
 
