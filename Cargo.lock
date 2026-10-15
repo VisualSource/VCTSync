@@ -1990,6 +1990,7 @@ dependencies = [
  "rquickjs",
  "rust-silos",
  "tokio",
+ "url",
 ]
 
 [[package]]

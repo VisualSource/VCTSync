@@ -19,6 +19,7 @@ reqwest = { workspace = true, optional = true }
 rust-silos = { version = "0.3.2", optional = true }
 rand = "0.10.3"
 jiff = { version = "0.2", optional = true }
+url = "2.5"
 
 
 [dev-dependencies]

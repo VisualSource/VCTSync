@@ -10,6 +10,7 @@ mod fetch;
 mod temporal;
 
 mod intl;
+mod url;
 
 mod formatter;
 pub mod iced;
@@ -23,6 +24,7 @@ pub fn init_browser_apis(ctx: &Ctx<'_>) -> Result<()> {
     crypto::init(ctx)?;
     timers::init(ctx)?;
     intl::init(ctx)?;
+    url::init(ctx)?;
 
     #[cfg(feature = "js-temporal")]
     temporal::init(ctx)?;
