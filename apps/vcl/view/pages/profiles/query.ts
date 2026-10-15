@@ -9,8 +9,18 @@ const profilesCollection = collectionOptions("profiles",
         queryKey: ["profiles"],
         queryClient: client.requireDependency<QueryClient>("queryClient"),
         queryFn: async () => {
-
-            return [{ name: "Example", id: "test example", icon: "leaf", mods: [{ name: "BepinEx", author: "BepinEx", enabled: true, icon: "somepath", id: "adeddd" }], dir: "C:\\Repos", launch_args: "" }] as Profile[];
+            return [
+                {
+                    name: "Example",
+                    id: "test_example",
+                    icon: "leaf",
+                    mods: [
+                        { name: "BepinEx", author: "BepinEx", enabled: true, icon: "somepath", id: "adeddd" }
+                    ],
+                    dir: "C:\\Repos",
+                    launch_args: ""
+                }
+            ] as Profile[];
         },
         getKey: item => item.id,
         onUpdate: async ({ transaction, collection }) => {
@@ -70,19 +80,6 @@ export const useProfile = (profileId: string | null) => {
 }
 
 export const useModList = (profileId: string | null) => {
-    const profilesCollection = useProfileCollection();
-
-    const { data, isLoading, isError, persistedError } = useLiveQuery({
-        query: p => p.from({ profile: profilesCollection }).where(({ profile }) => eq(profile.id, profileId)).findOne().select(({ profile }) => profile.mods)
-    });
-
-    return { data, isError, isLoading, error: persistedError }
-}
-
-export const useUpdateProfile = (profileId: string) => {
-    const profilesCollection = useProfileCollection();
-
-    return (callback: Parameters<typeof profilesCollection.update>[2]) => {
-        profilesCollection.update(profileId, callback);
-    }
+    const { data, ...rest } = useProfile(profileId);
+    return { data: data?.mods, ...rest };
 }

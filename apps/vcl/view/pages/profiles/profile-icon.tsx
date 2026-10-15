@@ -15,6 +15,7 @@ const ICON_MAP = {
 }
 
 export type Icon = keyof typeof ICON_MAP;
+export const ICONS = Object.keys(ICON_MAP) as Icon[];
 
 type IconProps = {
     type: Icon
