@@ -32,5 +32,5 @@ declare module "react-iced-native" {
      * back to `from` the contents are hidden and their effects cleaned up, and
      * they become visible again as soon as `active` turns back on.
      */
-    export function AnimActivity(props: Omit<Iced.Elements.Anim, "hideWhenInactive" | "onSettle">): React.ReactNode;
+    export function AnimActivity(props: Omit<Iced.Elements.Anim, "hideWhenInactive">): React.ReactNode;
 }

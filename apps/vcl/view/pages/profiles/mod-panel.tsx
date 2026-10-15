@@ -11,10 +11,11 @@ import { ModsList } from "./mod-panel-mod-list.js";
 
 type Props = {
     onClose: () => void;
+    onDelete: (id: string) => void;
     profileId: string | null,
 }
 
-export const ModPanel = ({ onClose, profileId }: Props) => {
+export const ModPanel = ({ onClose, onDelete, profileId }: Props) => {
     const [tab, setTab] = useState("settings");
 
     const { data, isLoading, isError, error } = useProfile(profileId);
@@ -60,7 +61,7 @@ export const ModPanel = ({ onClose, profileId }: Props) => {
                             </row>
                             <space height={18} />
 
-                            {tab === "settings" ? <SettingsTab onDelete={onClose} data={data!} /> : <ModsList profileId={profileId} />}
+                            {tab === "settings" ? <SettingsTab onDelete={onDelete} data={data!} /> : <ModsList profileId={profileId} />}
                         </col>
                     )
                 }

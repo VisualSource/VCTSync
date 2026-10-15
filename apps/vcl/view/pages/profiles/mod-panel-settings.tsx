@@ -6,7 +6,7 @@ import { IconButton, ICONS } from "./profile-icon.js";
 import { useProfileCollection } from "./query.js";
 import type { Profile } from "./types.js";
 
-export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: () => void }) => {
+export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: (id: string) => void }) => {
     const [name, setName] = useState(data.name);
     const collection = useProfileCollection();
     const [profileDir, setProfileDir] = useState(data.dir);
@@ -106,8 +106,7 @@ export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: () =>
                         kind: "warning"
                     }).then(result => {
                         if (!result) return;
-                        onDelete();
-                        collection.delete(data.id);
+                        onDelete(data.id);
                     }).catch(err => console.error(err));
                 }}>
                     <row alignX="center" alignY="center" spacing={4}>
