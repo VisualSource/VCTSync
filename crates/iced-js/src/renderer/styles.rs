@@ -161,7 +161,7 @@ impl JsProp for ThemeColor {
 }
 
 /// A container style whose colors are resolved against the theme at draw time.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct CustomViewStyle {
     pub background: Option<ThemeColor>,
     pub text_color: Option<ThemeColor>,
@@ -192,6 +192,41 @@ impl CustomViewStyle {
             snap: self.snap,
         }
     }
+
+    /// Reads `prefix`ed keys (e.g. `hoverBackground`), falling back to `base` for any that are missing.
+    fn parse(obj: &rquickjs::Object<'_>, prefix: &str, base: CustomViewStyle) -> CustomViewStyle {
+        let key = |name: &str| {
+            if prefix.is_empty() {
+                return name.to_string();
+            }
+            let mut chars = name.chars();
+            let first = chars
+                .next()
+                .map(|c| c.to_ascii_uppercase())
+                .unwrap_or_default();
+            format!("{prefix}{first}{}", chars.as_str())
+        };
+        let color = |name: &str| obj.get::<_, Prop<ThemeColor>>(key(name)).ok().map(to_inner);
+        let float = |name: &str| obj.get::<_, f32>(key(name)).ok();
+
+        CustomViewStyle {
+            background: color("background").or(base.background),
+            text_color: color("color").or(base.text_color),
+            border_color: color("borderColor").unwrap_or(base.border_color),
+            border_width: float("borderWidth").unwrap_or(base.border_width),
+            border_radius: obj
+                .get::<_, Prop<iced::border::Radius>>(key("borderRadius"))
+                .map(to_inner)
+                .unwrap_or(base.border_radius),
+            shadow_color: color("shadowColor").unwrap_or(base.shadow_color),
+            shadow_blur_radius: float("shadowBlurRadius").unwrap_or(base.shadow_blur_radius),
+            shadow_offset: Vector::new(
+                float("shadowOffsetX").unwrap_or(base.shadow_offset.x),
+                float("shadowOffsetY").unwrap_or(base.shadow_offset.y),
+            ),
+            snap: obj.get::<_, bool>(key("snap")).unwrap_or(base.snap),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -215,49 +250,60 @@ impl JsProp for ViewStyle {
 
         let obj = value.get::<rquickjs::Object<'_>>()?;
 
-        let background = obj
-            .get::<_, Prop<ThemeColor>>("background")
-            .ok()
-            .map(to_inner);
-        let text_color = obj.get::<_, Prop<ThemeColor>>("color").ok().map(to_inner);
+        Ok(ViewStyle::Custom(CustomViewStyle::parse(
+            &obj,
+            "",
+            CustomViewStyle::default(),
+        )))
+    }
+}
 
-        let border_width = obj.get::<_, f32>("borderWidth").ok().unwrap_or_default();
-        let border_color = obj
-            .get::<_, Prop<ThemeColor>>("borderColor")
-            .ok()
-            .map(to_inner)
-            .unwrap_or_default();
-        let border_radius = obj
-            .get::<_, Prop<iced::border::Radius>>("borderRadius")
-            .map(to_inner)
-            .unwrap_or_default();
+/// A button style where `hover*`, `pressed*` and `disabled*` keys override the active style.
+#[derive(Debug, Clone, Copy)]
+pub struct CustomButtonStyle {
+    active: CustomViewStyle,
+    hovered: CustomViewStyle,
+    pressed: CustomViewStyle,
+    disabled: CustomViewStyle,
+}
 
-        let shadow_color = obj
-            .get::<_, Prop<ThemeColor>>("shadowColor")
-            .ok()
-            .map(to_inner)
-            .unwrap_or_default();
-        let shadow_blur_radius = obj
-            .get::<_, f32>("shadowBlurRadius")
-            .ok()
-            .unwrap_or_default();
+impl CustomButtonStyle {
+    pub fn to_style(
+        &self,
+        theme: &Theme,
+        status: iced::widget::button::Status,
+    ) -> iced::widget::button::Style {
+        use iced::widget::button::{Status, Style};
 
-        let offset_y = obj.get::<_, f32>("shadowOffsetY").ok().unwrap_or_default();
-        let offset_x = obj.get::<_, f32>("shadowOffsetX").ok().unwrap_or_default();
+        let style = match status {
+            Status::Active => &self.active,
+            Status::Hovered => &self.hovered,
+            Status::Pressed => &self.pressed,
+            Status::Disabled => &self.disabled,
+        }
+        .to_style(theme);
 
-        let snap = obj.get::<_, bool>("snap").ok().unwrap_or_default();
+        Style {
+            background: style.background,
+            text_color: style.text_color.unwrap_or(theme.palette().text),
+            border: style.border,
+            shadow: style.shadow,
+            snap: style.snap,
+        }
+    }
+}
 
-        Ok(ViewStyle::Custom(CustomViewStyle {
-            background,
-            text_color,
-            border_color,
-            border_width,
-            border_radius,
-            shadow_color,
-            shadow_blur_radius,
-            shadow_offset: Vector::new(offset_x, offset_y),
-            snap,
-        }))
+impl JsProp for CustomButtonStyle {
+    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        let obj = value.get::<rquickjs::Object<'_>>()?;
+        let active = CustomViewStyle::parse(&obj, "", CustomViewStyle::default());
+
+        Ok(CustomButtonStyle {
+            active,
+            hovered: CustomViewStyle::parse(&obj, "hover", active),
+            pressed: CustomViewStyle::parse(&obj, "pressed", active),
+            disabled: CustomViewStyle::parse(&obj, "disabled", active),
+        })
     }
 }
 
@@ -271,7 +317,7 @@ pub enum ButtonStyle {
     Secondary,
     Warning,
     Subtle,
-    Custom,
+    Custom(CustomButtonStyle),
 }
 
 impl JsProp for ButtonStyle {
@@ -294,7 +340,9 @@ impl JsProp for ButtonStyle {
             };
         }
 
-        unimplemented!()
+        let custom = CustomButtonStyle::from_prop(value)?;
+
+        Ok(ButtonStyle::Custom(custom))
     }
 }
 

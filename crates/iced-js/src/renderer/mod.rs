@@ -157,7 +157,9 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                         styles::ButtonStyle::Text => {
                             btn = btn.style(iced::widget::button::text);
                         }
-                        styles::ButtonStyle::Custom => todo!(),
+                        styles::ButtonStyle::Custom(state) => {
+                            btn = btn.style(move |theme, status| state.to_style(theme, status))
+                        }
                         styles::ButtonStyle::Background => {
                             btn = btn.style(iced::widget::button::background);
                         }

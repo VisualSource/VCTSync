@@ -98,7 +98,23 @@ declare namespace Iced {
             "primary" |
             "secondary" |
             "warning" |
-            "subtle" | { background?: string; }
+            "subtle" | ButtonStyle
+        }
+        interface ViewStyle {
+            background?: ThemeColor;
+            color?: ThemeColor;
+            borderWidth?: number | undefined;
+            borderColor?: ThemeColor | undefined;
+            borderRadius?: number | string;
+            shadowColor?: ThemeColor;
+            shadowBlurRadius?: number;
+            shadowOffsetX?: number;
+            shadowOffsetY?: number;
+            snap?: boolean;
+        }
+        /** Unprefixed keys are the active style; `hover*`, `pressed*` and `disabled*` keys override it for that status. */
+        type ButtonStyle = ViewStyle & {
+            [K in keyof ViewStyle as `${"hover" | "pressed" | "disabled"}${Capitalize<K>}`]?: ViewStyle[K];
         }
         type PaletteShade = "base" | "weak" | "strong";
         type BackgroundShade = PaletteShade | "weakest" | "weaker" | "neutral" | "stronger" | "strongest";
@@ -113,18 +129,7 @@ declare namespace Iced {
             width?: Length,
             height?: Length,
 
-            style?: "roundedBox" | {
-                background?: ThemeColor;
-                color?: ThemeColor;
-                borderWidth?: number | undefined;
-                borderColor?: ThemeColor | undefined;
-                borderRadius?: number | string;
-                shadowColor?: ThemeColor;
-                shadowBlurRadius?: number;
-                shadowOffsetX?: number;
-                shadowOffsetY?: number;
-                snap?: boolean;
-            }
+            style?: "roundedBox" | ViewStyle
 
             center?: Length
 
@@ -245,7 +250,7 @@ declare namespace Iced {
             interface Switch {
                 type: "switch",
                 checked?: boolean;
-                onChange?: (ev: { type: "change", value: boolean }) => vold;
+                onChange?: (ev: { type: "change", value: boolean }) => void;
                 label?: string;
                 disabled?: boolean;
                 width?: Length;
