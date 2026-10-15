@@ -19,7 +19,6 @@ export const ModPanel = ({ onClose, profileId }: Props) => {
 
     if (!profileId) return null;
 
-
     return (
         <opaque>
             <view style={{ background: "background" }} height="fill">
@@ -145,7 +144,7 @@ const SettingsTab = ({ data, }: { data: Profile }) => {
                                 if (!result.path) return;
                                 setProfileDir(result.path);
                                 update(draf => {
-                                    draf.dir = profileDir;
+                                    draf.dir = result.path!;
                                 });
                             }).catch((err) => {
                                 console.error(err);
@@ -223,13 +222,13 @@ const ModsList = ({ profileId }: { profileId: string; }) => {
 
                                     <input type="switch" checked={e.enabled} onChange={(ev) => {
                                         update(draf => {
-                                            const mod = draf.mods.findIndex(e => e.id === e.id);
+                                            const mod = draf.mods.findIndex(mod => mod.id === e.id);
                                             if (mod !== -1 && draf.mods[mod]) draf.mods[mod].enabled = ev.value;
                                         })
                                     }} />
                                     <button width={30} style="subtle" height={30} padding={6} onPress={() => {
                                         update(draf => {
-                                            draf.mods = draf.mods.filter(mod => mod.id === e.id);
+                                            draf.mods = draf.mods.filter(mod => mod.id !== e.id);
                                         });
                                     }}>
                                         <svg src={Trash} style="currentColor" />

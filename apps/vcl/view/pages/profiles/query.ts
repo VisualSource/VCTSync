@@ -13,8 +13,21 @@ const profilesCollection = collectionOptions("profiles",
             return [{ name: "Example", id: "test example", icon: "leaf", mods: [{ name: "BepinEx", author: "BepinEx", enabled: true, icon: "somepath", id: "adeddd" }], dir: "C:\\Repos", launch_args: "" }] as Profile[];
         },
         getKey: item => item.id,
-        onUpdate: async ({ transaction }) => {
+        onUpdate: async ({ transaction, collection }) => {
             //TODO: use ipc to notify host about profiles state change
+
+            collection.utils.writeBatch(() => {
+                for (const m of transaction.mutations) collection.utils.writeUpdate(m.modified);
+            });
+
+            return { refetch: false }
+        },
+        onDelete: async ({ transaction, collection }) => {
+            collection.utils.writeBatch(() => {
+                for (const m of transaction.mutations) collection.utils.writeDelete(m.key);
+            });
+
+            return { refetch: false }
         }
     })
 );
