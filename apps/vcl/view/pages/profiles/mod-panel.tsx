@@ -22,6 +22,8 @@ export const ModPanel = ({ onClose, onDelete, profileId }: Props) => {
 
     if (!profileId) return null;
 
+    const enabledMods = data?.mods.reduce((prev, mod) => mod.enabled ? prev + 1 : prev, 0);
+
     return (
         <opaque>
             <view style={{ background: "background" }} height="fill">
@@ -55,7 +57,7 @@ export const ModPanel = ({ onClose, onDelete, profileId }: Props) => {
                                 <button style={tab === "mods" ? "primary" : "secondary"} onPress={() => setTab("mods")}>
                                     <row spacing={4}>
                                         <svg height={15} width={15} src={Boxes} style="currentColor" />
-                                        <text size={14}>Mods</text>
+                                        <text size={14}>{data?.mods.length !== 0 ? `Mods ${enabledMods}/${data?.mods.length}` : "Mods"}</text>
                                     </row>
                                 </button>
                             </row>

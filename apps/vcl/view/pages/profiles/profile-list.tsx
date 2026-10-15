@@ -72,7 +72,7 @@ export const ProfileList = ({ toggleShowDetails }: Props) => {
                                 <ProfileIcon type={profile.icon} />
                                 <col>
                                     <text size={14}>{profile.name}</text>
-                                    <text size={12} color="#9a9ea6">{`Mods ${profile.mods.length}/${profile.mods.length}`}</text>
+                                    <text size={12} color="#9a9ea6">{`Mods ${profile.mods.reduce((prev, mod) => mod.enabled ? prev + 1 : prev, 0)}/${profile.mods.length}`}</text>
                                 </col>
                                 <space width="fill" />
 
