@@ -33,7 +33,7 @@ type ButtonProps = {
     active?: boolean;
 } & IconProps;
 
-export const IconButton = ({ active, onPress, type }: ButtonProps) => {
+export const IconButton = ({ active, onPress, type }: ButtonProps & React.Attributes) => {
     return (
         <button onPress={onPress} width={32} height={32} style="background" padding={0}>
             <view alignX="center" alignY="center" width="fill" height="fill" style={{

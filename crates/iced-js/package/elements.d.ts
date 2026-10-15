@@ -11,7 +11,20 @@ declare namespace Iced {
     type Padding = [number, number] | number;
     type Pixels = number;
     type TooltipPosition = "top" | "bottom" | "left" | "right" | "followCursor";
-
+    type Font = {
+        style?: unknown
+        weight?: "extraLight" |
+        "light" |
+        "thin" |
+        "normal" |
+        "medium" |
+        "semibold" |
+        "bold" |
+        "extraBold" |
+        "black"
+        family?: string;
+        stretch?: "UltraCondensed" | "ExtraCondensed" | "Condensed" | "SemiCondensed" | "Normal" | "SemiExpanded" | "Expanded" | "ExtraExpanded" | "UltraExpanded"
+    } | "default" | "monospace";
     namespace Elements {
         interface Stack extends React.Attributes {
             height?: Length,
@@ -51,10 +64,7 @@ declare namespace Iced {
         interface Column extends Common { }
         interface Row extends Common { }
         interface Text extends React.Attributes {
-
             center?: boolean;
-
-            onLinkClick?: () => void;
             width?: Length;
             height?: Length;
             alignX?: Horizontal;
@@ -68,20 +78,7 @@ declare namespace Iced {
 
             color?: string,
 
-            font?: {
-                style?: unknown
-                weight?: "extraLight" |
-                "light" |
-                "thin" |
-                "normal" |
-                "medium" |
-                "semibold" |
-                "bold" |
-                "extraBold" |
-                "black"
-                family?: string;
-                stretch?: "UltraCondensed" | "ExtraCondensed" | "Condensed" | "SemiCondensed" | "Normal" | "SemiExpanded" | "Expanded" | "ExtraExpanded" | "UltraExpanded"
-            } | "default" | "monospace";
+            font?: Font
         }
         interface Button extends React.Attributes {
             onPress?: () => void;
@@ -247,7 +244,15 @@ declare namespace Iced {
             }
             interface Switch {
                 type: "switch",
-                checked: boolean;
+                checked?: boolean;
+                onChange?: (ev: { type: "change", value: boolean }) => vold;
+                label?: string;
+                disabled?: boolean;
+                width?: Length;
+                spacing?: Pixels;
+                size?: Pixels;
+                font?: Font;
+                textSize?: Pixels;
             }
             interface Radio {
                 type: "radio"

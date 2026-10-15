@@ -1,26 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-
 import Play from "../../assets/icons/play.svg" with { type: "svg" };
 import { AnimActivity, invoke } from "react-iced-native";
 import { useApp } from "../../state.js";
 import { ModPanel } from "./mod-panel.js";
 import { useState } from "react";
-import type { Profile } from "./types.js";
 import { ProfileList } from "./profile-list.js";
+import { useProfileOptions } from "./query.js";
 
 export const Profiles = () => {
     const [detailsId, setDetailsId] = useState<string | null>(null);
     const [showDetails, setShowDetails] = useState(false);
     const activeProfile = useApp(state => state.activeProfile);
     const setActiveProfile = useApp(state => state.setActiveProfile);
-    const { isLoading, isError, error, data } = useQuery({
-        queryKey: ["profiles"],
-        queryFn: async () => {
-            return [{ name: "Example", id: "test example", icon: "leaf", mods: [{ name: "BepinEx", author: "BepinEx", enabled: true, icon: "somepath", id: "adeddd" }], dir: "C:\\Repos", launch_args: "" }] as Profile[];
-        }
-    });
 
-    const options = data?.map(e => ({ label: e.name, value: e.id })) ?? [];
+    const options = useProfileOptions();
 
     return (
         <stack>
@@ -43,7 +35,7 @@ export const Profiles = () => {
                 </row>
                 <hr />
                 <space height={10} />
-                <ProfileList toggleShowDetails={(id: string) => { setDetailsId(id); setShowDetails(true); }} activeProfile={activeProfile} isError={isError} isLoading={isLoading} error={error} data={data} />
+                <ProfileList toggleShowDetails={(id: string) => { setDetailsId(id); setShowDetails(true); }} />
             </col>
 
 

@@ -13,46 +13,49 @@ import Library from "./assets/icons/library.svg" with {type: "svg" };
 import Boxes from "./assets/icons/boxes.svg" with {type: "svg" };
 import ScrollText from "./assets/icons/scroll-text.svg" with {type: "svg" };
 import SettingsSvg from "./assets/icons/settings.svg" with {type: "svg" };
-import { client } from "./client.js";
+import { queryClient, dbClient } from "./client.js";
+import { DbProvider } from "@tanstack/react-db";
 
 const App = () => {
     const [tab, setTab] = useState<string>("logs");
 
     return (
-        <QueryClientProvider client={client}>
-            <row>
-                <col spacing={4}>
-                    <Tooltip tip="Profiles">
-                        <button onPress={() => setTab("profiles")}>
-                            <svg style="currentColor" width={18} height={18} src={Library} />
-                        </button>
-                    </Tooltip>
-                    <Tooltip tip="Builds">
-                        <button onPress={() => setTab("builds")}>
-                            <svg style="currentColor" width={18} height={18} src={Boxes} />
-                        </button>
-                    </Tooltip>
-                    <Tooltip tip="Logs">
-                        <button onPress={() => setTab("logs")}>
-                            <svg style="currentColor" width={18} height={18} src={ScrollText} />
-                        </button>
-                    </Tooltip>
-                    <space height="fill" />
+        <QueryClientProvider client={queryClient}>
+            <DbProvider client={dbClient}>
+                <row>
+                    <col spacing={4}>
+                        <Tooltip tip="Profiles">
+                            <button onPress={() => setTab("profiles")}>
+                                <svg style="currentColor" width={18} height={18} src={Library} />
+                            </button>
+                        </Tooltip>
+                        <Tooltip tip="Builds">
+                            <button onPress={() => setTab("builds")}>
+                                <svg style="currentColor" width={18} height={18} src={Boxes} />
+                            </button>
+                        </Tooltip>
+                        <Tooltip tip="Logs">
+                            <button onPress={() => setTab("logs")}>
+                                <svg style="currentColor" width={18} height={18} src={ScrollText} />
+                            </button>
+                        </Tooltip>
+                        <space height="fill" />
 
-                    <Tooltip tip="Settings">
-                        <button onPress={() => setTab("settings")}>
-                            <svg style="currentColor" width={18} height={18} src={SettingsSvg} />
-                        </button>
-                    </Tooltip>
+                        <Tooltip tip="Settings">
+                            <button onPress={() => setTab("settings")}>
+                                <svg style="currentColor" width={18} height={18} src={SettingsSvg} />
+                            </button>
+                        </Tooltip>
 
-                    <space height={4} />
-                </col>
-                <vr />
-                <space width={4} />
-                <view>
-                    <Router tab={tab} />
-                </view>
-            </row>
+                        <space height={4} />
+                    </col>
+                    <vr />
+                    <space width={4} />
+                    <view>
+                        <Router tab={tab} />
+                    </view>
+                </row>
+            </DbProvider>
         </QueryClientProvider>
     );
 }

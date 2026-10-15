@@ -368,14 +368,39 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 unimplemented!()
             }
 
-            Tag::Switch { value, on_change } => {
+            Tag::Switch {
+                disabled,
+                checked,
+                on_change,
+                spacing,
+                label,
+                size,
+                text_size,
+                width,
+                font,
+            } => {
                 debug_assert_eq!(children.len(), 0);
-                let mut node = iced::widget::toggler(*value);
+                let mut node = iced::widget::toggler(*checked);
 
                 if let Some(id) = on_change {
-                    node = node
-                        .on_toggle(|value| Event::Callback(*id, Payload::BoolInputChange(value)))
+                    let callback = if *disabled {
+                        None
+                    } else {
+                        Some(|value: bool| Event::Callback(*id, Payload::BoolInputChange(value)))
+                    };
+
+                    node = node.on_toggle_maybe(callback);
                 }
+
+                if let Some(label) = label {
+                    node = node.label(label);
+                }
+
+                apply_opt!(node, spacing, spacing);
+                apply_opt!(node, width, width);
+                apply_opt!(node, size, size);
+                apply_opt!(node, text_size, text_size);
+                apply_opt!(node, font, font);
 
                 node.into()
             }

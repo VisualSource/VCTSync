@@ -1,18 +1,17 @@
 import LayersPlus from "../../assets/icons/layers-plus.svg" with { type: "svg" };
 import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
 import { ProfileIcon } from "./profile-icon.js";
-import type { Profile } from "./types.js";
+import { useListProfiles } from "./query.js";
+import { useApp } from "../../state.js";
 
 type Props = {
     toggleShowDetails: (id: string) => void,
-    activeProfile?: string | null,
-    isLoading: boolean;
-    isError: boolean;
-    error: Error | null,
-    data: Profile[] | undefined
 }
 
-export const ProfileList = ({ isLoading, isError, error, data, activeProfile, toggleShowDetails }: Props) => {
+export const ProfileList = ({ toggleShowDetails }: Props) => {
+    const activeProfile = useApp(state => state.activeProfile);
+    const { data, error, isError, isLoading } = useListProfiles();
+
     if (isLoading) return (
         <view height="fill" center="fill" width="fill">
             <col alignX="center" spacing={6}>
@@ -25,7 +24,7 @@ export const ProfileList = ({ isLoading, isError, error, data, activeProfile, to
     if (isError) return (
         <view height="fill" center="fill" width="fill">
             <col alignX="center" spacing={6}>
-                <text>{error?.message ?? String(error)}</text>
+                <text>{(error as Error)?.message ?? String(error)}</text>
             </col>
         </view>
     );

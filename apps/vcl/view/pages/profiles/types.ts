@@ -15,5 +15,7 @@ export type Profile = {
     name: string;
     id: string;
     icon: Icon,
-    mods: Mod[]
+    mods: Mod[],
+    created_at: string;
+    updated_at: string;
 }

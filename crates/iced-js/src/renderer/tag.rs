@@ -133,8 +133,15 @@ pub enum Tag {
         label: Option<String>,
     },
     Switch {
-        value: bool,
+        checked: bool,
         on_change: Option<CallbackId>,
+        label: Option<String>,
+        disabled: bool,
+        width: Option<Length>,
+        spacing: Option<Pixels>,
+        font: Option<Font>,
+        text_size: Option<Pixels>,
+        size: Option<Pixels>,
     },
     Textarea {
         state_id: String,
@@ -410,13 +417,11 @@ impl<'js> FromJs<'js> for Tag {
                     position: position.unwrap_or_default(),
                 })
             }
-
             "float" => {
                 map_props!("float", props, (scale, "scale", f32));
 
                 Ok(Tag::Float { scale })
             }
-
             "anim" => {
                 map_props!(
                     "anim",
@@ -440,11 +445,9 @@ impl<'js> FromJs<'js> for Tag {
                     on_settle,
                 })
             }
-
             "canvas" => {
                 unimplemented!()
             }
-
             "textarea" => {
                 let state_id = obj.get::<_, String>("_stateId")?;
 
@@ -453,7 +456,6 @@ impl<'js> FromJs<'js> for Tag {
                     on_change: None,
                 })
             }
-
             "input" => {
                 let input_type = props.get::<_, String>("type")?;
 
@@ -484,11 +486,31 @@ impl<'js> FromJs<'js> for Tag {
                         })
                     }
                     "switch" => {
-                        let value = props.get::<_, bool>("checked")?;
+                        map_props!(
+                            "switch",
+                            props,
+                            ignore["type"],
+                            (on_change, "onChange", CallbackId),
+                            (label, "label", String),
+                            (disabled, "disabled", bool),
+                            (width, "width", Length),
+                            (spacing, "spacing", Pixels),
+                            (size, "size", Pixels),
+                            (font, "font", Font),
+                            (text_size, "textSize", Pixels),
+                            (checked, "checked", bool)
+                        );
 
                         Ok(Tag::Switch {
-                            value,
-                            on_change: None,
+                            checked: checked.unwrap_or_default(),
+                            on_change,
+                            label,
+                            disabled: disabled.unwrap_or_default(),
+                            width,
+                            spacing,
+                            size,
+                            font,
+                            text_size,
                         })
                     }
                     "checkbox" => {
@@ -512,7 +534,6 @@ impl<'js> FromJs<'js> for Tag {
                     )),
                 }
             }
-
             "select" => {
                 map_props!(
                     "select",
@@ -532,7 +553,6 @@ impl<'js> FromJs<'js> for Tag {
                     options,
                 })
             }
-
             "stack" => {
                 map_props!(
                     "stack",
@@ -548,7 +568,6 @@ impl<'js> FromJs<'js> for Tag {
                     clip,
                 })
             }
-
             "opaque" => Ok(Tag::Opaque),
 
             #[cfg(feature = "code-element")]
