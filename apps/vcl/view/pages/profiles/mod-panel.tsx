@@ -13,10 +13,22 @@ type Props = {
     onClose: () => void;
     onDelete: (id: string) => void;
     profileId: string | null,
+    toggleAddMod: () => void;
 }
 
-export const ModPanel = ({ onClose, onDelete, profileId }: Props) => {
-    const [tab, setTab] = useState("settings");
+const btnTabStyle: Iced.Elements.ButtonStyle = {
+    color: "primary.base.text",
+    disabledOpacity: 0.5
+}
+
+const btnTabInactiveStyle: Iced.Elements.ButtonStyle = {
+    color: "primary.base.text",
+    opacity: 0.5
+}
+
+
+export const ModPanel = ({ toggleAddMod, onClose, onDelete, profileId }: Props) => {
+    const [tab, setTab] = useState("mods");
 
     const { data, isLoading, isError, error } = useProfile(profileId);
 
@@ -36,34 +48,53 @@ export const ModPanel = ({ onClose, onDelete, profileId }: Props) => {
                         </col>
                     ) : (
                         <col padding={4}>
-                            <row alignX="center" alignY="center">
+                            <row alignX="center" alignY="center" >
                                 <row spacing={6} alignX="center" alignY="center">
                                     <ProfileIcon type={data?.icon ?? "box"} />
                                     <text size={14} font={{ weight: "semibold" }}>{data!?.name}</text>
                                 </row>
                                 <space width="fill" />
                                 <button width="shrink" style="subtle" onPress={onClose}>
-                                    <svg height={18} width={18} src={XIcon} style="currentColor" />
+                                    <svg height={18} width={18} src={XIcon} color="background.text" />
                                 </button>
                             </row>
                             <space height={8} />
-                            <row spacing={4}>
-                                <button style={tab === "settings" ? "primary" : "secondary"} onPress={() => setTab("settings")}>
-                                    <row spacing={4}>
-                                        <svg height={15} width={15} src={SlidersHorizontal} style="currentColor" />
-                                        <text size={14}>Profile Settings</text>
-                                    </row>
-                                </button>
-                                <button style={tab === "mods" ? "primary" : "secondary"} onPress={() => setTab("mods")}>
-                                    <row spacing={4}>
-                                        <svg height={15} width={15} src={Boxes} style="currentColor" />
-                                        <text size={14}>{data?.mods.length !== 0 ? `Mods ${enabledMods}/${data?.mods.length}` : "Mods"}</text>
-                                    </row>
-                                </button>
+                            <row>
+                                <col width="shrink">
+                                    <button style={tab !== "mods" ? btnTabInactiveStyle : btnTabStyle} onPress={() => setTab("mods")}>
+                                        <row spacing={4}>
+                                            <svg height={15} width={15} src={Boxes} color="background.text" opacity={tab !== "mods" ? 0.5 : 1} />
+                                            <text size={14}>{data?.mods.length !== 0 ? `Mods ${enabledMods}/${data?.mods.length}` : "Mods"}</text>
+                                        </row>
+                                    </button>
+                                    {
+                                        tab === "mods" ? (
+                                            <view width="fill" height={2} style={{ background: "primary" }}>
+                                                <space />
+                                            </view>
+                                        ) : null
+                                    }
+                                </col>
+                                <col width="shrink">
+                                    <button style={tab !== "settings" ? btnTabInactiveStyle : btnTabStyle} onPress={() => setTab("settings")}>
+                                        <row spacing={4}>
+                                            <svg height={15} width={15} src={SlidersHorizontal} color="background.text" opacity={tab !== "settings" ? 0.5 : 1} />
+                                            <text size={14}>Settings</text>
+                                        </row>
+                                    </button>
+                                    {
+                                        tab === "settings" ? (
+                                            <view width="fill" height={2} style={{ background: "primary" }}>
+                                                <space />
+                                            </view>
+                                        ) : null
+                                    }
+                                </col>
                             </row>
+                            <hr />
                             <space height={18} />
 
-                            {tab === "settings" ? <SettingsTab onDelete={onDelete} data={data!} /> : <ModsList profileId={profileId} />}
+                            {tab === "settings" ? <SettingsTab onDelete={onDelete} data={data!} /> : <ModsList toggleAddMod={toggleAddMod} profileId={profileId} />}
                         </col>
                     )
                 }

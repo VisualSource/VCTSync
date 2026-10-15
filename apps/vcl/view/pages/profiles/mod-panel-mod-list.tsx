@@ -1,30 +1,48 @@
 import { useState } from "react";
 import { useModList, useProfileCollection } from "./query.js";
 import Trash from "@icon/trash.svg" with {type: "svg" };
+import PackagePlus from "@icon/package-plus.svg" with {type: "svg"};
+import TriangleAlert from "@icon/triangle-alert.svg" with { type: "svg" };
 
-export const ModsList = ({ profileId }: { profileId: string; }) => {
+export const ModsList = ({ profileId, toggleAddMod }: { profileId: string; toggleAddMod: () => void }) => {
     const [query, setQuery] = useState("");
-    const { data: mods } = useModList(profileId);
+    const { data: mods } = useModList(profileId, query);
     const collection = useProfileCollection();
 
     if (!mods) return (<col />);
 
     return (
         <>
-            <row>
-                <input type="text" value={query} onChange={(ev) => setQuery(ev.value)} placeholder="Search mods" />
+            <row spacing={4}>
+                <input
+                    size={14}
+                    padding={[8, 8]}
+                    type="text"
+                    value={query}
+                    onChange={(ev) => setQuery(ev.value)}
+                    placeholder="Search mods"
+                />
+                <button width="shrink" onPress={toggleAddMod}>
+                    <row alignX="center" alignY="center" spacing={2}>
+                        <svg height={16} width={16} color="background.text" src={PackagePlus} />
+                        <text size={16}>Add Mod</text>
+                    </row>
+                </button>
             </row>
 
             <space height={10} />
 
             {mods.length === 0 ? (
                 <col height="fill" alignX="center" alignY="center">
-                    <view>
-                        <text>No mods</text>
+                    <view center="fill">
+                        <col spacing={4} alignX="center">
+                            <svg height={48} width={48} color="background.text" src={TriangleAlert} />
+                            <text>{query.length ? `No mods with name of '${query}'` : "No mods"}</text>
+                        </col>
                     </view>
                 </col>
             ) : (
-                <scroll>
+                <scroll spacing={4}>
                     <col spacing={6}>
                         {mods.map(e => (
                             <view key={e.id} style={{ background: "background.weaker", borderRadius: 4 }}>
@@ -33,8 +51,8 @@ export const ModsList = ({ profileId }: { profileId: string; }) => {
                                         <svg src={Trash} />
                                     </view>
                                     <col>
-                                        <text size={14}>{e.name}</text>
-                                        <text color="#9a9ea6" size={12}>{e.author}</text>
+                                        <text color="primary.base.text" font={{ weight: "semibold" }} size={14}>{e.name}</text>
+                                        <text size={12}>{`${e.author} · ${e.version}`}</text>
                                     </col>
 
                                     <space width="fill" />
@@ -50,7 +68,7 @@ export const ModsList = ({ profileId }: { profileId: string; }) => {
                                             draft.mods = draft.mods.filter(mod => mod.id !== e.id);
                                         });
                                     }}>
-                                        <svg src={Trash} style="currentColor" />
+                                        <svg src={Trash} color="background.text" />
                                     </button>
                                 </row>
                             </view>

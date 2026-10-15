@@ -8,7 +8,7 @@ declare namespace Iced {
     type Length = "fill" | "shrink" | number | `${number}%`;
     type Horizontal = "center" | "left" | "right";
     type Vertical = "center" | "bottom" | "top";
-    type Padding = [number, number] | number;
+    type Padding = [number, number, number, number] | [number, number, number] | [number, number] | number;
     type Pixels = number;
     type TooltipPosition = "top" | "bottom" | "left" | "right" | "followCursor";
     type Font = {
@@ -57,7 +57,9 @@ declare namespace Iced {
         interface Svg extends React.Attributes {
             width?: Pixels;
             height?: Pixels;
-            style?: "currentColor" | { background?: string; }
+            color?: ThemeColor;
+            /** 0–1. */
+            opacity?: number;
             src: SvgHandle;
         }
 
@@ -76,7 +78,7 @@ declare namespace Iced {
             children: string;
             size?: Pixels;
 
-            color?: string,
+            color?: ThemeColor,
 
             font?: Font
         }
@@ -103,6 +105,8 @@ declare namespace Iced {
         interface ViewStyle {
             background?: ThemeColor;
             color?: ThemeColor;
+            /** Multiplies the alpha of the style's colors (background, text, border, shadow), 0–1. Unlike CSS, children with their own colors are not faded. */
+            opacity?: number;
             borderWidth?: number | undefined;
             borderColor?: ThemeColor | undefined;
             borderRadius?: number | string;

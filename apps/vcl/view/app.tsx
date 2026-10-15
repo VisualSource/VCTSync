@@ -26,24 +26,24 @@ const App = () => {
                     <col spacing={4}>
                         <Tooltip tip="Profiles">
                             <button onPress={() => setTab("profiles")}>
-                                <svg style="currentColor" width={18} height={18} src={Library} />
+                                <svg color="background.text" width={18} height={18} src={Library} />
                             </button>
                         </Tooltip>
                         <Tooltip tip="Builds">
                             <button onPress={() => setTab("builds")}>
-                                <svg style="currentColor" width={18} height={18} src={Boxes} />
+                                <svg color="background.text" width={18} height={18} src={Boxes} />
                             </button>
                         </Tooltip>
                         <Tooltip tip="Logs">
                             <button onPress={() => setTab("logs")}>
-                                <svg style="currentColor" width={18} height={18} src={ScrollText} />
+                                <svg color="background.text" width={18} height={18} src={ScrollText} />
                             </button>
                         </Tooltip>
                         <space height="fill" />
 
                         <Tooltip tip="Settings">
                             <button onPress={() => setTab("settings")}>
-                                <svg style="currentColor" width={18} height={18} src={SettingsSvg} />
+                                <svg color="background.text" width={18} height={18} src={SettingsSvg} />
                             </button>
                         </Tooltip>
 

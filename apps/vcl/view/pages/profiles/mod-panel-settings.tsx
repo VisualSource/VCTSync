@@ -6,6 +6,12 @@ import { IconButton, ICONS } from "./profile-icon.js";
 import { useProfileCollection } from "./query.js";
 import type { Profile } from "./types.js";
 
+
+const format = new Intl.DateTimeFormat("en", {
+    dateStyle: 'full',
+    timeStyle: 'short'
+});
+
 export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: (id: string) => void }) => {
     const [name, setName] = useState(data.name);
     const collection = useProfileCollection();
@@ -88,13 +94,17 @@ export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: (id: 
                                 console.error(err);
                             });
                         }}>
-                            <svg style="currentColor" src={FolderInput} />
+                            <svg color="background.text" src={FolderInput} />
                         </button>
                     </row>
                 </col>
             </col>
 
             <space height="fill" />
+            <col>
+                <text size={13}>{`Created: ${format.format(Temporal.PlainDateTime.from(data.created_at))}`}</text>
+                <text size={13}>{`Updated: ${format.format(Temporal.PlainDateTime.from(data.updated_at))}`}</text>
+            </col>
             <hr />
             <space height={6} />
             <row padding={4} alignX="center" alignY="center">
@@ -110,7 +120,7 @@ export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: (id: 
                     }).catch(err => console.error(err));
                 }}>
                     <row alignX="center" alignY="center" spacing={4}>
-                        <svg height={15} width={15} style="currentColor" src={Trash} />
+                        <svg height={15} width={15} color="background.text" src={Trash} />
                         <text size={14}>Delete profile</text>
                     </row>
                 </button>

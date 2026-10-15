@@ -222,7 +222,11 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 apply_opt!(node, align_y, align_y);
                 apply_opt!(node, shaping, shaping);
                 apply_opt!(node, line_height, line_height);
-                node = node.color_maybe(*color);
+                if let Some(color) = *color {
+                    node = node.style(move |theme| iced::widget::text::Style {
+                        color: Some(color.resolve(theme)),
+                    });
+                }
 
                 if center.is_some_and(|x| x) {
                     node = node.center();
@@ -524,39 +528,26 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 src,
                 width,
                 height,
-                style,
+                color,
+                opacity,
             } => {
                 debug_assert_eq!(children.len(), 0);
 
                 let mut node = iced::widget::svg(src.clone());
                 apply_opt!(node, width, width);
                 apply_opt!(node, height, height);
+                apply_opt!(node, opacity, opacity);
 
-                if let Some(style) = style {
-                    match style {
-                        styles::SvgStyle::CurrentColor => {
-                            node = node.style(style_svg);
-                        }
-                        styles::SvgStyle::Custom => todo!(),
-                    }
+                if let Some(color) = *color {
+                    node = node.style(move |theme, _status| iced::widget::svg::Style {
+                        color: Some(color.resolve(theme)),
+                    });
                 }
 
                 node.into()
             }
         },
         Node::Text(txt) => iced::widget::text(&**txt).into(),
-    }
-}
-
-#[cfg(feature = "svg-element")]
-pub fn style_svg(
-    theme: &iced::Theme,
-    _status: iced::widget::svg::Status,
-) -> iced::widget::svg::Style {
-    let pal = theme.palette();
-
-    iced::widget::svg::Style {
-        color: Some(pal.text),
     }
 }
 

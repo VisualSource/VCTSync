@@ -165,6 +165,8 @@ impl JsProp for ThemeColor {
 pub struct CustomViewStyle {
     pub background: Option<ThemeColor>,
     pub text_color: Option<ThemeColor>,
+    /// Multiplies the alpha of every color in the style; `None` leaves them as is.
+    pub opacity: Option<f32>,
     pub border_color: ThemeColor,
     pub border_width: f32,
     pub border_radius: iced::border::Radius,
@@ -177,20 +179,24 @@ pub struct CustomViewStyle {
 impl CustomViewStyle {
     pub fn to_style(&self, theme: &Theme) -> iced::widget::container::Style {
         iced::widget::container::Style {
-            background: self.background.map(|c| c.resolve(theme).into()),
-            text_color: self.text_color.map(|c| c.resolve(theme)),
+            background: self.background.map(|c| self.fade(c.resolve(theme)).into()),
+            text_color: self.text_color.map(|c| self.fade(c.resolve(theme))),
             border: Border {
-                color: self.border_color.resolve(theme),
+                color: self.fade(self.border_color.resolve(theme)),
                 width: self.border_width,
                 radius: self.border_radius,
             },
             shadow: Shadow {
-                color: self.shadow_color.resolve(theme),
+                color: self.fade(self.shadow_color.resolve(theme)),
                 blur_radius: self.shadow_blur_radius,
                 offset: self.shadow_offset,
             },
             snap: self.snap,
         }
+    }
+
+    fn fade(&self, color: Color) -> Color {
+        color.scale_alpha(self.opacity.unwrap_or(1.0))
     }
 
     /// Reads `prefix`ed keys (e.g. `hoverBackground`), falling back to `base` for any that are missing.
@@ -212,6 +218,7 @@ impl CustomViewStyle {
         CustomViewStyle {
             background: color("background").or(base.background),
             text_color: color("color").or(base.text_color),
+            opacity: float("opacity").or(base.opacity),
             border_color: color("borderColor").unwrap_or(base.border_color),
             border_width: float("borderWidth").unwrap_or(base.border_width),
             border_radius: obj
@@ -275,17 +282,19 @@ impl CustomButtonStyle {
     ) -> iced::widget::button::Style {
         use iced::widget::button::{Status, Style};
 
-        let style = match status {
+        let view = match status {
             Status::Active => &self.active,
             Status::Hovered => &self.hovered,
             Status::Pressed => &self.pressed,
             Status::Disabled => &self.disabled,
-        }
-        .to_style(theme);
+        };
+        let style = view.to_style(theme);
 
         Style {
             background: style.background,
-            text_color: style.text_color.unwrap_or(theme.palette().text),
+            text_color: style
+                .text_color
+                .unwrap_or_else(|| view.fade(theme.palette().text)),
             border: style.border,
             shadow: style.shadow,
             snap: style.snap,
@@ -343,33 +352,5 @@ impl JsProp for ButtonStyle {
         let custom = CustomButtonStyle::from_prop(value)?;
 
         Ok(ButtonStyle::Custom(custom))
-    }
-}
-
-#[cfg(feature = "svg-element")]
-#[derive(Debug)]
-pub enum SvgStyle {
-    CurrentColor,
-    Custom,
-}
-
-impl JsProp for SvgStyle {
-    fn from_prop(value: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
-        if let Ok(v) = value.get::<String>() {
-            return match v.as_str() {
-                "currentColor" => Ok(SvgStyle::CurrentColor),
-                _ => Err(rquickjs::Error::new_from_js_message(
-                    "string",
-                    "SvgStyle",
-                    "unknown preset for svg style",
-                )),
-            };
-        }
-
-        Err(rquickjs::Error::new_from_js_message(
-            value.type_name(),
-            "SvgStyle",
-            "unsupported type",
-        ))
     }
 }

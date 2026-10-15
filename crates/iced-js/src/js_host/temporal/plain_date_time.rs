@@ -1,4 +1,4 @@
-use rquickjs::{Class, Ctx, JsLifetime, Object, class::Trace, function::Opt};
+use rquickjs::{Class, Ctx, JsLifetime, Object, atom::PredefinedAtom, class::Trace, function::Opt};
 
 use super::duration::Duration;
 
@@ -6,7 +6,7 @@ use super::duration::Duration;
 #[rquickjs::class]
 pub struct PlainDateTime {
     #[qjs(skip_trace)]
-    data: jiff::civil::DateTime,
+    pub(crate) data: jiff::civil::DateTime,
 }
 
 impl PlainDateTime {
@@ -151,6 +151,11 @@ impl<'js> PlainDateTime {
         }
 
         unimplemented!()
+    }
+
+    #[qjs(rename = PredefinedAtom::ToString)]
+    fn js_to_string(&self) -> String {
+        self.data.to_string()
     }
 }
 

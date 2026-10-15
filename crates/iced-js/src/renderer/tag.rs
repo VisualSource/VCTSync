@@ -1,8 +1,8 @@
 use super::props::{Keyframe, Prop, SelectOption};
-use super::styles::{ButtonStyle, ViewStyle};
+use super::styles::{ButtonStyle, ThemeColor, ViewStyle};
 
 use iced::{
-    Color, Font, Length, Padding, Pixels,
+    Font, Length, Padding, Pixels,
     alignment::{Horizontal, Vertical},
     animation::Easing,
     widget::{
@@ -74,7 +74,7 @@ pub enum Tag {
         align_x: Option<Horizontal>,
         align_y: Option<Vertical>,
         wrapping: Option<bool>,
-        color: Option<Color>,
+        color: Option<ThemeColor>,
         center: Option<bool>,
         shaping: Option<Shaping>,
     },
@@ -164,7 +164,8 @@ pub enum Tag {
         src: iced::widget::svg::Handle,
         width: Option<Length>,
         height: Option<Length>,
-        style: Option<super::styles::SvgStyle>,
+        color: Option<super::styles::ThemeColor>,
+        opacity: Option<f32>,
     },
 }
 
@@ -331,7 +332,7 @@ impl<'js> FromJs<'js> for Tag {
                     (align_y, "alignY", Vertical),
                     (wrapping, "wrapping", bool),
                     (font, "font", Font),
-                    (color, "color", Color),
+                    (color, "color", ThemeColor),
                     (center, "center", bool)
                 );
 
@@ -590,7 +591,7 @@ impl<'js> FromJs<'js> for Tag {
             }
             #[cfg(feature = "svg-element")]
             "svg" => {
-                use super::styles::SvgStyle;
+                use super::styles::ThemeColor;
                 let handle =
                     props.get::<_, rquickjs::Class<'js, crate::loaders::svg::SvgHandle>>("src")?;
                 let src = handle.borrow().handle.clone();
@@ -601,14 +602,16 @@ impl<'js> FromJs<'js> for Tag {
                     ignore["src"],
                     (width, "width", Length),
                     (height, "height", Length),
-                    (style, "style", SvgStyle)
+                    (color, "color", ThemeColor),
+                    (opacity, "opacity", f32)
                 );
 
                 Ok(Tag::Svg {
                     src,
                     width,
                     height,
-                    style,
+                    color,
+                    opacity,
                 })
             }
 

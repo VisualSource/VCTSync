@@ -4,7 +4,7 @@ use crate::js_host::temporal::{now::Now, plain_date_time::PlainDateTime};
 
 mod duration;
 mod now;
-mod plain_date_time;
+pub(crate) mod plain_date_time;
 
 pub fn init(ctx: &rquickjs::Ctx<'_>) -> rquickjs::Result<()> {
     let temporal = Object::new_proto(ctx.clone(), None)?;

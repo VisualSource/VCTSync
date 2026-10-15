@@ -6,6 +6,7 @@ export type Mod = {
     icon: string;
     enabled: boolean;
     author: string;
+    version: string;
 }
 
 

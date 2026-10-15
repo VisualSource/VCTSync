@@ -5,8 +5,12 @@ import { ModPanel } from "./mod-panel.js";
 import { useRef, useState } from "react";
 import { ProfileList } from "./profile-list.js";
 import { useProfileCollection, useProfileOptions } from "./query.js";
+import { AddModDialog } from "./add-mod-dialog.js";
+
+
 
 export const Profiles = () => {
+    const [showAddMod, setShowAddMod] = useState(false);
     const [detailsId, setDetailsId] = useState<string | null>(null);
     const [showDetails, setShowDetails] = useState(false);
     const activeProfile = useApp(state => state.activeProfile);
@@ -15,6 +19,8 @@ export const Profiles = () => {
     const options = useProfileOptions();
     const collection = useProfileCollection();
     const pendingDelete = useRef<string | null>(null);
+
+    const toggleAddMod = () => setShowAddMod(e => !e);
 
     return (
         <stack>
@@ -29,8 +35,8 @@ export const Profiles = () => {
                             console.error(err);
                         })
                     }}>
-                        <row alignX="center" alignY="center">
-                            <svg height={15} width={15} style="currentColor" src={Play} />
+                        <row alignX="center" alignY="center" spacing={2}>
+                            <svg height={15} width={15} color="background.text" src={Play} />
                             <text>Launch</text>
                         </row>
                     </button>
@@ -49,10 +55,14 @@ export const Profiles = () => {
                 setDetailsId(null);
             }}>
                 <ModPanel
+                    toggleAddMod={toggleAddMod}
                     onClose={() => setShowDetails(false)}
                     onDelete={(id) => { pendingDelete.current = id; setShowDetails(false); }}
                     profileId={detailsId} />
             </AnimActivity>
+
+
+            {showAddMod ? (<AddModDialog profileId={detailsId} toggleAddMod={toggleAddMod} />) : null}
         </stack>
     )
 }
