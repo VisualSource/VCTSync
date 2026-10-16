@@ -1,22 +1,24 @@
 import { useState } from "react";
 import FolderInput from "@icon/folder-input.svg" with {type: "svg"};
 import Trash from "@icon/trash.svg" with {type: "svg" };
-import { open, confirm } from "../../platform/dialog.js";
-import { IconButton, ICONS } from "./profile-icon.js";
-import { useProfileCollection } from "./query.js";
-import type { Profile } from "./types.js";
-
+import { open, confirm } from "../../../platform/dialog.js";
+import { IconButton, ICONS } from "../profile-icon.js";
+import { useProfileCollection } from "../query.js";
+import type { Profile } from "../types.js";
+import { useProfileState } from "../state.js";
 
 const format = new Intl.DateTimeFormat("en", {
     dateStyle: 'full',
     timeStyle: 'short'
 });
 
-export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: (id: string) => void }) => {
+export const SettingsTab = ({ data }: { data: Profile }) => {
     const [name, setName] = useState(data.name);
     const collection = useProfileCollection();
     const [profileDir, setProfileDir] = useState(data.dir);
     const [launchArgs, setLaunchArgs] = useState(data.launch_args);
+
+    const toggleDetails = useProfileState(state => state.toggleDetails);
 
     return (
         <>
@@ -116,7 +118,10 @@ export const SettingsTab = ({ data, onDelete }: { data: Profile, onDelete: (id: 
                         kind: "warning"
                     }).then(result => {
                         if (!result) return;
-                        onDelete(data.id);
+                        toggleDetails({
+                            state: false,
+                            pendingId: data.id
+                        });
                     }).catch(err => console.error(err));
                 }}>
                     <row alignX="center" alignY="center" spacing={4}>

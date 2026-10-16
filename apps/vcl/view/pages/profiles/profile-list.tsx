@@ -1,21 +1,19 @@
-import LayersPlus from "../../assets/icons/layers-plus.svg" with { type: "svg" };
-import Settings from "../../assets/icons/settings.svg" with { type: "svg" };
+import LayersPlus from "@icon/layers-plus.svg" with { type: "svg" };
+import Settings from "@icon/settings.svg" with { type: "svg" };
 import { ICONS, ProfileIcon } from "./profile-icon.js";
 import { useListProfiles, useProfileCollection } from "./query.js";
 import { useApp } from "../../state.js";
 import { nanoid } from "nanoid";
+import { useProfileState } from "./state.js";
 
-type Props = {
-    toggleShowDetails: (id: string) => void
-}
-
-export const ProfileList = ({ toggleShowDetails }: Props) => {
+export const ProfileList = () => {
     const activeProfile = useApp(state => state.activeProfile);
     const { data, error, isError, isLoading } = useListProfiles();
     const collection = useProfileCollection();
 
-    const createProfile = () => {
+    const openDetails = useProfileState(state => state.openDetails);
 
+    const createProfile = () => {
         const time = Temporal.Now.plainDateTimeISO().toString();
         const id = nanoid();
         collection.insert({
@@ -105,7 +103,7 @@ export const ProfileList = ({ toggleShowDetails }: Props) => {
                                     </view>
                                 ) : null}
 
-                                <button height={36} width={36} style="subtle" onPress={() => toggleShowDetails(profile.id)}>
+                                <button height={36} width={36} style="subtle" onPress={() => openDetails(profile.id)}>
                                     <svg height={30} width={30} color="background.text" src={Settings} />
                                 </button>
                             </row>

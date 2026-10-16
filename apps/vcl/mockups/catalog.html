@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VCL Catalog Mockup</title>
+<style>
+/* Catalog as pushed screens (no modal) inside a 480x800 window: profile panel › catalog › details / zip preview.
+   Each screen slides in from the right over the previous one (AnimActivity x: 100% -> 0). Dark-only, same tokens as profiles.html. */
+:root {
+  color-scheme: dark;
+  --bg: #202225;
+  --surface: #2a2c30;
+  --surface-2: #33363b;
+  --line: #3b3e44;
+  --fg: #e6e6e6;
+  --muted: #9a9ea6;
+  --primary: #5865f2;
+  --primary-fg: #ffffff;
+  --success: #12664f;
+  --danger: #c3423f;
+  --warn: #b8892c;
+  --tag: #d9a441;
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: #141517; color: var(--fg); font-family: var(--font); font-size: 14px;
+  padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; align-items: center;
+}
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; color: var(--muted); font-size: 12px; max-width: 480px; width: 100%; }
+.toolbar strong { color: var(--fg); font-size: 13px; }
+.toolbar label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
+/* target window: 480 x 800 */
+.window {
+  width: 480px; max-width: 100%; height: 800px; max-height: calc(100vh - 110px); min-height: 520px; flex: none;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  display: flex; overflow: hidden; position: relative;
+}
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.sm { width: 15px; height: 15px; }
+svg.xs { width: 12px; height: 12px; }
+
+.rail { display: flex; flex-direction: column; gap: 4px; padding: 4px; border-right: 1px solid var(--line); }
+.rail .spacer { flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--primary); color: var(--primary-fg); border: 0; border-radius: 2px;
+  padding: 5px 10px; font: inherit; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { filter: brightness(1.12); }
+.btn:disabled { opacity: .5; cursor: default; filter: none; }
+.btn:focus-visible, .select:focus-visible, input:focus-visible, .pkg:focus-visible { outline: 2px solid var(--fg); outline-offset: 1px; }
+.btn.ghost { background: transparent; color: var(--fg); }
+.btn.ghost:hover { background: var(--surface-2); filter: none; }
+.btn.secondary { background: var(--surface-2); color: var(--fg); }
+.btn.success { background: var(--success); }
+.btn.icon { padding: 6px; }
+.btn.wide { flex: 1; padding: 8px 10px; }
+.rail .btn { padding: 6px; }
+.rail .btn.on { outline: 1px solid var(--muted); }
+.select { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 2px; padding: 5px 8px; font: inherit; min-width: 0; }
+input[type=search] {
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 2px; padding: 6px 8px; font: inherit; min-width: 0; box-sizing: border-box;
+}
+hr { border: 0; border-top: 1px solid var(--line); margin: 0; width: 100%; }
+.fill { flex: 1; min-width: 0; }
+.meta { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.avatar { border-radius: 4px; display: grid; place-items: center; color: #fff; flex: none; }
+
+/* page area + screen stack */
+.page { flex: 1; min-width: 0; position: relative; overflow: hidden; }
+.screen {
+  position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column;
+  transform: translateX(100%); visibility: hidden; transition: transform .22s ease-out, visibility 0s .22s;
+}
+.screen.base { transform: none; visibility: visible; }
+.screen.open { transform: none; visibility: visible; transition: transform .22s ease-out; }
+@media (prefers-reduced-motion: reduce) { .screen, .screen.open { transition: none; } }
+
+.head { display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 4px; min-height: 36px; }
+.head .title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.head .title span:first-child { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.body { flex: 1; min-height: 0; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.foot { border-top: 1px solid var(--line); padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+
+/* profile panel (Mods tab), simplified */
+.tabs { display: flex; gap: 4px; padding: 0 8px 6px; }
+.tab { background: var(--surface-2); color: var(--fg); border: 0; border-radius: 2px; padding: 5px 10px; font: inherit; display: inline-flex; gap: 6px; align-items: center; }
+.tab.on { background: var(--primary); color: var(--primary-fg); }
+.mod { display: flex; align-items: center; gap: 8px; padding: 6px; background: var(--surface); border-radius: 3px; }
+.mod .name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mod .name span:first-child { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* catalog */
+.search-bar { display: flex; gap: 6px; padding: 0 8px 8px; }
+.search-bar input { flex: 1; }
+.search-bar .select { width: 120px; flex: none; }
+.pkg { display: flex; gap: 8px; align-items: center; padding: 6px; background: var(--surface); border-radius: 3px; cursor: pointer; }
+.pkg:hover { background: var(--surface-2); }
+.pkg .name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pkg .name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pkg .name span:first-child { font-weight: 600; }
+.pkg .chev { color: var(--muted); }
+.chip { font-size: 11px; padding: 1px 6px; border-radius: 9px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.chip.ok { background: var(--success); color: #fff; }
+.chip.warn { background: var(--warn); color: #1a1a1a; }
+.chip.bad { background: var(--danger); color: #fff; }
+.stats { display: inline-flex; gap: 10px; align-items: center; }
+.stats span { display: inline-flex; gap: 3px; align-items: center; }
+.status { padding: 4px 8px; border-top: 1px solid var(--line); }
+
+/* details */
+.det-head { display: flex; gap: 10px; align-items: center; }
+.det-head .name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.det-head .name span:first-child { font-size: 16px; font-weight: 600; }
+.desc { line-height: 1.45; margin: 0; }
+.section-lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+.deps { display: flex; flex-direction: column; gap: 4px; }
+.dep { display: flex; gap: 8px; align-items: center; padding: 4px 6px; background: var(--surface); border-radius: 3px; }
+.dep .fill { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress { display: flex; flex-direction: column; gap: 3px; }
+.progress .track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress .bar { height: 100%; background: var(--primary); width: 0; transition: width .15s; }
+.row { display: flex; gap: 8px; align-items: center; }
+.center { flex: 1; display: grid; place-items: center; text-align: center; padding: 16px; }
+.center > div { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.skel { height: 44px; flex: none; border-radius: 3px; background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%); background-size: 200% 100%; animation: sk 1.2s linear infinite; }
+@keyframes sk { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } .progress .bar { transition: none; } }
+
+/* zip preview */
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.note { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; color: var(--muted); }
+.note.warn { color: var(--tag); }
+.note.bad { color: #e88; }
+code { font-family: var(--mono); font-size: 12px; }
+
+/* widget annotations */
+[data-w]::before {
+  content: attr(data-w); display: none; position: absolute; top: -7px; right: 4px; z-index: 5;
+  font: 10px/1.3 var(--mono); color: #1a1a1a; background: var(--tag); padding: 0 4px; border-radius: 2px; pointer-events: none; white-space: nowrap;
+}
+.annotate [data-w] { outline: 1px dashed var(--tag); outline-offset: 2px; }
+.annotate [data-w]::before { display: block; }
+.annotate [data-w]:not(.screen) { position: relative; }
+.annotate .screen[data-w]::before { top: 2px; right: 50%; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <strong>VCL · Catalog mockup (480×800)</strong>
+  <label><input type="checkbox" id="opt-annotate"> Widget names</label>
+  <label>Catalog
+    <select class="select" id="opt-state">
+      <option value="ok">Loaded</option><option value="loading">Loading</option><option value="error">Offline</option>
+    </select></label>
+  <label>Picked zip
+    <select class="select" id="opt-zip">
+      <option value="named">zfolmt-Bloodcraft-1.6.8.zip</option>
+      <option value="noauthor">Bloodcraft.zip (no author)</option>
+      <option value="bad">broken.zip (no manifest)</option>
+    </select></label>
+</div>
+
+<div class="window" id="win">
+  <nav class="rail">
+    <button class="btn on" aria-label="Profiles"><svg class="i"><use href="#i-library"/></svg></button>
+    <button class="btn" aria-label="Builds"><svg class="i"><use href="#i-boxes"/></svg></button>
+    <button class="btn" aria-label="Logs"><svg class="i"><use href="#i-scroll"/></svg></button>
+    <div class="spacer"></div>
+    <button class="btn" aria-label="Settings"><svg class="i"><use href="#i-settings"/></svg></button>
+  </nav>
+
+  <main class="page">
+    <!-- 0: profile panel, Mods tab (already exists — shown for context) -->
+    <section class="screen base" id="s-profile">
+      <div class="head">
+        <div class="avatar" style="background:#b5523b;width:30px;height:30px;margin-left:4px"><svg class="i sm"><use href="#i-sword"/></svg></div>
+        <div class="title"><span>Modded Main</span></div>
+        <button class="btn ghost icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="tabs"><span class="tab on"><svg class="i sm"><use href="#i-boxes"/></svg>Mods <span id="mod-count"></span></span><span class="tab"><svg class="i sm"><use href="#i-sliders"/></svg>Settings</span></div>
+      <hr>
+      <div class="search-bar" style="padding-top:8px">
+        <input type="search" placeholder="Search mods">
+        <button class="btn" id="open-catalog" data-w="button → push catalog"><svg class="i sm"><use href="#i-package-plus"/></svg>Add Mod</button>
+      </div>
+      <div class="body" id="profile-mods" style="padding-top:0"></div>
+    </section>
+
+    <!-- 1: catalog -->
+    <section class="screen" id="s-catalog" data-w="AnimActivity › opaque(screen)">
+      <div class="head">
+        <button class="btn ghost icon" data-back aria-label="Back to profile"><svg class="i"><use href="#i-left"/></svg></button>
+        <div class="title"><span>Add mods</span><span class="meta">to Modded Main</span></div>
+        <button class="btn secondary" id="choose" data-w="button → file dialog (*.zip)" title="Add a mod from a .zip file"><svg class="i sm"><use href="#i-archive"/></svg>From .zip</button>
+      </div>
+      <div class="search-bar">
+        <input type="search" id="q" placeholder="Search Thunderstore" data-w="text_input">
+        <select class="select" id="sort" data-w="pick_list" aria-label="Sort">
+          <option value="downloads">Popular</option>
+          <option value="rating">Top rated</option>
+          <option value="updated">Updated</option>
+          <option value="name">Name</option>
+        </select>
+      </div>
+      <div class="body" id="results" data-w="scroll › col of button-styled row" style="padding-top:0"></div>
+      <div class="status meta row" id="status">
+        <span class="fill" id="status-text"></span>
+        <button class="btn ghost icon" id="refresh" aria-label="Refresh catalog" title="Refresh catalog"><svg class="i sm"><use href="#i-refresh"/></svg></button>
+      </div>
+    </section>
+
+    <!-- 2: package details -->
+    <section class="screen" id="s-details" data-w="AnimActivity › opaque(screen)">
+      <div class="head">
+        <button class="btn ghost icon" data-back aria-label="Back to catalog"><svg class="i"><use href="#i-left"/></svg></button>
+        <div class="title"><span id="d-crumb"></span></div>
+        <button class="btn ghost icon" aria-label="Open on Thunderstore" title="Open on Thunderstore"><svg class="i sm"><use href="#i-link"/></svg></button>
+      </div>
+      <div class="body" id="details" data-w="scroll › col"></div>
+      <div class="foot" id="details-foot" data-w="container (pinned bottom)"></div>
+    </section>
+
+    <!-- 3: zip preview -->
+    <section class="screen" id="s-zip" data-w="AnimActivity › opaque(screen)">
+      <div class="head">
+        <button class="btn ghost icon" data-back aria-label="Back to catalog"><svg class="i"><use href="#i-left"/></svg></button>
+        <div class="title"><span>Add from file</span><span class="meta" id="z-file"></span></div>
+      </div>
+      <div class="body" id="zip"></div>
+      <div class="foot" id="zip-foot"></div>
+    </section>
+  </main>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></symbol>
+    <symbol id="i-boxes" viewBox="0 0 24 24"><path d="M7 16.5 2 13.5v6l5 3 5-3v-6z"/><path d="m17 16.5-5-3v6l5 3 5-3v-6z"/><path d="M12 8 7 5v6l5 3 5-3V5z"/></symbol>
+    <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-sword" viewBox="0 0 24 24"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-package-plus" viewBox="0 0 24 24"><path d="M16 16h6"/><path d="M19 13v6"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><path d="M3.29 7 12 12l8.71-5"/><path d="M12 22V12"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><path d="M10 12v-1"/><path d="M10 18v-2"/><path d="M10 7V6"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15.5 22H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v16a2 2 0 0 0 .27 1"/><circle cx="10" cy="20" r="2"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+    <symbol id="i-thumb" viewBox="0 0 24 24"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/><path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/><path d="M5 13a10 10 0 0 1 5.24-2.76"/><path d="m2 2 20 20"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+  </defs>
+</svg>
+
+<script>
+// Stand-in for Thunderstore's /c/v-rising/api/v1/package/ — fields mirror `latest` (version_number, description, dependencies, ...).
+const COLORS = ["#2f8a5b", "#b5523b", "#7a5bd1", "#b8892c", "#3a7bc8", "#5c6370", "#a2447a", "#3c8c8c"];
+const P = (ns, name, ver, dl, rating, updated, desc, deps = []) => ({ ns, name, ver, dl, rating, updated, desc, deps, full: `${ns}-${name}` });
+const BEP = "BepInEx-BepInExPack_V_Rising-1.733.2", VCF = "deca-VampireCommandFramework-0.10.4", BS = "deca-Bloodstone-0.2.3";
+const catalog = [
+  P("BepInEx", "BepInExPack_V_Rising", "1.733.2", 2_410_000, 182, "2026-08-02", "BepInEx pack for V Rising. Preconfigured and includes Unity Base DLLs."),
+  P("deca", "VampireCommandFramework", "0.10.4", 1_320_000, 96, "2026-07-21", "Command framework for developers to easily create universal commands for their plugins.", [BEP]),
+  P("deca", "Bloodstone", "0.2.3", 980_000, 71, "2026-06-30", "Modding library: keybinds, hooks, hot reload, and shared utilities for V Rising plugins.", [BEP]),
+  P("zfolmt", "Bloodcraft", "1.6.8", 640_000, 154, "2026-09-28", "Leveling, expertise, legacies, professions, quests, and familiars for V Rising servers.", [BEP, VCF]),
+  P("odjit", "KindredCommands", "2.1.4", 590_000, 88, "2026-09-11", "Admin commands for server management: teleports, spawns, boss locks, and more.", [BEP, VCF]),
+  P("deca", "ModernCamera", "1.5.0", 870_000, 130, "2026-05-14", "Adds an over-the-shoulder camera, first person mode, and camera options.", [BEP, BS]),
+  P("XPRising", "XPRising", "0.3.2", 210_000, 41, "2026-04-03", "RPG-style experience and leveling replacing gear score.", [BEP, VCF]),
+  P("Elmegaard", "QuickStash", "1.4.1", 420_000, 63, "2026-03-19", "Stash all items into nearby chests that already hold the same item with a single key.", [BEP, BS]),
+  P("odjit", "KindredSchematics", "1.3.0", 150_000, 37, "2026-08-26", "Save, load, and share castle building schematics.", [BEP, VCF]),
+  P("sinai", "UnityExplorer", "4.12.3", 330_000, 52, "2025-12-01", "In-game UI for exploring, debugging, and modifying Unity games.", [BEP]),
+];
+catalog.forEach((p, i) => p.color = COLORS[i % COLORS.length]);
+const byFull = Object.fromEntries(catalog.map(p => [p.full, p]));
+
+// Mods already in the profile ("Modded Main").
+const installed = new Map([
+  ["BepInEx-BepInExPack_V_Rising", "1.733.2"],
+  ["deca-VampireCommandFramework", "0.10.2"],   // outdated -> "Update"
+  ["odjit-KindredCommands", "2.1.4"],
+]);
+
+const ZIPS = {
+  named: { file: "zfolmt-Bloodcraft-1.6.8.zip", manifest: { name: "Bloodcraft", version_number: "1.6.8", website_url: "https://github.com/mfoltz/Bloodcraft", description: catalog[3].desc, dependencies: catalog[3].deps } },
+  noauthor: { file: "Bloodcraft.zip", manifest: { name: "Bloodcraft", version_number: "1.6.8", website_url: "", description: catalog[3].desc, dependencies: catalog[3].deps } },
+  bad: { file: "broken.zip", manifest: null },
+};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n);
+const pretty = n => n.replace(/_/g, " ");
+const avatar = (color, size) => `<div class="avatar" style="background:${color};width:${size}px;height:${size}px"><svg class="i ${size < 36 ? "sm" : ""}"><use href="#i-box"/></svg></div>`;
+const depKey = d => d.split("-").slice(0, 2).join("-");
+const cmpVer = (a, b) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
+
+let state = "ok", selected = null, picked = null;
+const jobs = new Map(); // full -> { pct, step }
+
+// screen stack: profile › catalog › (details | zip)
+const stack = ["s-profile"];
+function push(id) { stack.push(id); $("#" + id).classList.add("open"); }
+function pop() { if (stack.length < 2) return; $("#" + stack.pop()).classList.remove("open"); }
+document.querySelectorAll("[data-back]").forEach(b => b.onclick = pop);
+document.addEventListener("keydown", e => { if (e.key === "Escape") pop(); });
+
+function statusOf(p) {
+  if (jobs.has(p.full)) return "installing";
+  const v = installed.get(p.full);
+  if (!v) return "none";
+  return cmpVer(v, p.ver) < 0 ? "outdated" : "installed";
+}
+function missingDeps(deps, seen = new Set()) {
+  for (const d of deps) {
+    const k = depKey(d);
+    if (installed.has(k) || seen.has(k)) continue;
+    seen.add(k);
+    if (byFull[k]) missingDeps(byFull[k].deps, seen);
+  }
+  return [...seen];
+}
+const chip = s => ({
+  installed: `<span class="chip ok">Installed</span>`,
+  outdated: `<span class="chip warn">Update</span>`,
+  installing: `<span class="chip">Installing…</span>`,
+  none: "",
+}[s]);
+
+function renderProfile() {
+  const mods = [...installed].map(([k, v]) => ({ k, v, p: byFull[k] }));
+  $("#mod-count").textContent = `${mods.length}/${mods.length}`;
+  $("#profile-mods").innerHTML = mods.map(({ k, v, p }) => `
+    <div class="mod">${avatar(p?.color ?? "#5c6370", 30)}
+      <div class="name"><span>${esc(pretty(k.split("-").slice(1).join("-")))}</span><span class="meta">${esc(k.split("-")[0])} · v${esc(v)}</span></div>
+    </div>`).join("");
+}
+
+function renderResults() {
+  const r = $("#results");
+  if (state === "loading") {
+    r.innerHTML = Array(8).fill('<div class="skel"></div>').join("");
+    $("#status-text").textContent = "Fetching package list from thunderstore.io…";
+    return;
+  }
+  if (state === "error") {
+    r.innerHTML = `<div class="center"><div><svg class="i" style="width:40px;height:40px"><use href="#i-wifi-off"/></svg>
+      <span>Couldn't reach Thunderstore.</span><span class="meta">You can still add a mod with <b>From .zip</b>.</span>
+      <button class="btn secondary" id="retry"><svg class="i sm"><use href="#i-refresh"/></svg>Retry</button></div></div>`;
+    $("#status-text").textContent = "Last synced: never";
+    return;
+  }
+  const q = $("#q").value.trim().toLowerCase();
+  const sort = $("#sort").value;
+  const list = catalog.filter(p => !q || p.name.toLowerCase().includes(q) || p.ns.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))
+    .sort((a, b) => sort === "downloads" ? b.dl - a.dl : sort === "rating" ? b.rating - a.rating : sort === "updated" ? b.updated.localeCompare(a.updated) : a.name.localeCompare(b.name));
+  r.innerHTML = list.map((p, i) => `
+    <div class="pkg" data-full="${p.full}" tabindex="0" ${i === 0 ? 'data-w="button-styled row → push details"' : ""}>
+      ${avatar(p.color, 32)}
+      <div class="name"><span>${esc(pretty(p.name))}</span>
+        <span class="meta stats"><span>${esc(p.ns)}</span><span><svg class="i xs"><use href="#i-download"/></svg>${fmt(p.dl)}</span><span><svg class="i xs"><use href="#i-thumb"/></svg>${p.rating}</span></span></div>
+      ${chip(statusOf(p))}
+      <svg class="i sm chev"><use href="#i-right"/></svg>
+    </div>`).join("") || `<div class="center"><div class="meta">No mods match "${esc(q)}".</div></div>`;
+  $("#status-text").textContent = `${list.length} of ${catalog.length} · synced 4 min ago`;
+}
+
+function depRows(deps) {
+  return deps.length ? deps.map(dep => {
+    const k = depKey(dep), have = installed.get(k), pk = byFull[k];
+    return `<div class="dep">${avatar(pk?.color ?? "#5c6370", 22)}<span class="fill">${esc(pretty(k.split("-")[1]))} <span class="meta">${esc(dep.split("-")[2])}</span></span>
+      ${have ? `<span class="chip ok">Installed</span>` : pk ? `<span class="chip warn">Will install</span>` : `<span class="chip bad">Not found</span>`}</div>`;
+  }).join("") : `<span class="meta">None</span>`;
+}
+
+function renderDetails() {
+  const p = selected && byFull[selected];
+  if (!p) return;
+  const st = statusOf(p), job = jobs.get(p.full), miss = missingDeps(p.deps);
+  $("#d-crumb").textContent = pretty(p.name);
+  $("#details").innerHTML = `
+    <div class="det-head">
+      ${avatar(p.color, 48)}
+      <div class="name"><span>${esc(pretty(p.name))}</span>
+        <span class="meta">by ${esc(p.ns)} · v${esc(p.ver)}</span>
+        <span class="meta stats"><span><svg class="i xs"><use href="#i-download"/></svg>${fmt(p.dl)}</span><span><svg class="i xs"><use href="#i-thumb"/></svg>${p.rating}</span><span>updated ${p.updated}</span></span></div>
+    </div>
+    <p class="desc">${esc(p.desc)}</p>
+    <div class="section-lbl">Dependencies (${p.deps.length})</div>
+    <div class="deps" data-w="col">${depRows(p.deps)}</div>`;
+  $("#details-foot").innerHTML = job
+    ? `<div class="progress"><span class="meta">${job.step}</span><div class="track"><div class="bar" style="width:${job.pct}%"></div></div></div>
+       <button class="btn wide" disabled>Installing…</button>`
+    : `<span class="meta">${st === "installed" ? "Installed in this profile." : miss.length ? `Also installs ${miss.length} missing ${miss.length === 1 ? "dependency" : "dependencies"}.` : "All dependencies present."}</span>
+       ${st === "installed" ? `<button class="btn success wide" disabled><svg class="i sm"><use href="#i-check"/></svg>Installed</button>`
+        : st === "outdated" ? `<button class="btn wide" id="install" data-w="button (primary)"><svg class="i sm"><use href="#i-refresh"/></svg>Update to v${esc(p.ver)}</button>`
+        : `<button class="btn wide" id="install" data-w="button (primary)"><svg class="i sm"><use href="#i-download"/></svg>Install${miss.length ? ` (+${miss.length})` : ""}</button>`}`;
+}
+
+function render() { renderProfile(); renderResults(); renderDetails(); }
+
+function install(p) {
+  const queue = [...missingDeps(p.deps), p.full];
+  jobs.set(p.full, { pct: 0, step: "Resolving dependencies…" });
+  let i = 0, pct = 0;
+  const tick = () => {
+    const cur = byFull[queue[i]];
+    pct += 8;
+    const phase = pct < 60 ? "Downloading" : pct < 90 ? "Extracting" : "Writing manifest";
+    jobs.set(p.full, { pct: Math.min(100, Math.round(((i + pct / 100) / queue.length) * 100)), step: `${phase} ${pretty(cur.name)} (${i + 1}/${queue.length})` });
+    if (pct >= 100) { installed.set(cur.full, cur.ver); i++; pct = 0; }
+    if (i >= queue.length) { jobs.delete(p.full); render(); return; }
+    render(); setTimeout(tick, 70);
+  };
+  render(); setTimeout(tick, 250);
+}
+
+function renderZip() {
+  const z = ZIPS[picked];
+  $("#z-file").textContent = z.file;
+  if (!z.manifest) {
+    $("#zip").innerHTML = `<div class="note bad"><svg class="i sm"><use href="#i-alert"/></svg><span><b>${esc(z.file)}</b> isn't a valid mod package: <code>manifest.json</code> was not found at the root of the zip.</span></div>`;
+    $("#zip-foot").innerHTML = `<button class="btn secondary wide" id="rechoose">Choose another…</button>`;
+    return;
+  }
+  const m = z.manifest;
+  const parts = z.file.replace(/\.zip$/, "").split("-");
+  const author = m.author ?? (parts.length >= 3 ? parts[0] : null);
+  const exists = author && installed.has(`${author}-${m.name}`);
+  const miss = missingDeps(m.dependencies);
+  $("#zip").innerHTML = `
+    <div class="det-head">
+      ${avatar("#b5523b", 48)}
+      <div class="name"><span>${esc(m.name)}</span><span class="meta">v${esc(m.version_number)}</span></div>
+    </div>
+    <dl class="kv" data-w="col of row(label, value)">
+      <dt>Author</dt><dd>${author ? `${esc(author)} <span class="meta">(from ${m.author ? "manifest" : "file name"})</span>` : `<span class="chip warn">Unknown</span>`}</dd>
+      <dt>Website</dt><dd>${m.website_url ? esc(m.website_url) : `<span class="meta">—</span>`}</dd>
+    </dl>
+    <p class="desc">${esc(m.description)}</p>
+    ${!author ? `<div class="note warn"><svg class="i sm"><use href="#i-alert"/></svg><span>No author found, so update checks won't work. Rename to <code>Author-${esc(m.name)}-${esc(m.version_number)}.zip</code> to fix.</span></div>` : ""}
+    ${exists ? `<div class="note warn"><svg class="i sm"><use href="#i-alert"/></svg><span>Already in this profile — it will be replaced.</span></div>` : ""}
+    <div class="section-lbl">Dependencies (${m.dependencies.length})</div>
+    <div class="deps">${depRows(m.dependencies)}</div>`;
+  $("#zip-foot").innerHTML = `
+    <span class="meta">${miss.length ? `Missing dependencies will be installed from Thunderstore.` : "All dependencies present."}</span>
+    <div class="row">
+      <button class="btn secondary" id="rechoose">Choose another…</button>
+      <button class="btn wide" id="add-file" data-w="button (primary) → ipc import-mod-zip"><svg class="i sm"><use href="#i-package-plus"/></svg>Add to profile${miss.length ? ` (+${miss.length})` : ""}</button>
+    </div>`;
+}
+
+// events
+$("#open-catalog").onclick = () => push("s-catalog");
+$("#q").addEventListener("input", renderResults);
+$("#sort").addEventListener("change", renderResults);
+$("#refresh").onclick = () => { state = "loading"; $("#opt-state").value = "loading"; render(); setTimeout(() => { state = "ok"; $("#opt-state").value = "ok"; render(); }, 900); };
+const openPkg = full => { selected = full; renderDetails(); push("s-details"); };
+$("#results").addEventListener("click", e => {
+  if (e.target.closest("#retry")) return $("#refresh").onclick();
+  const row = e.target.closest(".pkg"); if (row) openPkg(row.dataset.full);
+});
+$("#results").addEventListener("keydown", e => {
+  const row = e.target.closest(".pkg");
+  if (row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openPkg(row.dataset.full); }
+});
+$("#details-foot").addEventListener("click", e => { if (e.target.closest("#install")) install(byFull[selected]); });
+// "From .zip" = native file dialog; the toolbar's "Picked zip" stands in for what the user chose.
+$("#choose").onclick = () => { picked = $("#opt-zip").value; renderZip(); push("s-zip"); };
+$("#zip-foot").addEventListener("click", e => {
+  if (e.target.closest("#rechoose")) { picked = $("#opt-zip").value; renderZip(); }
+  const add = e.target.closest("#add-file");
+  if (add) {
+    add.disabled = true; add.textContent = "Extracting…";
+    const m = ZIPS[picked].manifest, parts = ZIPS[picked].file.split("-");
+    setTimeout(() => {
+      installed.set(`${parts.length >= 3 ? parts[0] : "local"}-${m.name}`, m.version_number);
+      while (stack.length > 1) pop();   // back to the profile's mod list
+      render();
+    }, 700);
+  }
+});
+$("#opt-state").onchange = e => { state = e.target.value; render(); };
+$("#opt-zip").onchange = () => { if (stack.at(-1) === "s-zip") { picked = $("#opt-zip").value; renderZip(); } };
+$("#opt-annotate").onchange = e => $("#win").classList.toggle("annotate", e.target.checked);
+
+render();
+</script>
+</body>
+</html>

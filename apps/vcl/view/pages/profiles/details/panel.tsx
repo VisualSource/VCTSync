@@ -4,17 +4,11 @@ import XIcon from "@icon/x.svg" with {type: "svg" };
 import SlidersHorizontal from "@icon/sliders-horizontal.svg" with { type: "svg" };
 import Boxes from "@icon/boxes.svg" with { type: "svg" };
 
-import { ProfileIcon, } from "./profile-icon.js";
-import { useProfile } from "./query.js";
-import { SettingsTab } from "./mod-panel-settings.js";
-import { ModsList } from "./mod-panel-mod-list.js";
-
-type Props = {
-    onClose: () => void;
-    onDelete: (id: string) => void;
-    profileId: string | null,
-    toggleAddMod: () => void;
-}
+import { ProfileIcon, } from "../profile-icon.js";
+import { useProfile } from "../query.js";
+import { SettingsTab } from "./settings.js";
+import { ModsList } from "./mod-list.js";
+import { useProfileState } from "../state.js";
 
 const btnTabStyle: Iced.Elements.ButtonStyle = {
     color: "primary.base.text",
@@ -27,8 +21,10 @@ const btnTabInactiveStyle: Iced.Elements.ButtonStyle = {
 }
 
 
-export const ModPanel = ({ toggleAddMod, onClose, onDelete, profileId }: Props) => {
+export const ModPanel = () => {
     const [tab, setTab] = useState("mods");
+    const profileId = useProfileState(state => state.detailId);
+    const onClose = useProfileState(state => state.toggleDetails);
 
     const { data, isLoading, isError, error } = useProfile(profileId);
 
@@ -94,7 +90,7 @@ export const ModPanel = ({ toggleAddMod, onClose, onDelete, profileId }: Props) 
                             <hr />
                             <space height={18} />
 
-                            {tab === "settings" ? <SettingsTab onDelete={onDelete} data={data!} /> : <ModsList toggleAddMod={toggleAddMod} profileId={profileId} />}
+                            {tab === "settings" ? <SettingsTab data={data!} /> : <ModsList />}
                         </col>
                     )
                 }

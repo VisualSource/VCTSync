@@ -1,15 +1,19 @@
 import { useState } from "react";
-import { useModList, useProfileCollection } from "./query.js";
+import { useModList, useProfileCollection } from "../query.js";
 import Trash from "@icon/trash.svg" with {type: "svg" };
 import PackagePlus from "@icon/package-plus.svg" with {type: "svg"};
 import TriangleAlert from "@icon/triangle-alert.svg" with { type: "svg" };
+import { useProfileState } from "../state.js";
 
-export const ModsList = ({ profileId, toggleAddMod }: { profileId: string; toggleAddMod: () => void }) => {
+export const ModsList = () => {
+    const profileId = useProfileState(state => state.detailId);
+    const toggleCatlog = useProfileState(state => state.toggleCatlog);
+
     const [query, setQuery] = useState("");
     const { data: mods } = useModList(profileId, query);
     const collection = useProfileCollection();
 
-    if (!mods) return (<col />);
+    if (!mods || !profileId) return (<col />);
 
     return (
         <>
@@ -22,7 +26,7 @@ export const ModsList = ({ profileId, toggleAddMod }: { profileId: string; toggl
                     onChange={(ev) => setQuery(ev.value)}
                     placeholder="Search mods"
                 />
-                <button width="shrink" onPress={toggleAddMod}>
+                <button width="shrink" onPress={toggleCatlog}>
                     <row alignX="center" alignY="center" spacing={2}>
                         <svg height={16} width={16} color="background.text" src={PackagePlus} />
                         <text size={16}>Add Mod</text>

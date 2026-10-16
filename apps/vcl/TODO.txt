@@ -1,0 +1,66 @@
+VCL — Profiles page (vs mockups/profiles.html)
+==============================================
+Out of scope here: profiles collection onInsert/onUpdate/onDelete handlers (query.ts).
+
+[ ] 0. Replace add-mod-dialog.tsx with pushed screens (no modal; window is 480x800)
+       profile panel (Mods) -> "Add Mod" pushes Catalog -> row pushes Details / "From .zip" pushes Zip preview
+       each screen = AnimActivity x:100%->0 like the profile panel; back arrow + Esc pop one level
+
+[ ] 1a. Add Mod: load from file (.zip)
+    [ ] "From .zip" button in catalog header -> platform/dialog open(), filter *.zip -> push Zip preview
+        (check open() supports extension filters; add if not)
+    [ ] Rust IPC command: (zip path, profile dir) ->
+        - read manifest.json at zip root (Thunderstore V1: name, version_number, description,
+          website_url, dependencies["Team-Name-Version"], optional "author")
+        - author fallback: parse file name "Namespace-Name-Version.zip" (r2modman convention)
+        - read icon.png (256x256) -> return path / data URI
+        - extract into profile dir (BepInEx layout; BepInExPack goes to game root)
+        - error if manifest.json missing / unparsable
+    [ ] Push Mod into draft.mods (nanoid id, enabled: true), pop back to the profile's mod list
+    [ ] Extend Mod type: description?, dependencies: string[], source: "local" | "thunderstore"
+    [ ] Missing deps on a zip import -> offer install from Thunderstore
+
+[ ] 1b. Add Mod: Thunderstore catalog (see mockups/catalog.html)
+    API (public, no auth; what r2modman uses):
+      GET https://thunderstore.io/c/v-rising/api/v1/package/        full list (deprecated but served; large -> cache)
+      GET https://thunderstore.io/c/v-rising/api/v1/package-listing-index/
+      GET https://thunderstore.io/api/experimental/package/{namespace}/{name}/
+          latest: version_number, icon, download_url, dependencies, description, website_url
+    [ ] Fetch + cache package list (host side)
+    [ ] Search / sort / details / install UI per mockup
+    [ ] Install = download download_url -> same zip import as 1a
+    [ ] Auto-install missing dependencies
+
+[ ] 2. Clicking a profile row sets it active (profile-list.tsx row is a plain view)
+       gear stays a separate button
+
+[ ] 3. Active-profile defaults & sync
+    [ ] New profile: set active if none, open panel immediately
+    [ ] Deleting the active profile: fall back to first remaining (page.tsx onSettle)
+    [ ] No profiles: disable select + Launch
+    [ ] invoke("launch-game", { profileId }) — currently {}; no host handler found in apps/vcl/src
+    [ ] (optional) "Launching <name>..." button state
+
+[ ] 4. Settings tab
+    [ ] Key SettingsTab by data.id (local name/args/dir state goes stale when switching profiles)
+    [ ] Name: save on blur/debounce, not only Enter (optional)
+    Dropped from mockup: game build select (stable only), BepInEx select (BepInEx is a mod)
+    (optional) row meta shows BepInEx version found in the mod list
+
+[ ] 5. Mods list polish
+    [ ] Real mod icon instead of Trash placeholder (mod-panel-mod-list.tsx)
+    [ ] Dim disabled mods (opacity ~0.45)
+    [ ] Case-insensitive search (query.ts useModList)
+    [ ] Version shown as "v1.2.3"
+
+[ ] 6. Panel / overlay
+    [ ] Scrim behind panel, click to close
+    [ ] Esc pops the top screen (zip/details -> catalog -> panel -> closed)
+    [ ] Default tab + reset tab when profileId changes
+    [ ] Remove data!?.name in mod-panel.tsx header
+
+[ ] 7. List nits
+    [ ] Meta wording "N/M mods" (+ " · BepInEx x" if 4-optional)
+    [ ] Gear button smaller (match panel close button)
+
+Order: 0 -> 1a -> 2+3 -> 6 -> 5 -> 4 -> 7 -> 1b

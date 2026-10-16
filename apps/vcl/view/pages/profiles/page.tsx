@@ -1,26 +1,19 @@
 import Play from "../../assets/icons/play.svg" with { type: "svg" };
 import { AnimActivity, invoke } from "react-iced-native";
 import { useApp } from "../../state.js";
-import { ModPanel } from "./mod-panel.js";
-import { useRef, useState } from "react";
+import { ModPanel } from "./details/panel.js";
 import { ProfileList } from "./profile-list.js";
 import { useProfileCollection, useProfileOptions } from "./query.js";
-import { AddModDialog } from "./add-mod-dialog.js";
-
-
+import { useProfileState } from "./state.js";
+import { Catalog } from "./catalog/panel.js";
 
 export const Profiles = () => {
-    const [showAddMod, setShowAddMod] = useState(false);
-    const [detailsId, setDetailsId] = useState<string | null>(null);
-    const [showDetails, setShowDetails] = useState(false);
+    const { showCatalog, showDetails, clearDetails } = useProfileState();
     const activeProfile = useApp(state => state.activeProfile);
     const setActiveProfile = useApp(state => state.setActiveProfile);
 
     const options = useProfileOptions();
     const collection = useProfileCollection();
-    const pendingDelete = useRef<string | null>(null);
-
-    const toggleAddMod = () => setShowAddMod(e => !e);
 
     return (
         <stack>
@@ -43,26 +36,25 @@ export const Profiles = () => {
                 </row>
                 <hr />
                 <space height={10} />
-                <ProfileList toggleShowDetails={(id: string) => { setDetailsId(id); setShowDetails(true); }} />
+                <ProfileList />
             </col>
 
-
             <AnimActivity active={showDetails} from={{ x: "100%" }} to={{ x: 0 }} duration={220} onSettle={(ev) => {
+                const state = useProfileState.getState();
                 // Delete only once the panel has slid out, so it never renders a missing record.
-                if (ev.value || !pendingDelete.current) return;
-                collection.delete(pendingDelete.current);
-                pendingDelete.current = null;
-                setDetailsId(null);
+                if (ev.value || !state.pendingDelete) return;
+                collection.delete(state.pendingDelete);
+                clearDetails();
             }}>
-                <ModPanel
-                    toggleAddMod={toggleAddMod}
-                    onClose={() => setShowDetails(false)}
-                    onDelete={(id) => { pendingDelete.current = id; setShowDetails(false); }}
-                    profileId={detailsId} />
+                <ModPanel />
+            </AnimActivity>
+
+            <AnimActivity active={showCatalog} from={{ x: "100%" }} to={{ x: 0 }} duration={220}>
+                <Catalog />
             </AnimActivity>
 
 
-            {showAddMod ? (<AddModDialog profileId={detailsId} toggleAddMod={toggleAddMod} />) : null}
+
         </stack>
     )
 }
