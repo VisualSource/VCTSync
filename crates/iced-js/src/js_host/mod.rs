@@ -13,6 +13,7 @@ mod temporal;
 pub mod compression;
 
 mod intl;
+mod text_decoder;
 mod url;
 
 mod formatter;
@@ -28,6 +29,7 @@ pub fn init_browser_apis(ctx: &Ctx<'_>) -> Result<()> {
     timers::init(ctx)?;
     intl::init(ctx)?;
     url::init(ctx)?;
+    text_decoder::init(ctx)?;
 
     #[cfg(feature = "js-temporal")]
     temporal::init(ctx)?;

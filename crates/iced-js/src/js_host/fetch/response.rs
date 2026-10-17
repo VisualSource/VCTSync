@@ -36,7 +36,7 @@ impl Response {
 
     #[qjs(get)]
     fn ok(&self) -> bool {
-        self.status.is_success() || self.status.is_client_error()
+        self.status.is_success()
     }
 
     #[qjs(get)]

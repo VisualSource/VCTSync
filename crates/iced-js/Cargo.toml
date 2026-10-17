@@ -15,7 +15,7 @@ rquickjs = { version = "0.14.0", features = [
 ] }
 tokio = { workspace = true, features = ["macros", "fs", "sync", "time"] }
 iced = { workspace = true, features = ["tokio", "advanced"] }
-reqwest = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true, features = ["gzip"] }
 rust-silos = { version = "0.3.2", optional = true }
 rand = "0.10.3"
 jiff = { version = "0.2", optional = true }
