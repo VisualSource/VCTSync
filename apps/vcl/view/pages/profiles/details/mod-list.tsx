@@ -26,7 +26,7 @@ export const ModsList = () => {
                     onChange={(ev) => setQuery(ev.value)}
                     placeholder="Search mods"
                 />
-                <button width="shrink" onPress={toggleCatlog}>
+                <button width="shrink" onPress={() => toggleCatlog(true)}>
                     <row alignX="center" alignY="center" spacing={2}>
                         <svg height={16} width={16} color="background.text" src={PackagePlus} />
                         <text size={16}>Add Mod</text>
