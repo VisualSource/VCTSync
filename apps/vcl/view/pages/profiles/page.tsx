@@ -6,9 +6,11 @@ import { ProfileList } from "./profile-list.js";
 import { useProfileCollection, useProfileOptions } from "./query.js";
 import { useProfileState } from "./state.js";
 import { Catalog } from "./catalog/panel.js";
+import { ZipInstallPanel } from "./zip-install-panel.js";
+import { ModDetailPanel } from "./catalog/mod-details.js";
 
 export const Profiles = () => {
-    const { showCatalog, showDetails, clearDetails } = useProfileState();
+    const { showCatalog, showDetails, clearDetails, showCatalogSubmenu } = useProfileState();
     const activeProfile = useApp(state => state.activeProfile);
     const setActiveProfile = useApp(state => state.setActiveProfile);
 
@@ -54,7 +56,17 @@ export const Profiles = () => {
             </AnimActivity>
 
 
+            {showCatalog ? (
+                <>
+                    <AnimActivity active={showCatalogSubmenu === "mod-detail"} from={{ x: "100%" }} to={{ x: 0 }} duration={220}>
+                        <ModDetailPanel />
+                    </AnimActivity>
 
+                    <AnimActivity active={showCatalogSubmenu === "zip-install"} from={{ x: "100%" }} to={{ x: 0 }} duration={220}>
+                        <ZipInstallPanel />
+                    </AnimActivity>
+                </>
+            ) : null}
         </stack>
     )
 }

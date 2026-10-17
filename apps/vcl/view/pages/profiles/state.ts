@@ -4,6 +4,7 @@ type Store = {
     showDetails: boolean;
     detailId: string | null;
     showCatalog: boolean;
+    showCatalogSubmenu: "zip-install" | "mod-detail" | null;
 
     pendingDelete: string | null;
 
@@ -17,6 +18,8 @@ type Store = {
 export const useProfileState = create<Store>()((set, get) => ({
     showDetails: false,
     showCatalog: false,
+    showCatalogSubmenu: null,
+
 
     detailId: null,
     pendingDelete: null,
@@ -32,7 +35,7 @@ export const useProfileState = create<Store>()((set, get) => ({
     },
     toggleCatlog(state) {
         const value = state !== undefined ? state : !get().showCatalog;
-        set({ showCatalog: value });
+        set({ showCatalog: value, showCatalogSubmenu: null });
     },
     clearDetails() {
         set({ pendingDelete: null, detailId: null });

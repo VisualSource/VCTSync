@@ -4,6 +4,8 @@ import Refresh from "@icon/refresh-cw.svg";
 import { useState } from "react";
 import { useProfileState } from "../state.js";
 import { useQuery } from "@tanstack/react-query";
+import { fetchCatalog } from "./requets.js";
+import { ProfileIcon } from "../profile-icon.js";
 
 const SELECT_OPTIONS = [{
     label: "Popular",
@@ -16,17 +18,10 @@ export const Catalog = () => {
 
     const toggle = useProfileState(state => state.toggleCatlog);
 
-    const { data, isLoading, isError, error } = useQuery({
+    const { data, isLoading, isError, error, refetch } = useQuery({
         queryKey: ["voidcrew-mod-list"],
-        queryFn: async () => {
-            const response = await fetch("https://thunderstore.io/c/void-crew/api/v1/package-listing-index/");
-
-            if (!response.ok) {
-                throw new Error(response.statusText);
-            }
-
-            return [];
-        }
+        queryFn: fetchCatalog,
+        staleTime: 5 * 60_000,
     })
 
     return (
@@ -62,10 +57,36 @@ export const Catalog = () => {
                             <col><text>Loading...</text></col>
                         ) : isError ? (
                             <col><text>{`${error.message}`}</text></col>
+                        ) : !data ? (
+                            <col />
                         ) : (
-                            <scroll height="fill" spacing={2}>
-                                <col>
+                            <scroll height="fill" spacing={4}>
+                                <col spacing={4}>
+                                    {data?.map(mod => (
+                                        <button key={mod.uuid4} padding={0} style={{}}>
+                                            <view style={{
+                                                background: "background.weaker",
+                                                borderRadius: 4
+                                            }}>
+                                                <row spacing={4} padding={6} alignY="center">
+                                                    <ProfileIcon type="box" />
 
+                                                    <col>
+                                                        <text font={{ weight: "bold" }}>{mod.name}</text>
+                                                        <row spacing={4}>
+                                                            <text size={12}>{mod.owner}</text>
+                                                            <text size={12}>{mod.versions[0]?.downloads.toString() ?? ""}</text>
+                                                            <text size={12}>{mod.rating_score.toString()}</text>
+                                                        </row>
+                                                    </col>
+
+                                                    <space width="fill" />
+                                                </row>
+
+                                            </view>
+
+                                        </button>
+                                    ))}
                                 </col>
                             </scroll>
                         )
@@ -75,7 +96,7 @@ export const Catalog = () => {
                     <row alignX="center" alignY="center" padding={[0, 4, 4]}>
                         <text size={12}>synced 3 min ago</text>
                         <space width="fill" />
-                        <button width="shrink" style="subtle">
+                        <button width="shrink" style="subtle" onPress={() => refetch()}>
                             <svg color="background.text" width={15} height={15} src={Refresh} />
                         </button>
                     </row>

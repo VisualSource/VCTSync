@@ -50,6 +50,7 @@ fn main() -> iced::Result {
 
     let mut builder = Builder::new();
     builder.filter_level(log::LevelFilter::Warn); // silence everything by default
+    builder.filter_module("iced_js::console", log::LevelFilter::Info);
     builder.parse_default_env(); // RUST_LOG can still override the above
     builder.target(Target::Stdout);
 
