@@ -11,6 +11,10 @@ declare module "*.svg" {
     export default handle;
 }
 
+declare module "iced:compression" {
+    export function gzipDecodeSync(data: Uint8Array): Uint8Array;
+}
+
 declare module "react-iced-native" {
 
     /**

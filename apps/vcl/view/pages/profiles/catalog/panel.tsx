@@ -18,7 +18,15 @@ export const Catalog = () => {
 
     const { data, isLoading, isError, error } = useQuery({
         queryKey: ["voidcrew-mod-list"],
-        queryFn: async () => { }
+        queryFn: async () => {
+            const response = await fetch("https://thunderstore.io/c/void-crew/api/v1/package-listing-index/");
+
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+
+            return [];
+        }
     })
 
     return (

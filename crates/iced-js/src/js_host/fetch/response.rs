@@ -67,13 +67,50 @@ impl Response {
         Ok(text)
     }
 
-    async fn array_buffer(&mut self) {}
-    async fn blob(&mut self) {}
-    async fn bytes(&mut self) {}
+    async fn array_buffer(&mut self, ctx: Ctx<'_>) -> rquickjs::Result<()> {
+        Err(rquickjs::Exception::throw_message(
+            &ctx,
+            "Response.arrayBuffer is not implemented",
+        ))
+    }
+    async fn blob(&mut self, ctx: Ctx<'_>) -> rquickjs::Result<()> {
+        Err(rquickjs::Exception::throw_message(
+            &ctx,
+            "Response.blob is not implemented",
+        ))
+    }
+    async fn bytes<'js>(
+        &mut self,
+        ctx: Ctx<'js>,
+    ) -> rquickjs::Result<rquickjs::TypedArray<'js, u8>> {
+        let Some(resp) = self.inner.take() else {
+            return Err(rquickjs::Exception::throw_type(
+                &ctx,
+                "body already disturbed",
+            ));
+        };
 
-    async fn clone(&mut self) {}
+        let body = resp
+            .bytes()
+            .await
+            .map_err(|err| rquickjs::Exception::throw_dom(&ctx, "network", &err.to_string()))?;
 
-    async fn form_data(&mut self) {}
+        rquickjs::TypedArray::new_copy(ctx, &body[..])
+    }
+
+    async fn clone(&mut self, ctx: Ctx<'_>) -> rquickjs::Result<()> {
+        Err(rquickjs::Exception::throw_message(
+            &ctx,
+            "Response.clone is not implemented",
+        ))
+    }
+
+    async fn form_data(&mut self, ctx: Ctx<'_>) -> rquickjs::Result<()> {
+        Err(rquickjs::Exception::throw_message(
+            &ctx,
+            "Response.formData is not implemented",
+        ))
+    }
 
     async fn json<'js>(&mut self, ctx: Ctx<'js>) -> Result<Value<'js>> {
         let text = self.text(ctx.clone()).await?;
@@ -83,5 +120,10 @@ impl Response {
         Ok(value)
     }
 
-    async fn text_stream(&mut self) {}
+    async fn text_stream(&mut self, ctx: Ctx<'_>) -> rquickjs::Result<()> {
+        Err(rquickjs::Exception::throw_message(
+            &ctx,
+            "Response.textStream is not implemented",
+        ))
+    }
 }

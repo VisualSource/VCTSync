@@ -9,6 +9,9 @@ mod fetch;
 #[cfg(feature = "js-temporal")]
 mod temporal;
 
+#[cfg(feature = "js-compression")]
+pub mod compression;
+
 mod intl;
 mod url;
 

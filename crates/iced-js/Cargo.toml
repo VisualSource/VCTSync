@@ -21,6 +21,8 @@ rand = "0.10.3"
 jiff = { version = "0.2", optional = true }
 url = "2.5"
 
+libflate = { version = "2", optional = true }
+
 
 [dev-dependencies]
 futures = { version = "0.3" }
@@ -37,3 +39,5 @@ markdown-element = ["iced/markdown"]
 qr-element = ["iced/qr_code"]
 code-element = ["iced/highlighter"]
 js-temporal = ["dep:jiff"]
+
+js-compression = ["dep:libflate"]
