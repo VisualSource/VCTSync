@@ -1,14 +1,41 @@
 use crate::{
-    helpers::{app_dir, delete_profile_dir, game_status, ipc_reply, load_profiles, profile_from_dir, save_profiles, write_app_file},
+    helpers::{app_dir, delete_profile_dir, game_status, ipc_reply, load_profiles, normalize, profile_from_dir, read_log, save_profiles, write_app_file},
     ipc_mappings::{
         InstallBuildConfig, IpcError, MessageDialogConfig, MessageDialogResult, OpenDialogResult,
-        InstallModConfig, InstallModResult, LaunchGameConfig, OpenFileConfig, UninstallModConfig, SetModEnabledConfig, ProfileDirConfig, DeleteDirResult, ZipPathConfig, AppInfo, OpenPathConfig, BuildProgress,
+        InstallModConfig, InstallModResult, LaunchGameConfig, OpenFileConfig, UninstallModConfig, SetModEnabledConfig, ProfileDirConfig, DeleteDirResult, ZipPathConfig, AppInfo, OpenPathConfig, BuildProgress, ReadLogConfig, ExportResult,
     },
     state::{AppSettings, Message},
 };
 use iced::{Element, Task, Theme};
 use iced_js::Host;
 use nanoserde::{DeJson, SerJson, SerRon};
+
+/// Show a folder in the file manager; for a file, open its folder with the file selected.
+/// A path that doesn't exist yet (e.g. the log before first launch) opens its nearest existing
+/// parent, since Explorer falls back to its default folder for a missing path.
+fn open_in_file_manager(path: &std::path::Path) -> std::io::Result<()> {
+    let Some(path) = path.ancestors().find(|p| p.exists()) else {
+        return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("{} does not exist", path.display())));
+    };
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let mut command = std::process::Command::new("explorer");
+        if path.is_file() {
+            // Explorer parses its own command line: the quotes must wrap only the path.
+            command.raw_arg(format!("/select,\"{}\"", path.display()));
+        } else {
+            command.arg(path);
+        }
+        command.spawn().map(|_| ())
+    }
+    #[cfg(not(windows))]
+    {
+        let dir = if path.is_file() { path.parent().unwrap_or(path) } else { path };
+        std::process::Command::new("xdg-open").arg(dir).spawn().map(|_| ())
+    }
+}
 
 /// Builds install like a Thunderstore mod under this "Author-Name".
 const BUILD_FULL_NAME: &str = "VisualSource-VoidCrewTerminus";
@@ -100,11 +127,7 @@ impl Application {
                                 let result = OpenPathConfig::deserialize_json(&payload)
                                     .map_err(|err| err.to_string())
                                     .and_then(|config| {
-                                        let opener = if cfg!(windows) { "explorer" } else { "xdg-open" };
-                                        std::process::Command::new(opener)
-                                            .arg(config.path)
-                                            .spawn()
-                                            .map(|_| ())
+                                        open_in_file_manager(&normalize(std::path::Path::new(&config.path)))
                                             .map_err(|err| err.to_string())
                                     });
                                 Event::IpcDispatch(cmd, id, ipc_reply(result))
@@ -116,13 +139,47 @@ impl Application {
 
                             Task::done(Message::Js(Event::IpcDispatch(cmd, id, data)))
                         }
-                        "logs::list-lines" => Task::perform(
+                        "logs::read" => Task::perform(
                             async move {
-                                iced_js::Event::IpcDispatch(
-                                    cmd,
-                                    id,
-                                    "[\"Hello, set log line\"]".to_string(),
-                                )
+                                let data = match ReadLogConfig::deserialize_json(&payload) {
+                                    Ok(config) => {
+                                        let file = profile_from_dir(&config.profile_dir).log_file();
+                                        tokio::task::spawn_blocking(move || read_log(&file, config.size, config.modified))
+                                            .await
+                                            .map_err(|err| err.to_string())
+                                            .and_then(|r| r.map_err(|err| err.to_string()))
+                                            .map(|log| log.serialize_json())
+                                            .unwrap_or_else(|err| ipc_reply(Err(err)))
+                                    }
+                                    Err(err) => ipc_reply(Err(err.to_string())),
+                                };
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "logs::export" => Task::perform(
+                            async move {
+                                let result: Result<Option<String>, String> = async {
+                                    let config = ProfileDirConfig::deserialize_json(&payload).map_err(|err| err.to_string())?;
+                                    let file = profile_from_dir(&config.profile_dir).log_file();
+                                    let Some(target) = rfd::AsyncFileDialog::new()
+                                        .set_file_name("LogOutput.log")
+                                        .add_filter("Log file", &["log", "txt"])
+                                        .save_file()
+                                        .await
+                                    else {
+                                        return Ok(None);
+                                    };
+                                    tokio::fs::copy(&file, target.path()).await.map_err(|err| err.to_string())?;
+                                    Ok(Some(target.path().to_string_lossy().to_string()))
+                                }
+                                .await;
+
+                                let data = match result {
+                                    Ok(path) => ExportResult { path }.serialize_json(),
+                                    Err(err) => ipc_reply(Err(err)),
+                                };
+                                Event::IpcDispatch(cmd, id, data)
                             },
                             Message::Js,
                         ),

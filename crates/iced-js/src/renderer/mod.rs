@@ -204,16 +204,16 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 font,
                 wrapping,
             } => {
-                debug_assert_eq!(children.len(), 1);
-
-                let text = match &children[0] {
-                    Node::Text(el) => el,
-                    Node::Element { .. } => {
+                // React drops an empty-string child, so `<text>{""}</text>` arrives with none.
+                let text = match children.first() {
+                    Some(Node::Text(el)) => &**el,
+                    None => "",
+                    Some(Node::Element { .. }) => {
                         unreachable!("text node should not contain a element node")
                     }
                 };
 
-                let mut node = iced::widget::text(&**text);
+                let mut node = iced::widget::text(text);
 
                 apply_opt!(node, size, size);
                 apply_opt!(node, width, width);
@@ -602,6 +602,23 @@ mod replay_tests {
     use super::*;
     use iced::advanced::widget::Tree;
     use rquickjs::{Context, Runtime};
+
+    /// `<text>{""}</text>` reaches the host with no children (React drops empty strings);
+    /// it must render as empty text instead of rejecting the whole commit.
+    #[test]
+    fn empty_text_renders() {
+        let rt = Runtime::new().unwrap();
+        let ctx = Context::full(&rt).unwrap();
+
+        let node = ctx.with(|ctx| {
+            let commit = ctx
+                .eval::<rquickjs::Object, _>(r#"({ type: "col", props: {}, children: [{ type: "text", props: {}, children: [] }] })"#)
+                .unwrap();
+            node::to_node(commit, 0).unwrap()
+        });
+
+        let _ = Tree::new(&render_tree(&node));
+    }
 
     /// Commits as the profiles page sends them (from a real session's
     /// outline log), diffed into one long-lived tree the way iced rebuilds.

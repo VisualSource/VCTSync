@@ -51,7 +51,7 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 export const useApp = create<AppState>()((set, get) => ({
     ...DEFAULT_SETTINGS,
     activeProfile: null,
-    page: "logs",
+    page: "profiles",
     setPage(page) {
         set({ page });
     },

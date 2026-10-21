@@ -4,12 +4,17 @@ const APP_DIR: &str = "vcl.visualsource.github";
 /// Profile dirs may start with `%APPDATA%`, meaning `<config dir>/vcl.visualsource.github`
 /// (see profile-list.tsx createProfile).
 pub fn profile_from_dir(dir: &str) -> bepinex_lib::Profile {
-    match (dir.strip_prefix("%APPDATA%"), dirs::config_dir()) {
-        (Some(rest), Some(config)) => {
-            bepinex_lib::Profile::new(config.join(APP_DIR).join(rest.trim_start_matches(['/', '\\'])))
-        }
-        _ => bepinex_lib::Profile::new(dir),
-    }
+    let path = match (dir.strip_prefix("%APPDATA%"), dirs::config_dir()) {
+        (Some(rest), Some(config)) => config.join(APP_DIR).join(rest.trim_start_matches(['/', '\\'])),
+        _ => std::path::PathBuf::from(dir),
+    };
+    bepinex_lib::Profile::new(normalize(&path))
+}
+
+/// Rebuild from components so separators are native (`/` becomes `\` on Windows).
+/// Most APIs accept mixed separators but Explorer does not.
+pub fn normalize(path: &std::path::Path) -> std::path::PathBuf {
+    path.components().collect()
 }
 
 pub fn app_dir() -> std::io::Result<std::path::PathBuf> {
@@ -25,4 +30,19 @@ pub async fn write_app_file(name: &str, contents: String) -> std::io::Result<()>
     let tmp = dir.join(format!("{name}.tmp"));
     tokio::fs::write(&tmp, contents).await?;
     tokio::fs::rename(&tmp, dir.join(name)).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn profile_paths_use_native_separators() {
+        let root = profile_from_dir("%APPDATA%/profiles/abc").root().to_path_buf();
+        assert!(root.ends_with("vcl.visualsource.github/profiles/abc"));
+        if cfg!(windows) {
+            assert!(!root.to_string_lossy().contains('/'), "{}", root.display());
+            assert_eq!(normalize(std::path::Path::new("C:/Games/VC/log.txt")).to_string_lossy(), r"C:\Games\VC\log.txt");
+        }
+    }
 }

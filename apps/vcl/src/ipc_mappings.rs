@@ -149,6 +149,34 @@ pub struct OpenPathConfig {
     pub path: String,
 }
 
+#[derive(Debug, DeJson)]
+pub struct ReadLogConfig {
+    pub profile_dir: String,
+    /// What the view already has; content is skipped when both still match.
+    #[nserde(default)]
+    pub size: u64,
+    #[nserde(default)]
+    pub modified: u64,
+}
+
+/// A profile's BepInEx `LogOutput.log`.
+#[derive(SerJson)]
+pub struct LogFile {
+    pub path: String,
+    pub exists: bool,
+    pub size: u64,
+    /// Unix ms.
+    pub modified: u64,
+    /// `None` when unchanged since the view's last read (or the file is missing).
+    pub content: Option<String>,
+}
+
+/// `path` is `None` when the save dialog was cancelled.
+#[derive(SerJson)]
+pub struct ExportResult {
+    pub path: Option<String>,
+}
+
 #[derive(SerJson)]
 pub struct IpcError {
     pub error: String,

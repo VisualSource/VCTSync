@@ -735,10 +735,11 @@ impl Tag {
             | Tag::Checkbox { .. }
             | Tag::Switch { .. }
             | Tag::Progress { .. } => len == 0,
+            // Empty when its only child is "" (React renders no text node for that).
+            Tag::Text { .. } => len <= 1,
             Self::Float { .. }
             | Tag::View { .. }
             | Tag::Button { .. }
-            | Tag::Text { .. }
             | Tag::Textarea { .. }
             | Tag::Opaque => len == 1,
             // Empty while a hidden `<Activity>` inside it has not rendered its
