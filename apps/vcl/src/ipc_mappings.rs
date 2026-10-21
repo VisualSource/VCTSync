@@ -192,6 +192,9 @@ pub struct InstallBuildConfig {
     /// `sha256:<hex>`; empty skips the check.
     #[nserde(default)]
     pub digest: String,
+    /// Dev agent bearer token for its downloads; empty for GitHub.
+    #[nserde(default)]
+    pub token: String,
 }
 
 /// Pushed as `build::progress` while a build downloads.

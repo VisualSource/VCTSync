@@ -1,0 +1,23 @@
+[package]
+name = "vct-agent"
+version = "0.1.0"
+edition = { workspace = true }
+
+[[bin]]
+name = "vct-agent"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs", "net", "sync", "time", "signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+nanoserde = "0.2.1"
+axum = "0.8"
+tokio-stream = { version = "0.1", features = ["sync"] }
+notify = "8"
+clap = { version = "4", features = ["derive"] }
+s-zip = "0.13"
+sha2 = "0.10"
+getrandom = "0.2"

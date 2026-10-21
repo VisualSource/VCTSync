@@ -160,6 +160,8 @@ export const Builds = () => {
                 profile_dir: profile.dir,
                 source_url: build.source_url,
                 digest: build.digest ?? "",
+                // Dev agent downloads need the same token as its list.
+                token: build.content_type === "local" ? app.devApiToken : "",
             });
             if (result.error) throw new Error(result.error);
 

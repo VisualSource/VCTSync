@@ -209,6 +209,7 @@ impl Application {
                                         BUILD_FULL_NAME,
                                         &profile,
                                         Some(&config.digest),
+                                        Some(&config.token),
                                         move |downloaded, total| {
                                             let step = (total / 100).max(64 * 1024);
                                             if downloaded == total || downloaded - last_sent >= step {

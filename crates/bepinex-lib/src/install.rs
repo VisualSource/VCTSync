@@ -97,11 +97,12 @@ pub async fn install_mod_url(
     full_name: &str,
     profile: &Profile,
 ) -> Result<Option<PathBuf>, LibError> {
-    install_mod_download(http_client, url, full_name, profile, None, |_, _| {}).await
+    install_mod_download(http_client, url, full_name, profile, None, None, |_, _| {}).await
 }
 
 /// [`install_mod_url`] with a checksum and download progress. `digest` is `sha256:<hex>`
 /// (GitHub's asset format) or bare hex; a mismatch fails before anything is extracted.
+/// `bearer` is sent as `Authorization: Bearer <token>` (the dev agent requires it).
 /// `progress` receives `(downloaded, total)`; `total` is 0 when unknown.
 pub async fn install_mod_download<F>(
     http_client: &reqwest::Client,
@@ -109,13 +110,18 @@ pub async fn install_mod_download<F>(
     full_name: &str,
     profile: &Profile,
     digest: Option<&str>,
+    bearer: Option<&str>,
     progress: F,
 ) -> Result<Option<PathBuf>, LibError>
 where
     F: FnMut(u64, u64),
 {
     let url = Url::parse(url).map_err(|err| LibError::UrlParse(err.to_string()))?;
-    let resp = http_client.get(url).send().await?.error_for_status()?;
+    let mut request = http_client.get(url);
+    if let Some(token) = bearer.filter(|t| !t.is_empty()) {
+        request = request.bearer_auth(token);
+    }
+    let resp = request.send().await?.error_for_status()?;
 
     let extract_dir = tempfile::tempdir()?;
     download_zip(resp, extract_dir.path(), digest, progress).await?;
