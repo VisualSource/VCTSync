@@ -16,4 +16,7 @@ export type Version = {
     timestamp: string;
     branch: string,
     digest: string;
+    /** Bytes, when the source reports it. */
+    size?: number;
+    prerelease?: boolean;
 }

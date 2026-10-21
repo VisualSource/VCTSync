@@ -154,13 +154,23 @@ pub struct IpcError {
     pub error: String,
 }
 
+/// A VoidCrewTerminus build (GitHub release or dev agent) to install into a profile.
 #[derive(Debug, DeJson)]
 pub struct InstallBuildConfig {
-    id: String,
-    version: String,
-    source_url: String,
-    content_type: String,
-    timestamp: String,
-    branch: String,
-    digest: String,
+    /// Build id, echoed in `build::progress` events.
+    pub id: String,
+    pub profile_dir: String,
+    pub source_url: String,
+    /// `sha256:<hex>`; empty skips the check.
+    #[nserde(default)]
+    pub digest: String,
+}
+
+/// Pushed as `build::progress` while a build downloads.
+#[derive(SerJson)]
+pub struct BuildProgress {
+    pub id: String,
+    pub downloaded: u64,
+    /// 0 when the server doesn't send a length.
+    pub total: u64,
 }

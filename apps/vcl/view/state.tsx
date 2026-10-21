@@ -24,8 +24,13 @@ const DEFAULT_SETTINGS: Settings = {
     saveDir: "",
 };
 
+export type Page = "profiles" | "builds" | "logs" | "settings";
+
 type AppState = Settings & {
     activeProfile: string | null;
+    /** The rail page being shown. */
+    page: Page;
+    setPage: (page: Page) => void;
 
     /** Settings came back from the host; edits before this aren't saved. */
     loaded: boolean;
@@ -46,6 +51,10 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 export const useApp = create<AppState>()((set, get) => ({
     ...DEFAULT_SETTINGS,
     activeProfile: null,
+    page: "logs",
+    setPage(page) {
+        set({ page });
+    },
 
     loaded: false,
     saveState: "saved",

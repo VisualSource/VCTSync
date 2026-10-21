@@ -49,7 +49,7 @@ export const Profiles = () => {
                     </row>
                     <space width="fill" />
                     <button onPress={() => launch.mutate()} disabled={!active || launch.isPending}>
-                        <row alignX="center" alignY="center" spacing={4}>
+                        <row alignY="center" spacing={4}>
                             <svg height={15} width={15} color="background.text" src={Play} opacity={!active || launch.isPending ? 0.5 : 1} />
                             <text>{launch.isPending ? `Launching ${active?.name}…` : "Launch"}</text>
                         </row>

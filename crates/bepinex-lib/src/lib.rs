@@ -59,7 +59,7 @@ mod steam;
 
 pub use doorstop::{DoorstopConfig, DoorstopVersion};
 pub use error::LibError;
-pub use install::{DEFAULT_BEPINEX_PACK_VERSION, install_bepinex_pack, install_build, install_mod_url, install_mod_zip, read_zip_manifest, set_mod_enabled, uninstall_mod};
+pub use install::{DEFAULT_BEPINEX_PACK_VERSION, install_bepinex_pack, install_build, install_mod_download, install_mod_url, install_mod_zip, read_zip_manifest, set_mod_enabled, uninstall_mod};
 pub use launch::{LaunchMethod, LaunchMode, Launcher};
 pub use link::{link_profile, unlink_profile};
 pub use profile::Profile;

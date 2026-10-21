@@ -2,13 +2,16 @@ use crate::{
     helpers::{app_dir, delete_profile_dir, game_status, ipc_reply, load_profiles, profile_from_dir, save_profiles, write_app_file},
     ipc_mappings::{
         InstallBuildConfig, IpcError, MessageDialogConfig, MessageDialogResult, OpenDialogResult,
-        InstallModConfig, InstallModResult, LaunchGameConfig, OpenFileConfig, UninstallModConfig, SetModEnabledConfig, ProfileDirConfig, DeleteDirResult, ZipPathConfig, AppInfo, OpenPathConfig,
+        InstallModConfig, InstallModResult, LaunchGameConfig, OpenFileConfig, UninstallModConfig, SetModEnabledConfig, ProfileDirConfig, DeleteDirResult, ZipPathConfig, AppInfo, OpenPathConfig, BuildProgress,
     },
     state::{AppSettings, Message},
 };
 use iced::{Element, Task, Theme};
 use iced_js::Host;
 use nanoserde::{DeJson, SerJson, SerRon};
+
+/// Builds install like a Thunderstore mod under this "Author-Name".
+const BUILD_FULL_NAME: &str = "VisualSource-VoidCrewTerminus";
 
 pub struct Application {
     host: iced_js::Host,
@@ -113,10 +116,6 @@ impl Application {
 
                             Task::done(Message::Js(Event::IpcDispatch(cmd, id, data)))
                         }
-                        "fetch::install_build" => Task::perform(
-                            async move { Event::IpcDispatch(cmd, id, format!("null")) },
-                            Message::Js,
-                        ),
                         "logs::list-lines" => Task::perform(
                             async move {
                                 iced_js::Event::IpcDispatch(
@@ -127,23 +126,60 @@ impl Application {
                             },
                             Message::Js,
                         ),
-                        "install::build" => Task::perform(
-                            async move {
-                                let config = match InstallBuildConfig::deserialize_json(&payload) {
-                                    Ok(e) => e,
-                                    Err(err) => {
-                                        log::error!("{}", err);
+                        "install::build" => {
+                            let config = match InstallBuildConfig::deserialize_json(&payload) {
+                                Ok(config) => config,
+                                Err(err) => {
+                                    let data = ipc_reply(Err(err.to_string()));
+                                    return Task::done(Message::Js(Event::IpcDispatch(cmd, id, data)));
+                                }
+                            };
+                            let build_id = config.id.clone();
 
-                                        return Event::IpcDispatch(cmd, id, format!("null"));
-                                    }
-                                };
+                            Task::sip(
+                                iced::task::sipper(async move |mut sender| {
+                                    use iced::futures::StreamExt;
 
-                                log::info!("Install: {:#?}", config);
-
-                                iced_js::Event::IpcDispatch(cmd, id, "{}".to_string())
-                            },
-                            Message::Js,
-                        ),
+                                    let profile = profile_from_dir(&config.profile_dir);
+                                    // The download reports into a channel that's forwarded to iced; the channel
+                                    // closes when the install future finishes and drops the callback.
+                                    let (tx, mut rx) = iced::futures::channel::mpsc::unbounded();
+                                    // ~100 progress events per download, however many chunks arrive.
+                                    let mut last_sent = 0u64;
+                                    let install = bepinex_lib::install_mod_download(
+                                        crate::http::get_client(),
+                                        &config.source_url,
+                                        BUILD_FULL_NAME,
+                                        &profile,
+                                        Some(&config.digest),
+                                        move |downloaded, total| {
+                                            let step = (total / 100).max(64 * 1024);
+                                            if downloaded == total || downloaded - last_sent >= step {
+                                                last_sent = downloaded;
+                                                let _ = tx.unbounded_send((downloaded, total));
+                                            }
+                                        },
+                                    );
+                                    let forward = async {
+                                        while let Some(progress) = rx.next().await {
+                                            sender.send(progress).await;
+                                        }
+                                    };
+                                    iced::futures::join!(install, forward).0
+                                }),
+                                move |(downloaded, total)| {
+                                    let data = BuildProgress { id: build_id.clone(), downloaded, total }.serialize_json();
+                                    Message::Js(Event::IpcDispatch("build::progress".to_string(), String::new(), data))
+                                },
+                                move |result| {
+                                    let data = match result {
+                                        Ok(icon) => InstallModResult { icon: icon.map(|p| p.to_string_lossy().to_string()) }.serialize_json(),
+                                        Err(err) => ipc_reply(Err(err.to_string())),
+                                    };
+                                    Message::Js(Event::IpcDispatch(cmd, id, data))
+                                },
+                            )
+                        }
                         "message-dialog" => Task::perform(
                             async move {
                                 let config = match MessageDialogConfig::deserialize_json(&payload) {

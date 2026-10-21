@@ -102,17 +102,21 @@ export const ModDetailPanel = () => {
                         </button>
                     ) : status === "installed" ? (
                         <button style="success" disabled>
-                            <row spacing={6} alignX="center" alignY="center">
-                                <svg height={15} width={15} color="success.text" src={Check} />
-                                <text size={14}>Installed</text>
-                            </row>
+                            <view width="fill" alignX="center">
+                                <row spacing={6} alignY="center">
+                                    <svg height={15} width={15} color="success.text" src={Check} />
+                                    <text size={14}>Installed</text>
+                                </row>
+                            </view>
                         </button>
                     ) : (
                         <button onPress={install}>
-                            <row spacing={6} alignX="center" alignY="center">
-                                <svg height={15} width={15} color="primary.text" src={status === "outdated" ? Refresh : Download} />
-                                <text size={14}>{status === "outdated" ? `Update to v${latest.version_number}` : `Install${missing.length ? ` (+${missing.length})` : ""}`}</text>
-                            </row>
+                            <view width="fill" alignX="center">
+                                <row spacing={6} alignY="center">
+                                    <svg height={15} width={15} color="primary.text" src={status === "outdated" ? Refresh : Download} />
+                                    <text size={14}>{status === "outdated" ? `Update to v${latest.version_number}` : `Install${missing.length ? ` (+${missing.length})` : ""}`}</text>
+                                </row>
+                            </view>
                         </button>
                     )}
                 </col>

@@ -32,7 +32,7 @@ export const ModsList = () => {
                     placeholder="Search mods"
                 />
                 <button width="shrink" onPress={() => toggleCatlog(true)}>
-                    <row alignX="center" alignY="center" spacing={2}>
+                    <row alignY="center" spacing={2}>
                         <svg height={16} width={16} color="background.text" src={PackagePlus} />
                         <text size={16}>Add Mod</text>
                     </row>
@@ -42,7 +42,7 @@ export const ModsList = () => {
             <space height={10} />
 
             {mods.length === 0 ? (
-                <col height="fill" alignX="center" alignY="center">
+                <col height="fill" alignX="center">
                     <view center="fill">
                         <col spacing={4} alignX="center">
                             <svg height={48} width={48} color="background.text" src={TriangleAlert} />

@@ -1,4 +1,5 @@
 import BackArrow from "@icon/arrow-left.svg";
+import { Center } from "../../../utils.js";
 import Archive from "@icon/file-archive.svg";
 import Refresh from "@icon/refresh-cw.svg";
 import Download from "@icon/download.svg";
@@ -86,7 +87,7 @@ export const Catalog = () => {
                                 if (result.path) openZipInstall(result.path);
                             }).catch(err => console.error(err));
                         }}>
-                            <row spacing={6} alignX="center" alignY="center">
+                            <row spacing={6} alignY="center">
                                 <svg height={15} width={15} color="secondary.text" src={Archive} />
                                 <text size={14}>From .zip</text>
                             </row>
@@ -100,11 +101,11 @@ export const Catalog = () => {
 
                     {
                         isLoading ? (
-                            <col height="fill" alignX="center" alignY="center">
+                            <Center>
                                 <text color="background.strongest.text">Fetching package list from thunderstore.io…</text>
-                            </col>
+                            </Center>
                         ) : isError || !list ? (
-                            <col height="fill" alignX="center" alignY="center" spacing={8}>
+                            <Center spacing={8}>
                                 <svg height={40} width={40} color="background.text" src={WifiOff} />
                                 <text>Couldn't reach Thunderstore.</text>
                                 <text size={12} color="background.strongest.text">You can still add a mod with From .zip.</text>
@@ -114,11 +115,11 @@ export const Catalog = () => {
                                         <text size={14}>Retry</text>
                                     </row>
                                 </button>
-                            </col>
+                            </Center>
                         ) : list.length === 0 ? (
-                            <col height="fill" alignX="center" alignY="center">
+                            <Center>
                                 <text color="background.strongest.text">{`No mods match "${query}".`}</text>
-                            </col>
+                            </Center>
                         ) : (
                             <scroll height="fill" spacing={4}>
                                 <col spacing={4}>
@@ -151,7 +152,7 @@ export const Catalog = () => {
                     }
 
                     <hr />
-                    <row alignX="center" alignY="center" padding={[0, 4, 4]}>
+                    <row alignY="center" padding={[0, 4, 4]}>
                         <text size={12} color="background.strongest.text">
                             {data && list ? `${list.length} of ${data.mods.length} · synced ${syncedMin < 1 ? "just now" : `${syncedMin} min ago`}` : isLoading ? "Syncing…" : "Last synced: never"}
                         </text>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Center } from "../../../utils.js";
 
 import XIcon from "@icon/x.svg" with {type: "svg" };
 import SlidersHorizontal from "@icon/sliders-horizontal.svg" with { type: "svg" };
@@ -39,13 +40,13 @@ export const ModPanel = () => {
                     isLoading ? (
                         <col></col>
                     ) : isError ? (
-                        <col alignX="center" alignY="center">
+                        <Center>
                             <text>{(error as Error)?.message ?? String(error)}</text>
-                        </col>
+                        </Center>
                     ) : (
                         <col padding={4}>
-                            <row alignX="center" alignY="center" >
-                                <row spacing={6} alignX="center" alignY="center">
+                            <row alignY="center" >
+                                <row spacing={6} alignY="center">
                                     <ProfileIcon type={data?.icon ?? "box"} />
                                     <text size={14} font={{ weight: "semibold" }}>{data?.name ?? ""}</text>
                                 </row>

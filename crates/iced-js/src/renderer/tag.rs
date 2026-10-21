@@ -17,21 +17,21 @@ type CallbackId = u64;
 
 #[derive(Debug)]
 pub enum Tag {
+    /// iced columns only align children horizontally, so there is no `align_y`.
     Col {
         padding: Option<Padding>,
         height: Option<Length>,
         width: Option<Length>,
         align_x: Option<Horizontal>,
-        align_y: Option<Vertical>,
         clip: Option<bool>,
         warp: Option<bool>,
         spacing: Option<Pixels>,
     },
+    /// iced rows only align children vertically, so there is no `align_x`.
     Row {
         padding: Option<Padding>,
         height: Option<Length>,
         width: Option<Length>,
-        align_x: Option<Horizontal>,
         align_y: Option<Vertical>,
         clip: Option<bool>,
         spacing: Option<Pixels>,
@@ -160,6 +160,14 @@ pub enum Tag {
         clip: Option<bool>,
     },
     Opaque,
+    Progress {
+        value: f32,
+        max: Option<f32>,
+        width: Option<Length>,
+        height: Option<Length>,
+        /// Named palette: primary | secondary | success | warning | danger.
+        style: Option<String>,
+    },
     #[cfg(feature = "img-element")]
     Img {
         src: iced::widget::image::Handle,
@@ -225,41 +233,49 @@ impl<'js> FromJs<'js> for Tag {
         let props = obj.get::<_, rquickjs::Object<'js>>("props")?;
 
         match tag_type.as_str() {
-            "col" | "row" => {
+            // An off-axis alignX/alignY falls through to map_props' "unknown prop" warning.
+            "row" => {
                 map_props!(
                     "row",
                     props,
                     (padding, "padding", Padding),
                     (width, "width", Length),
                     (height, "height", Length),
-                    (align_x, "alignX", Horizontal),
                     (align_y, "alignY", Vertical),
                     (clip, "clip", bool),
                     (warp, "warp", bool),
                     (spacing, "spacing", Pixels)
                 );
-                Ok(if tag_type == "row" {
-                    Tag::Row {
-                        padding,
-                        height,
-                        width,
-                        align_x,
-                        align_y,
-                        clip,
-                        warp,
-                        spacing,
-                    }
-                } else {
-                    Tag::Col {
-                        padding,
-                        height,
-                        width,
-                        align_x,
-                        align_y,
-                        clip,
-                        warp,
-                        spacing,
-                    }
+                Ok(Tag::Row {
+                    padding,
+                    height,
+                    width,
+                    align_y,
+                    clip,
+                    warp,
+                    spacing,
+                })
+            }
+            "col" => {
+                map_props!(
+                    "col",
+                    props,
+                    (padding, "padding", Padding),
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (align_x, "alignX", Horizontal),
+                    (clip, "clip", bool),
+                    (warp, "warp", bool),
+                    (spacing, "spacing", Pixels)
+                );
+                Ok(Tag::Col {
+                    padding,
+                    height,
+                    width,
+                    align_x,
+                    clip,
+                    warp,
+                    spacing,
                 })
             }
             "view" => {
@@ -588,6 +604,26 @@ impl<'js> FromJs<'js> for Tag {
             }
 
             #[cfg(feature = "img-element")]
+            "progress" => {
+                map_props!(
+                    "progress",
+                    props,
+                    (value, "value", f32),
+                    (max, "max", f32),
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (style, "style", String)
+                );
+
+                Ok(Tag::Progress {
+                    value: value.unwrap_or(0.0),
+                    max,
+                    width,
+                    height,
+                    style,
+                })
+            }
+
             #[cfg(feature = "img-element")]
             "img" => {
                 // Local file path; iced caches the decoded image by path.
@@ -680,6 +716,7 @@ impl Display for Tag {
             Self::TextInput { .. } => write!(f, "input(text)"),
             Self::Textarea { .. } => write!(f, "textarea"),
 
+            Tag::Progress { .. } => write!(f, "progress"),
             #[cfg(feature = "img-element")]
             Tag::Img { .. } => write!(f, "img"),
             #[cfg(feature = "svg-element")]
@@ -696,7 +733,8 @@ impl Tag {
             | Tag::Vr { .. }
             | Tag::TextInput { .. }
             | Tag::Checkbox { .. }
-            | Tag::Switch { .. } => len == 0,
+            | Tag::Switch { .. }
+            | Tag::Progress { .. } => len == 0,
             Self::Float { .. }
             | Tag::View { .. }
             | Tag::Button { .. }

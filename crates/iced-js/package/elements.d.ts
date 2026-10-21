@@ -39,8 +39,6 @@ declare namespace Iced {
             padding?: Padding;
             height?: Length;
             width?: Length;
-            alignX?: Horizontal;
-            alignY?: Vertical;
             clip?: boolean;
             warp?: boolean;
 
@@ -74,8 +72,28 @@ declare namespace Iced {
             borderRadius?: number;
         }
 
-        interface Column extends Common { }
-        interface Row extends Common { }
+        interface Progress extends React.Attributes {
+            value: number;
+            /** Range is 0..=max. @default 1 */
+            max?: number;
+            /** Length along the bar. @default "fill" */
+            width?: Length;
+            /** Thickness. */
+            height?: Length;
+            /** @default "primary" */
+            style?: "primary" | "secondary" | "success" | "warning" | "danger";
+        }
+
+        /** Children stack vertically; align them horizontally only (iced has no column alignY). To center
+         *  vertically, wrap in `<view center="fill">` or a view with `alignY`. */
+        interface Column extends Common {
+            alignX?: Horizontal;
+        }
+        /** Children flow horizontally; align them vertically only (iced has no row alignX). To center
+         *  horizontally, wrap in a view with `alignX`. */
+        interface Row extends Common {
+            alignY?: Vertical;
+        }
         interface Text extends React.Attributes {
             center?: boolean;
             width?: Length;
@@ -322,6 +340,7 @@ declare module "react/jsx-runtime" {
             svg: Iced.Elements.Svg,
             // only when img-element is enabled
             img: Iced.Elements.Img,
+            progress: Iced.Elements.Progress,
 
             textarea: Iced.Elements.Textarea;
             select: Iced.Elements.Select;

@@ -526,6 +526,30 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 iced::widget::opaque(content)
             }
 
+            Tag::Progress {
+                value,
+                max,
+                width,
+                height,
+                style,
+            } => {
+                debug_assert_eq!(children.len(), 0);
+                use iced::widget::progress_bar;
+
+                let mut node = progress_bar(0.0..=max.unwrap_or(1.0), *value);
+                apply_opt!(node, width, length);
+                apply_opt!(node, height, girth);
+
+                let palette: fn(&iced::Theme) -> progress_bar::Style = match style.as_deref() {
+                    Some("secondary") => progress_bar::secondary,
+                    Some("success") => progress_bar::success,
+                    Some("warning") => progress_bar::warning,
+                    Some("danger") => progress_bar::danger,
+                    _ => progress_bar::primary,
+                };
+                node.style(palette).into()
+            }
+
             #[cfg(feature = "img-element")]
             Tag::Img {
                 src,

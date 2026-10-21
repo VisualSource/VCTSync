@@ -3,7 +3,7 @@ type Props = { isLoading: boolean, isError: boolean, error: Error | null, data: 
 export const LogViewer = ({ isLoading, isError, error, data }: Props) => {
     if (isLoading) return (
         <view height="fill" center="fill" width="fill">
-            <col alignX="center" alignY="center">
+            <col alignX="center">
                 <text>Loading</text>
             </col>
         </view>
@@ -12,7 +12,7 @@ export const LogViewer = ({ isLoading, isError, error, data }: Props) => {
 
     if (isError) return (
         <view height="fill" center="fill" width="fill">
-            <col alignX="center" alignY="center">
+            <col alignX="center">
                 <text>{error?.message ?? String(error)}</text>
             </col>
         </view>
@@ -21,7 +21,7 @@ export const LogViewer = ({ isLoading, isError, error, data }: Props) => {
 
     if (!data || !data.length) return (
         <view height="fill" center="fill" width="fill">
-            <col alignX="center" alignY="center">
+            <col alignX="center">
                 <text>No log file content</text>
             </col>
         </view>

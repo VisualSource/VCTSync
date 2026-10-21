@@ -111,7 +111,7 @@ export const SettingsTab = ({ data }: { data: Profile }) => {
             </col>
             <hr />
             <space height={6} />
-            <row padding={4} alignX="center" alignY="center">
+            <row padding={4} alignY="center">
                 <text size={13}>Deletes the profile folder</text>
                 <space width="fill" />
                 <button style="danger" width="shrink" onPress={() => {
@@ -126,7 +126,7 @@ export const SettingsTab = ({ data }: { data: Profile }) => {
                         });
                     }).catch(err => console.error(err));
                 }}>
-                    <row alignX="center" alignY="center" spacing={4}>
+                    <row alignY="center" spacing={4}>
                         <svg height={15} width={15} color="background.text" src={Trash} />
                         <text size={14}>Delete profile</text>
                     </row>

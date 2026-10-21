@@ -120,10 +120,12 @@ export const ZipInstallPanel = () => {
                             <text size={14}>Choose another…</text>
                         </button>
                         <button disabled={!manifest || isPending} onPress={add}>
-                            <row spacing={6} alignX="center" alignY="center">
-                                <svg height={15} width={15} color="primary.text" src={PackagePlus} />
-                                <text size={14}>{isPending ? "Installing…" : `Add to profile${missing.length ? ` (+${missing.length})` : ""}`}</text>
-                            </row>
+                            <view width="fill" alignX="center">
+                                <row spacing={6} alignY="center">
+                                    <svg height={15} width={15} color="primary.text" src={PackagePlus} />
+                                    <text size={14}>{isPending ? "Installing…" : `Add to profile${missing.length ? ` (+${missing.length})` : ""}`}</text>
+                                </row>
+                            </view>
                         </button>
                     </row>
                 </col>

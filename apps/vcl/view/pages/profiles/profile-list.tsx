@@ -80,7 +80,7 @@ export const ProfileList = () => {
 
     return (
         <col padding={[0, 4]} spacing={6}>
-            <row alignX="center" alignY="center">
+            <row alignY="center">
                 <text size={14}>PROFILES</text>
                 <space width="fill" />
                 <button width="shrink" onPress={createProfile}>

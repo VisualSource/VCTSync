@@ -28,12 +28,12 @@ pub async fn install_build<F>(
     progress: F,
 ) -> Result<(), LibError>
 where
-    F: AsyncFnMut(u64, u64),
+    F: FnMut(u64, u64),
 {
     let url = Url::parse(source).map_err(|err| LibError::UrlParse(err.to_string()))?;
     let resp = http_client.get(url).send().await?.error_for_status()?;
 
-    download_zip(resp, out_dir, progress).await
+    download_zip(resp, out_dir, None, progress).await
 }
 
 /// Download the Thunderstore BepInExPack and hoist its contents into the profile.
@@ -46,7 +46,7 @@ pub async fn install_bepinex_pack(
     let resp = http_client.get(url).send().await?.error_for_status()?;
 
     let extract_dir = tempfile::tempdir()?;
-    download_zip(resp, extract_dir.path(), async |_, _| {}).await?;
+    download_zip(resp, extract_dir.path(), None, |_, _| {}).await?;
 
     let profile = profile.clone();
     tokio::task::spawn_blocking(move || {
@@ -97,13 +97,44 @@ pub async fn install_mod_url(
     full_name: &str,
     profile: &Profile,
 ) -> Result<Option<PathBuf>, LibError> {
+    install_mod_download(http_client, url, full_name, profile, None, |_, _| {}).await
+}
+
+/// [`install_mod_url`] with a checksum and download progress. `digest` is `sha256:<hex>`
+/// (GitHub's asset format) or bare hex; a mismatch fails before anything is extracted.
+/// `progress` receives `(downloaded, total)`; `total` is 0 when unknown.
+pub async fn install_mod_download<F>(
+    http_client: &reqwest::Client,
+    url: &str,
+    full_name: &str,
+    profile: &Profile,
+    digest: Option<&str>,
+    progress: F,
+) -> Result<Option<PathBuf>, LibError>
+where
+    F: FnMut(u64, u64),
+{
     let url = Url::parse(url).map_err(|err| LibError::UrlParse(err.to_string()))?;
     let resp = http_client.get(url).send().await?.error_for_status()?;
 
     let extract_dir = tempfile::tempdir()?;
-    download_zip(resp, extract_dir.path(), async |_, _| {}).await?;
+    download_zip(resp, extract_dir.path(), digest, progress).await?;
 
     install_extracted(extract_dir, full_name, profile).await
+}
+
+fn verify_digest(expected: &str, actual_hex: &str) -> Result<(), LibError> {
+    let expected_hex = match expected.split_once(':') {
+        Some(("sha256", hex)) => hex,
+        Some((algo, _)) => return Err(LibError::UnsupportedDigest(algo.to_string())),
+        None => expected,
+    };
+
+    if expected_hex.eq_ignore_ascii_case(actual_hex) {
+        Ok(())
+    } else {
+        Err(LibError::DigestMismatch { expected: expected_hex.to_string(), actual: actual_hex.to_string() })
+    }
 }
 
 async fn install_extracted(
@@ -235,10 +266,12 @@ fn route_entries(dir: &Path, full_name: &str, bepinex: &Path) -> Result<(), LibE
 
 /// Download a zip to a temp file and extract it into `out_dir`.
 /// `progress` receives `(downloaded, total)`; `total` is 0 when unknown.
-async fn download_zip<F>(mut resp: Response, out_dir: &Path, mut progress: F) -> Result<(), LibError>
+async fn download_zip<F>(mut resp: Response, out_dir: &Path, digest: Option<&str>, mut progress: F) -> Result<(), LibError>
 where
-    F: AsyncFnMut(u64, u64),
+    F: FnMut(u64, u64),
 {
+    use sha2::Digest;
+
     let temp = tempfile::Builder::new()
         .suffix(".zip")
         .tempfile()?
@@ -247,14 +280,20 @@ where
     let total = resp.content_length().unwrap_or(0);
     let mut downloaded = 0;
     let mut file = tokio::fs::File::create(&temp).await?;
+    let mut hasher = sha2::Sha256::new();
 
     while let Some(chunk) = resp.chunk().await? {
         file.write_all(&chunk).await?;
+        hasher.update(&chunk);
         downloaded += chunk.len() as u64;
-        progress(downloaded, total).await;
+        progress(downloaded, total);
     }
     file.flush().await?;
     drop(file);
+
+    if let Some(expected) = digest.filter(|d| !d.is_empty()) {
+        verify_digest(expected, &format!("{:x}", hasher.finalize()))?;
+    }
 
     let mut zip = s_zip::AsyncStreamingZipReader::open(&temp).await?;
     zip.extract_all(out_dir).await?;
@@ -307,6 +346,15 @@ fn copy_dir(from: &Path, to: &Path) -> Result<(), LibError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn digest_formats() {
+        let hex = "ab12";
+        assert!(verify_digest("sha256:AB12", hex).is_ok());
+        assert!(verify_digest("ab12", hex).is_ok());
+        assert!(matches!(verify_digest("sha256:ffff", hex), Err(LibError::DigestMismatch { .. })));
+        assert!(matches!(verify_digest("md5:ab12", hex), Err(LibError::UnsupportedDigest(_))));
+    }
 
     #[test]
     fn disable_and_enable_round_trip() {

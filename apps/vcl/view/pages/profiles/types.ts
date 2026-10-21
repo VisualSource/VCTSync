@@ -11,7 +11,8 @@ export type Mod = {
     description?: string;
     /** Thunderstore "Author-Name-Version" strings. */
     dependencies: string[];
-    source: "local" | "thunderstore";
+    /** "release" / "dev" are VoidCrewTerminus builds from the Versions page. */
+    source: "local" | "thunderstore" | "release" | "dev";
 }
 
 

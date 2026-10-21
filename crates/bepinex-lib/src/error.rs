@@ -23,6 +23,12 @@ pub enum LibError {
     #[error(transparent)]
     Http(#[from] reqwest::Error),
 
+    #[error("download doesn't match its checksum (expected sha256 {expected}, got {actual}); nothing was installed")]
+    DigestMismatch { expected: String, actual: String },
+
+    #[error("unsupported checksum type '{0}'")]
+    UnsupportedDigest(String),
+
     #[error("url parse: {0}")]
     UrlParse(String),
 

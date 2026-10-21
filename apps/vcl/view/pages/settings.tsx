@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Center } from "../utils.js";
 import { invoke } from "react-iced-native";
 import type { ReactNode } from "react";
 import { useApp } from "../state.js";
@@ -101,7 +102,7 @@ export const Settings = () => {
     const syncedMin = Math.round((Date.now() - catalog.dataUpdatedAt) / 60_000);
 
     if (!settings.loaded) return (
-        <col height="fill" alignX="center" alignY="center"><text color={MUTED}>Loading settings…</text></col>
+        <Center><text color={MUTED}>Loading settings…</text></Center>
     );
 
     const game = status.data;

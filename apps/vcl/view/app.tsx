@@ -1,6 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-iced-native";
-import { useState } from "react";
 
 import { Tooltip } from "./utils.js";
 
@@ -18,7 +17,8 @@ import { DbProvider } from "@tanstack/react-db";
 import { useApp } from "./state.js";
 
 const App = () => {
-    const [tab, setTab] = useState<string>("logs");
+    const tab = useApp(state => state.page);
+    const setTab = useApp(state => state.setPage);
 
     return (
         <QueryClientProvider client={queryClient}>
