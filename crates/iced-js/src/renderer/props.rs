@@ -163,6 +163,28 @@ impl JsProp for Vertical {
     }
 }
 
+/// `true`/`false` (word wrapping on/off) or a mode name.
+impl JsProp for iced::widget::text::Wrapping {
+    fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
+        use iced::widget::text::Wrapping;
+        if let Some(on) = v.as_bool() {
+            return Ok(if on { Wrapping::Word } else { Wrapping::None });
+        }
+
+        match v.get::<String>()?.as_str() {
+            "none" => Ok(Wrapping::None),
+            "word" => Ok(Wrapping::Word),
+            "glyph" => Ok(Wrapping::Glyph),
+            "wordOrGlyph" => Ok(Wrapping::WordOrGlyph),
+            _ => Err(rquickjs::Error::new_from_js_message(
+                "string",
+                "Wrapping",
+                "expected none | word | glyph | wordOrGlyph",
+            )),
+        }
+    }
+}
+
 impl JsProp for iced::widget::tooltip::Position {
     fn from_prop(v: rquickjs::Value<'_>) -> rquickjs::Result<Self> {
         use iced::widget::tooltip::Position;

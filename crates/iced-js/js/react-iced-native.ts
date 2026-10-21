@@ -91,6 +91,13 @@ export const invoke = async <T>(cmd: string, payload?: unknown) => {
     });
 }
 
+/** Subscribe to events the host pushes with `Event::IpcDispatch(cmd, _, payload)`. Returns an unsubscribe. */
+export const listen = <T>(cmd: string, cb: (payload: T) => void) => {
+    const callback = (ev: { id: string; payload: unknown }) => cb(ev.payload as T);
+    __ICED_INTERNALS__.addEventListener(cmd, callback);
+    return () => __ICED_INTERNALS__.removeEventListener(cmd, callback);
+}
+
 
 /* -------------------------------------------------------------------------
  * Callback registry

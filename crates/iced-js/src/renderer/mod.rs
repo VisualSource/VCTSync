@@ -202,7 +202,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 center,
                 shaping,
                 font,
-                ..
+                wrapping,
             } => {
                 debug_assert_eq!(children.len(), 1);
 
@@ -222,6 +222,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 apply_opt!(node, align_y, align_y);
                 apply_opt!(node, shaping, shaping);
                 apply_opt!(node, line_height, line_height);
+                apply_opt!(node, wrapping, wrapping);
                 if let Some(color) = *color {
                     node = node.style(move |theme| iced::widget::text::Style {
                         color: Some(color.resolve(theme)),
@@ -477,6 +478,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
             }
 
             Tag::Select {
+                width,
                 value,
                 placeholder,
                 on_select,
@@ -493,6 +495,7 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
                 if let Some(placeholder) = placeholder {
                     node = node.placeholder(placeholder);
                 }
+                apply_opt!(node, width, width);
 
                 node.into()
             }
@@ -521,6 +524,25 @@ pub fn render_tree<'a>(tree: &'a Node) -> Element<'a, Event> {
 
                 let content = render_tree(&children[0]);
                 iced::widget::opaque(content)
+            }
+
+            #[cfg(feature = "img-element")]
+            Tag::Img {
+                src,
+                width,
+                height,
+                opacity,
+                border_radius,
+            } => {
+                debug_assert_eq!(children.len(), 0);
+
+                let mut node = iced::widget::image(src.clone());
+                apply_opt!(node, width, width);
+                apply_opt!(node, height, height);
+                apply_opt!(node, opacity, opacity);
+                apply_opt!(node, border_radius, border_radius);
+
+                node.into()
             }
 
             #[cfg(feature = "svg-element")]

@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 reqwest = { workspace = true }
-iced-js = { workspace = true, features = ["js-compression"] }
+iced-js = { workspace = true, features = ["js-compression", "img-element"] }
 anyhow = { workspace = true }
 bepinex-lib = { path = "../../crates/bepinex-lib" }
 iced = { workspace = true, features = ["svg", "tokio", "sipper"] }

@@ -2,36 +2,36 @@ VCL — Profiles page (vs mockups/profiles.html)
 ==============================================
 Out of scope here: profiles collection onInsert/onUpdate/onDelete handlers (query.ts).
 
-[ ] 0. Replace add-mod-dialog.tsx with pushed screens (no modal; window is 480x800)
+✔ 0. Replace add-mod-dialog.tsx with pushed screens (no modal; window is 480x800) @done(26-10-21 13:14)
        profile panel (Mods) -> "Add Mod" pushes Catalog -> row pushes Details / "From .zip" pushes Zip preview
        each screen = AnimActivity x:100%->0 like the profile panel; back arrow + Esc pop one level
 
 [ ] 1a. Add Mod: load from file (.zip)
-    [ ] "From .zip" button in catalog header -> platform/dialog open(), filter *.zip -> push Zip preview
+    ✔ "From .zip" button in catalog header -> platform/dialog open(), filter *.zip -> push Zip preview @done(26-10-21 13:24)
         (check open() supports extension filters; add if not)
-    [ ] Rust IPC command: (zip path, profile dir) ->
+    ✔ Rust IPC command: (zip path, profile dir) -> @done(26-10-21 13:40)
         - read manifest.json at zip root (Thunderstore V1: name, version_number, description,
           website_url, dependencies["Team-Name-Version"], optional "author")
         - author fallback: parse file name "Namespace-Name-Version.zip" (r2modman convention)
         - read icon.png (256x256) -> return path / data URI
         - extract into profile dir (BepInEx layout; BepInExPack goes to game root)
         - error if manifest.json missing / unparsable
-    [ ] Push Mod into draft.mods (nanoid id, enabled: true), pop back to the profile's mod list
-    [ ] Extend Mod type: description?, dependencies: string[], source: "local" | "thunderstore"
-    [ ] Missing deps on a zip import -> offer install from Thunderstore
+    ✔ Push Mod into draft.mods (nanoid id, enabled: true), pop back to the profile's mod list @done(26-10-21 13:40)
+    ✔ Extend Mod type: description?, dependencies: string[], source: "local" | "thunderstore" @done(26-10-21 13:40)
+    ✔ Missing deps on a zip import -> offer install from Thunderstore @done(26-10-21 13:40)
 
-[ ] 1b. Add Mod: Thunderstore catalog (see mockups/catalog.html)
+✔ 1b. Add Mod: Thunderstore catalog (see mockups/catalog.html) @done(26-10-21 13:24)
     API (public, no auth; what r2modman uses):
       GET https://thunderstore.io/c/v-rising/api/v1/package/        full list (deprecated but served; large -> cache)
       GET https://thunderstore.io/c/v-rising/api/v1/package-listing-index/
       GET https://thunderstore.io/api/experimental/package/{namespace}/{name}/
           latest: version_number, icon, download_url, dependencies, description, website_url
-    [ ] Fetch + cache package list (host side)
-    [ ] Search / sort / details / install UI per mockup
-    [ ] Install = download download_url -> same zip import as 1a
-    [ ] Auto-install missing dependencies
+    ✔ Fetch + cache package list (host side) @done(26-10-21 13:24)
+    ✔ Search / sort / details / install UI per mockup @done(26-10-21 13:24)
+    ✔ Install = download download_url -> same zip import as 1a @done(26-10-21 14:03)
+    ✔ Auto-install missing dependencies @done(26-10-21 14:03)
 
-[ ] 2. Clicking a profile row sets it active (profile-list.tsx row is a plain view)
+✔ 2. Clicking a profile row sets it active (profile-list.tsx row is a plain view) @done(26-10-21 13:24)
        gear stays a separate button
 
 [ ] 3. Active-profile defaults & sync
@@ -49,7 +49,7 @@ Out of scope here: profiles collection onInsert/onUpdate/onDelete handlers (quer
 
 [ ] 5. Mods list polish
     [ ] Real mod icon instead of Trash placeholder (mod-panel-mod-list.tsx)
-    [ ] Dim disabled mods (opacity ~0.45)
+    ✔ Dim disabled mods (opacity ~0.45) @done(26-10-21 13:36)
     [ ] Case-insensitive search (query.ts useModList)
     [ ] Version shown as "v1.2.3"
 

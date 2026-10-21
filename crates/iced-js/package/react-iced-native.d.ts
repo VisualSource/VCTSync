@@ -28,6 +28,9 @@ declare module "react-iced-native" {
      */
     export function invoke<T>(cmd: string, obj: unknown): Promise<T>;
 
+    /** Subscribe to events the host pushes with `Event::IpcDispatch(cmd, _, payload)`. Returns an unsubscribe. */
+    export function listen<T>(cmd: string, cb: (payload: T) => void): () => void;
+
 
     export function createRoot(id: string): { render: (el: React.ReactNode) => void, destroy(): void; }
 

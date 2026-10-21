@@ -1,6 +1,8 @@
 use crate::{
+    helpers::{app_dir, delete_profile_dir, game_status, ipc_reply, load_profiles, profile_from_dir, save_profiles, write_app_file},
     ipc_mappings::{
-        InstallBuildConfig, MessageDialogConfig, MessageDialogResult, OpenDialogResult,
+        InstallBuildConfig, IpcError, MessageDialogConfig, MessageDialogResult, OpenDialogResult,
+        InstallModConfig, InstallModResult, LaunchGameConfig, OpenFileConfig, UninstallModConfig, SetModEnabledConfig, ProfileDirConfig, DeleteDirResult, ZipPathConfig, AppInfo, OpenPathConfig,
     },
     state::{AppSettings, Message},
 };
@@ -14,13 +16,14 @@ pub struct Application {
 }
 
 impl Application {
-    pub fn theme(_: &Application) -> Theme {
-        Theme::Dark
+    pub fn theme(state: &Application) -> Theme {
+        state.settings.theme()
     }
     pub fn new() -> (Self, Task<Message>) {
+        let settings = app_dir().map(|dir| AppSettings::load(&dir.join("settings.ron"))).unwrap_or_default();
         let state = Self {
             host: Host::new([("main", "app.js")]),
-            settings: AppSettings::new(),
+            settings,
         };
 
         (state, Task::none())
@@ -34,42 +37,77 @@ impl Application {
                     match cmd.as_str() {
                         "save::settings" => {
                             let config = match AppSettings::deserialize_json(&payload) {
-                                Ok(e) => e,
+                                Ok(config) => config,
                                 Err(err) => {
-                                    log::error!("{}", err);
-
-                                    return Task::done(Message::Js(Event::IpcDispatch(
-                                        cmd,
-                                        id,
-                                        format!("null"),
-                                    )));
+                                    let data = ipc_reply(Err(err.to_string()));
+                                    return Task::done(Message::Js(Event::IpcDispatch(cmd, id, data)));
                                 }
                             };
 
+                            // Applied right away (theme, launch method); the file write follows.
                             let ron = config.serialize_ron();
                             state.settings = config;
 
                             Task::perform(
                                 async move {
-                                    let Some(config_dir) = dirs::config_dir() else {
-                                        log::error!(
-                                            "failed to write config write do to supported config dir"
-                                        );
-                                        return Event::IpcDispatch(cmd, id, "null".to_string());
-                                    };
-
-                                    let settings_file =
-                                        config_dir.join("vcl.visualsource.github/settings.ron");
-
-                                    if let Err(err) = tokio::fs::write(settings_file, ron).await {
-                                        log::error!("{}", err)
-                                    }
-
-                                    Event::IpcDispatch(cmd, id, "null".to_string())
+                                    let result = write_app_file("settings.ron", ron).await.map_err(|err| err.to_string());
+                                    Event::IpcDispatch(cmd, id, ipc_reply(result))
                                 },
                                 Message::Js,
                             )
                         }
+                        "app::info" => {
+                            let info = AppInfo {
+                                app_dir: app_dir().map(|dir| dir.to_string_lossy().to_string()).unwrap_or_default(),
+                                version: env!("CARGO_PKG_VERSION").to_string(),
+                                themes: Theme::ALL.iter().map(|theme| theme.to_string()).collect(),
+                            };
+                            Task::done(Message::Js(Event::IpcDispatch(cmd, id, info.serialize_json())))
+                        }
+                        "game::status" => {
+                            let settings = state.settings.clone();
+                            Task::perform(
+                                async move {
+                                    let status = tokio::task::spawn_blocking(move || game_status(&settings))
+                                        .await
+                                        .map(|status| status.serialize_json())
+                                        .unwrap_or_else(|err| ipc_reply(Err(err.to_string())));
+                                    Event::IpcDispatch(cmd, id, status)
+                                },
+                                Message::Js,
+                            )
+                        }
+                        "game::unlink" => {
+                            let settings = state.settings.clone();
+                            Task::perform(
+                                async move {
+                                    let result = tokio::task::spawn_blocking(move || -> Result<(), bepinex_lib::LibError> {
+                                        bepinex_lib::unlink_profile(settings.steam()?.game_dir())
+                                    })
+                                    .await
+                                    .map_err(|err| err.to_string())
+                                    .and_then(|r| r.map_err(|err| err.to_string()));
+                                    Event::IpcDispatch(cmd, id, ipc_reply(result))
+                                },
+                                Message::Js,
+                            )
+                        }
+                        "open-path" => Task::perform(
+                            async move {
+                                let result = OpenPathConfig::deserialize_json(&payload)
+                                    .map_err(|err| err.to_string())
+                                    .and_then(|config| {
+                                        let opener = if cfg!(windows) { "explorer" } else { "xdg-open" };
+                                        std::process::Command::new(opener)
+                                            .arg(config.path)
+                                            .spawn()
+                                            .map(|_| ())
+                                            .map_err(|err| err.to_string())
+                                    });
+                                Event::IpcDispatch(cmd, id, ipc_reply(result))
+                            },
+                            Message::Js,
+                        ),
                         "fetch::settings" => {
                             let data = state.settings.serialize_json();
 
@@ -178,6 +216,183 @@ impl Application {
                             },
                             Message::Js,
                         ),
+                        "open-file" => Task::perform(
+                            async move {
+                                let config = OpenFileConfig::deserialize_json(&payload).unwrap_or_default();
+                                let mut dialog = rfd::AsyncFileDialog::new();
+                                if !config.filters.is_empty() {
+                                    dialog = dialog.add_filter(config.filters.join(", "), &config.filters);
+                                }
+
+                                let path = dialog
+                                    .pick_file()
+                                    .await
+                                    .map(|handle| handle.path().to_string_lossy().to_string());
+
+                                Event::IpcDispatch(cmd, id, OpenDialogResult::new(path).serialize_json())
+                            },
+                            Message::Js,
+                        ),
+                        "zip::read-manifest" => Task::perform(
+                            async move {
+                                let result = match ZipPathConfig::deserialize_json(&payload) {
+                                    Ok(config) => bepinex_lib::read_zip_manifest(std::path::Path::new(&config.path))
+                                        .await
+                                        .map_err(|err| err.to_string()),
+                                    Err(err) => Err(err.to_string()),
+                                };
+
+                                let data = result.unwrap_or_else(|error| IpcError { error }.serialize_json());
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "mods::install" => Task::perform(
+                            async move {
+                                let result = match InstallModConfig::deserialize_json(&payload) {
+                                    Ok(config) => {
+                                        let profile = profile_from_dir(&config.profile_dir);
+                                        match (config.path, config.url) {
+                                            (Some(path), _) => bepinex_lib::install_mod_zip(std::path::Path::new(&path), &config.full_name, &profile)
+                                                .await
+                                                .map_err(|err| err.to_string()),
+                                            (None, Some(url)) => bepinex_lib::install_mod_url(crate::http::get_client(), &url, &config.full_name, &profile)
+                                                .await
+                                                .map_err(|err| err.to_string()),
+                                            (None, None) => Err("mods::install needs a path or url".to_string()),
+                                        }
+                                    }
+                                    Err(err) => Err(err.to_string()),
+                                };
+
+                                let data = match result {
+                                    Ok(icon) => InstallModResult { icon: icon.map(|p| p.to_string_lossy().to_string()) }.serialize_json(),
+                                    Err(error) => IpcError { error }.serialize_json(),
+                                };
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "profiles::list" => Task::perform(
+                            async move {
+                                let data = match load_profiles().await {
+                                    Ok(profiles) => profiles.serialize_json(),
+                                    Err(err) => IpcError { error: err.to_string() }.serialize_json(),
+                                };
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "profiles::save" => Task::perform(
+                            async move {
+                                let data = match save_profiles(&payload).await {
+                                    Ok(()) => "{}".to_string(),
+                                    Err(err) => IpcError { error: err.to_string() }.serialize_json(),
+                                };
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "mods::uninstall" => Task::perform(
+                            async move {
+                                let result = match UninstallModConfig::deserialize_json(&payload) {
+                                    Ok(config) => tokio::task::spawn_blocking(move || {
+                                        bepinex_lib::uninstall_mod(&config.full_name, &profile_from_dir(&config.profile_dir))
+                                    })
+                                    .await
+                                    .map_err(|err| err.to_string())
+                                    .and_then(|r| r.map_err(|err| err.to_string())),
+                                    Err(err) => Err(err.to_string()),
+                                };
+
+                                let data = match result {
+                                    Ok(()) => "{}".to_string(),
+                                    Err(error) => IpcError { error }.serialize_json(),
+                                };
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "mods::set-enabled" => Task::perform(
+                            async move {
+                                let result = match SetModEnabledConfig::deserialize_json(&payload) {
+                                    Ok(config) => tokio::task::spawn_blocking(move || {
+                                        bepinex_lib::set_mod_enabled(&config.full_name, &profile_from_dir(&config.profile_dir), config.enabled)
+                                    })
+                                    .await
+                                    .map_err(|err| err.to_string())
+                                    .and_then(|r| r.map_err(|err| err.to_string())),
+                                    Err(err) => Err(err.to_string()),
+                                };
+
+                                let data = match result {
+                                    Ok(()) => "{}".to_string(),
+                                    Err(error) => IpcError { error }.serialize_json(),
+                                };
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "profiles::delete-dir" => Task::perform(
+                            async move {
+                                let data = match ProfileDirConfig::deserialize_json(&payload) {
+                                    Ok(config) => {
+                                        let dir = profile_from_dir(&config.profile_dir).root().to_path_buf();
+                                        let shown = dir.to_string_lossy().to_string();
+                                        let app = app_dir().unwrap_or_default();
+                                        match tokio::task::spawn_blocking(move || delete_profile_dir(&dir, &app)).await {
+                                            Ok(Ok(deleted)) => DeleteDirResult { deleted, dir: shown }.serialize_json(),
+                                            Ok(Err(err)) => IpcError { error: err.to_string() }.serialize_json(),
+                                            Err(err) => IpcError { error: err.to_string() }.serialize_json(),
+                                        }
+                                    }
+                                    Err(err) => IpcError { error: err.to_string() }.serialize_json(),
+                                };
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        ),
+                        "launch-game" => {
+                            let settings = state.settings.clone();
+                            Task::perform(
+                            async move {
+                                let launch = move |config: LaunchGameConfig| -> Result<(), bepinex_lib::LibError> {
+                                    let steam = settings.steam()?;
+                                    let profile = profile_from_dir(&config.profile_dir);
+                                    bepinex_lib::link_profile(&profile, steam.game_dir())?;
+                                    bepinex_lib::Launcher::new(steam, profile).launch(
+                                        bepinex_lib::LaunchMode::Modded,
+                                        settings.launch_method(),
+                                        config.launch_args.split_whitespace(),
+                                    )?;
+                                    Ok(())
+                                };
+
+                                let result = match LaunchGameConfig::deserialize_json(&payload) {
+                                    Ok(config) => tokio::task::spawn_blocking(move || launch(config))
+                                        .await
+                                        .map_err(|err| err.to_string())
+                                        .and_then(|r| r.map_err(|err| err.to_string())),
+                                    Err(err) => Err(err.to_string()),
+                                };
+
+                                let data = match result {
+                                    Ok(()) => "{}".to_string(),
+                                    Err(error) => IpcError { error }.serialize_json(),
+                                };
+
+                                Event::IpcDispatch(cmd, id, data)
+                            },
+                            Message::Js,
+                        )
+                        }
                         _ => Task::none(),
                     }
                 } else {

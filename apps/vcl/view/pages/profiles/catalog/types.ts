@@ -3,6 +3,7 @@ export type CatalogModVersion = {
     full_name: string;
     icon: string;
     version_number: string;
+    description: string;
     dependencies: string[]
     download_url: string;
     downloads: number;
@@ -28,4 +29,14 @@ export type CatalogMod = {
     has_nsfw_content: boolean;
     categories: string[];
     versions: CatalogModVersion[]
+}
+
+/** Thunderstore V1 manifest.json at the zip root. */
+export type ZipManifest = {
+    name: string;
+    version_number: string;
+    website_url: string;
+    description: string;
+    dependencies: string[];
+    author?: string;
 }

@@ -21,7 +21,16 @@ impl SteamPaths {
     /// Find Steam (registry on windows) and the library that holds Void Crew.
     pub fn locate() -> Result<Self, LibError> {
         let steam = steamlocate::SteamDir::locate().map_err(|_| LibError::SteamNotFound)?;
+        Self::find_game(steam)
+    }
 
+    /// Like [`SteamPaths::locate`], but with a user-chosen Steam folder.
+    pub fn locate_in(steam_dir: &Path) -> Result<Self, LibError> {
+        let steam = steamlocate::SteamDir::from_dir(steam_dir).map_err(|_| LibError::SteamNotFound)?;
+        Self::find_game(steam)
+    }
+
+    fn find_game(steam: steamlocate::SteamDir) -> Result<Self, LibError> {
         let (app, library) = steam
             .find_app(VOID_CREW_APP_ID)?
             .ok_or(LibError::GameNotFound)?;

@@ -41,7 +41,7 @@ type MessageDialogOptions = {
 }
 
 export const message = async (message: string, options?: Omit<MessageDialogOptions, "description">) => {
-    const data = await invoke<{ result: string }>("message-dialog", { ...options, description: message });
+    const data = await invoke<{ result: string }>("message-dialog", { ...options, level: options?.kind, description: message });
 
     return data.result;
 }

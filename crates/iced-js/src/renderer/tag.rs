@@ -7,7 +7,7 @@ use iced::{
     animation::Easing,
     widget::{
         self,
-        text::{LineHeight, Shaping},
+        text::{LineHeight, Shaping, Wrapping},
     },
 };
 use rquickjs::FromJs;
@@ -73,7 +73,7 @@ pub enum Tag {
         height: Option<Length>,
         align_x: Option<Horizontal>,
         align_y: Option<Vertical>,
-        wrapping: Option<bool>,
+        wrapping: Option<Wrapping>,
         color: Option<ThemeColor>,
         center: Option<bool>,
         shaping: Option<Shaping>,
@@ -148,6 +148,7 @@ pub enum Tag {
         on_change: Option<CallbackId>,
     },
     Select {
+        width: Option<Length>,
         placeholder: Option<String>,
         on_select: CallbackId,
         value: Option<String>,
@@ -159,6 +160,14 @@ pub enum Tag {
         clip: Option<bool>,
     },
     Opaque,
+    #[cfg(feature = "img-element")]
+    Img {
+        src: iced::widget::image::Handle,
+        width: Option<Length>,
+        height: Option<Length>,
+        opacity: Option<f32>,
+        border_radius: Option<f32>,
+    },
     #[cfg(feature = "svg-element")]
     Svg {
         src: iced::widget::svg::Handle,
@@ -330,7 +339,7 @@ impl<'js> FromJs<'js> for Tag {
                     (height, "height", Length),
                     (align_x, "alignX", Horizontal),
                     (align_y, "alignY", Vertical),
-                    (wrapping, "wrapping", bool),
+                    (wrapping, "wrapping", Wrapping),
                     (font, "font", Font),
                     (color, "color", ThemeColor),
                     (center, "center", bool)
@@ -540,6 +549,7 @@ impl<'js> FromJs<'js> for Tag {
                     "select",
                     props,
                     ignore["src","onSelect","options"],
+                    (width, "width", Length),
                     (placeholder, "placeholder", String),
                     (value, "value", String)
                 );
@@ -548,6 +558,7 @@ impl<'js> FromJs<'js> for Tag {
                 let options = props.get::<_, Vec<SelectOption>>("options")?;
 
                 Ok(Tag::Select {
+                    width,
                     placeholder,
                     on_select,
                     value,
@@ -577,8 +588,28 @@ impl<'js> FromJs<'js> for Tag {
             }
 
             #[cfg(feature = "img-element")]
+            #[cfg(feature = "img-element")]
             "img" => {
-                unimplemented!()
+                // Local file path; iced caches the decoded image by path.
+                let src: String = props.get("src")?;
+
+                map_props!(
+                    "img",
+                    props,
+                    ignore["src"],
+                    (width, "width", Length),
+                    (height, "height", Length),
+                    (opacity, "opacity", f32),
+                    (border_radius, "borderRadius", f32)
+                );
+
+                Ok(Tag::Img {
+                    src: iced::widget::image::Handle::from_path(src),
+                    width,
+                    height,
+                    opacity,
+                    border_radius,
+                })
             }
 
             #[cfg(feature = "markdown-element")]
@@ -649,6 +680,8 @@ impl Display for Tag {
             Self::TextInput { .. } => write!(f, "input(text)"),
             Self::Textarea { .. } => write!(f, "textarea"),
 
+            #[cfg(feature = "img-element")]
+            Tag::Img { .. } => write!(f, "img"),
             #[cfg(feature = "svg-element")]
             Tag::Svg { .. } => write!(f, "svg"),
         }

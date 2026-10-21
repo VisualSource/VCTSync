@@ -15,6 +15,7 @@ import ScrollText from "./assets/icons/scroll-text.svg" with {type: "svg" };
 import SettingsSvg from "./assets/icons/settings.svg" with {type: "svg" };
 import { queryClient, dbClient } from "./client.js";
 import { DbProvider } from "@tanstack/react-db";
+import { useApp } from "./state.js";
 
 const App = () => {
     const [tab, setTab] = useState<string>("logs");
@@ -77,4 +78,5 @@ const Router = ({ tab }: { tab: string }) => {
 
 
 
+void useApp.getState().loadSettings();
 createRoot("main").render(<App />);

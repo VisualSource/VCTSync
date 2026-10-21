@@ -5,9 +5,18 @@ import { useListProfiles, useProfileCollection } from "./query.js";
 import { useApp } from "../../state.js";
 import { nanoid } from "nanoid";
 import { useProfileState } from "./state.js";
+import type { Profile } from "./types.js";
+
+/** "3/4 mods · BepInEx 5.4.2305" */
+const profileMeta = (profile: Profile) => {
+    const enabled = profile.mods.filter(mod => mod.enabled).length;
+    const bepinex = profile.mods.find(mod => mod.author === "BepInEx" && mod.name === "BepInExPack");
+    return `${enabled}/${profile.mods.length} mods${bepinex ? ` · BepInEx ${bepinex.version}` : ""}`;
+}
 
 export const ProfileList = () => {
     const activeProfile = useApp(state => state.activeProfile);
+    const setProfile = useApp(state => state.setActiveProfile);
     const { data, error, isError, isLoading } = useListProfiles();
     const collection = useProfileCollection();
 
@@ -26,6 +35,7 @@ export const ProfileList = () => {
             dir: `%APPDATA%/profiles/${id}`,
             icon: ICONS[Math.floor(Math.random() * ICONS.length)] ?? "box",
         });
+        if (!activeProfile) setProfile(id);
     };
 
     if (isLoading) return (
@@ -89,24 +99,26 @@ export const ProfileList = () => {
                             background: "background.weaker",
                             borderRadius: 4
                         }}>
-                            <row padding={6} spacing={6} alignY="center">
-                                <ProfileIcon type={profile.icon} />
-                                <col>
-                                    <text color="primary.base.text" font={{ weight: "semibold" }} size={14}>{profile.name}</text>
-                                    <text size={12}>{`Mods ${profile.mods.reduce((prev, mod) => mod.enabled ? prev + 1 : prev, 0)}/${profile.mods.length}`}</text>
-                                </col>
-                                <space width="fill" />
+                            <button onPress={() => setProfile(profile.id)} style={{}} padding={0}>
+                                <row padding={6} spacing={6} alignY="center">
+                                    <ProfileIcon type={profile.icon} />
+                                    <col>
+                                        <text color="primary.base.text" font={{ weight: "semibold" }} size={14}>{profile.name}</text>
+                                        <text size={12}>{profileMeta(profile)}</text>
+                                    </col>
+                                    <space width="fill" />
 
-                                {profile.id === activeProfile ? (
-                                    <view style={{ background: "primary", borderRadius: 9 }} padding={[1, 6]}>
-                                        <text size={11}>Active</text>
-                                    </view>
-                                ) : null}
+                                    {profile.id === activeProfile ? (
+                                        <view style={{ background: "primary", borderRadius: 9 }} padding={[1, 6]}>
+                                            <text size={11}>Active</text>
+                                        </view>
+                                    ) : null}
 
-                                <button height={36} width={36} style="subtle" onPress={() => openDetails(profile.id)}>
-                                    <svg height={30} width={30} color="background.text" src={Settings} />
-                                </button>
-                            </row>
+                                    <button width="shrink" style="subtle" onPress={() => openDetails(profile.id)}>
+                                        <svg height={18} width={18} color="background.text" src={Settings} />
+                                    </button>
+                                </row>
+                            </button>
                         </view>
                     ))}
                 </col>

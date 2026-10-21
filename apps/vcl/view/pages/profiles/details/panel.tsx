@@ -47,7 +47,7 @@ export const ModPanel = () => {
                             <row alignX="center" alignY="center" >
                                 <row spacing={6} alignX="center" alignY="center">
                                     <ProfileIcon type={data?.icon ?? "box"} />
-                                    <text size={14} font={{ weight: "semibold" }}>{data!?.name}</text>
+                                    <text size={14} font={{ weight: "semibold" }}>{data?.name ?? ""}</text>
                                 </row>
                                 <space width="fill" />
                                 <button width="shrink" style="subtle" onPress={onClose}>

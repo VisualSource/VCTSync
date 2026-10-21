@@ -4,6 +4,7 @@
 )]
 
 mod app;
+mod helpers;
 mod http;
 mod ipc_mappings;
 mod state;
@@ -29,10 +30,17 @@ fn keyboard_listener(_state: &Application) -> Subscription<Message> {
             modifiers,
             ..
         }) => {
-            if modifiers.is_empty() && named == iced::keyboard::key::Named::F5 {
-                Some(Message::Reload)
-            } else {
-                None
+            use iced::keyboard::key::Named;
+            match named {
+                _ if !modifiers.is_empty() => None,
+                Named::F5 => Some(Message::Reload),
+                // Pushed to `listen("key::escape", ...)` in the view.
+                Named::Escape => Some(Message::Js(iced_js::Event::IpcDispatch(
+                    "key::escape".to_string(),
+                    String::new(),
+                    "{}".to_string(),
+                ))),
+                _ => None,
             }
         }
         _ => None,

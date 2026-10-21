@@ -49,7 +49,7 @@ const remoteQueryFn = async ({ signal }: { signal: AbortSignal }) => {
     } as Version));
 }
 
-const localQueryFn = async ({ signal }: { signal: AbortSignal, }) => {
+export const localQueryFn = async ({ signal }: { signal: AbortSignal, }) => {
     const app = useApp.getState();
 
     if (!app.devApiUrl) throw new Error("No api url configured");

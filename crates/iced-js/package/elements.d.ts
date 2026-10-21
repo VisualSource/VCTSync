@@ -48,6 +48,7 @@ declare namespace Iced {
         }
 
         interface Select extends React.Attributes {
+            width?: Length;
             value?: string | undefined,
             options?: (string | { value: string; label: string })[];
             placeholder?: string;
@@ -63,6 +64,16 @@ declare namespace Iced {
             src: SvgHandle;
         }
 
+        interface Img extends React.Attributes {
+            /** Path to a local image file (png, jpg, ...). */
+            src: string;
+            width?: Length;
+            height?: Length;
+            /** 0–1. */
+            opacity?: number;
+            borderRadius?: number;
+        }
+
         interface Column extends Common { }
         interface Row extends Common { }
         interface Text extends React.Attributes {
@@ -72,7 +83,8 @@ declare namespace Iced {
             alignX?: Horizontal;
             alignY?: Vertical;
 
-            wrapping?: boolean;
+            /** `true`/`false` turn word wrapping on/off; "glyph" breaks anywhere (paths, ids). */
+            wrapping?: boolean | "none" | "word" | "glyph" | "wordOrGlyph";
 
             shaping?: "auto" | "basic" | "advanced"
             children: string;
@@ -308,6 +320,8 @@ declare module "react/jsx-runtime" {
 
             // only when svg-element is enabled
             svg: Iced.Elements.Svg,
+            // only when img-element is enabled
+            img: Iced.Elements.Img,
 
             textarea: Iced.Elements.Textarea;
             select: Iced.Elements.Select;

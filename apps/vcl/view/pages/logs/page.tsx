@@ -5,7 +5,7 @@ import { LogViewer } from "./log-viewer.js";
 
 export const Logs = () => {
     const modLogLines = useApp(state => state.modOnlyLogLines);
-    const setModLogLines = useApp(state => state.setModOnlyLogLines);
+    const updateSettings = useApp(state => state.updateSettings);
     const { isLoading, isError, error, data } = useQuery({
         queryKey: ["logs", modLogLines],
         queryFn: () => {
@@ -16,7 +16,7 @@ export const Logs = () => {
     return (
         <col>
             <row padding={[2, 4]}>
-                <input label="Mod lines only" type="checkbox" checked={modLogLines} onChange={(e) => setModLogLines(e.value)} />
+                <input label="Mod lines only" type="checkbox" checked={modLogLines} onChange={(e) => updateSettings({ modOnlyLogLines: e.value })} />
                 <space width="fill" />
             </row>
             <hr />

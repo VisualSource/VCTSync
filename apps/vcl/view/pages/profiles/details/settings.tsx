@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FolderInput from "@icon/folder-input.svg" with {type: "svg"};
 import Trash from "@icon/trash.svg" with {type: "svg" };
 import { open, confirm } from "../../../platform/dialog.js";
@@ -20,6 +20,20 @@ export const SettingsTab = ({ data }: { data: Profile }) => {
 
     const toggleDetails = useProfileState(state => state.toggleDetails);
 
+    // Autosave text fields 400ms after typing stops; a pending edit is flushed if the tab unmounts.
+    const pending = useRef<(() => void) | null>(null);
+    useEffect(() => {
+        if (name === data.name && launchArgs === data.launch_args && profileDir === data.dir) return;
+        pending.current = () => collection.update(data.id, draft => {
+            draft.name = name;
+            draft.launch_args = launchArgs;
+            draft.dir = profileDir;
+        });
+        const timer = setTimeout(() => { pending.current?.(); pending.current = null; }, 400);
+        return () => clearTimeout(timer);
+    }, [name, launchArgs, profileDir]);
+    useEffect(() => () => pending.current?.(), []);
+
     return (
         <>
             <col spacing={12}>
@@ -33,11 +47,7 @@ export const SettingsTab = ({ data }: { data: Profile }) => {
                         onChange={(ev) => {
                             setName(ev.value);
                         }}
-                        onSubmit={() => collection.update(data.id, draft => {
-                            draft.name = name;
-                        })
-
-                        } />
+                    />
                 </col>
 
                 <col spacing={4}>
@@ -61,9 +71,6 @@ export const SettingsTab = ({ data }: { data: Profile }) => {
                         placeholder="-windowed -console"
                         value={launchArgs}
                         onChange={(ev) => setLaunchArgs(ev.value)}
-                        onSubmit={() => collection.update(data.id, draft => {
-                            draft.launch_args = launchArgs;
-                        })}
                     />
                 </col>
 
@@ -78,11 +85,6 @@ export const SettingsTab = ({ data }: { data: Profile }) => {
                             value={profileDir}
                             onChange={(ev) => {
                                 setProfileDir(ev.value);
-                            }}
-                            onSubmit={() => {
-                                collection.update(data.id, draft => {
-                                    draft.dir = profileDir;
-                                })
                             }}
                         />
                         <button width="shrink" onPress={() => {
